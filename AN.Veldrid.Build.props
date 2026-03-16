@@ -1,4 +1,13 @@
-﻿<Project>
+﻿<!--
+  AN.Veldrid.Build.props - Veldrid Library Build Configuration
+
+  This file is explicitly imported by Veldrid library projects (not auto-discovered like Directory.Build.props).
+  This allows users to create their own Directory.Build.props for overrides without conflicting with
+  Veldrid's internal build settings.
+
+  Note: UseLocalVeldrid is controlled by the user via Directory.Build.props, not here.
+-->
+<Project>
 
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>

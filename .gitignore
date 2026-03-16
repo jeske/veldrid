@@ -5,6 +5,18 @@ project.lock.json
 
 ### VisualStudio ###
 
+#####
+# user build config files
+# 
+# we disallow checking these in so the user has them to override configs
+#
+Directory.Build.props
+Directory.Build.targets
+Directory.Packages.props
+global.json
+nuget.config
+.editorconfig
+
 # User-specific files
 *.suo
 *.user

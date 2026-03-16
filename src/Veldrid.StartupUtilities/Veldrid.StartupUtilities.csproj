@@ -1,5 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\AN.Veldrid.Build.props" />
+
   <PropertyGroup>
     <PackageVersion>$(AssemblyVersion)</PackageVersion>
     <TargetFramework>net9.0</TargetFramework>
@@ -18,9 +20,10 @@
     <ProjectReference Include="..\Veldrid\Veldrid.csproj" />
   </ItemGroup>
 
-  <!-- Fall back to AN.Veldrid NuGet package for CI/release builds -->
+  <!-- Use PackageReference when not building from source -->
+  <!-- Version is inherited from consuming project -->
   <ItemGroup Condition="'$(UseLocalVeldrid)' != 'true'">
-    <PackageReference Include="AN.Veldrid" Version="4.9.69-ga405fe8484" />
+    <PackageReference Include="AN.Veldrid" />
   </ItemGroup>
 
   <ItemGroup>

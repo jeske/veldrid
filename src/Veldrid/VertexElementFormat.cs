@@ -1,4 +1,7 @@
-﻿namespace Veldrid
+﻿// Legacy Veldrid 4.9.0 compatibility: Support both underscore and non-underscore naming
+#define SUPPORT_LEGACY_VELDRID_SYMBOLS
+
+namespace Veldrid
 {
     /// <summary>
     ///     The format of an individual vertex element.
@@ -158,6 +161,18 @@
         /// <summary>
         ///     Four 16-bit floating point values.
         /// </summary>
-        Half4
+        Half4,
+
+#if SUPPORT_LEGACY_VELDRID_SYMBOLS
+        // Legacy Veldrid 4.9.0 symbol aliases (with underscores)
+        Byte2_Norm = Byte2Norm,
+        Byte4_Norm = Byte4Norm,
+        SByte2_Norm = SByte2Norm,
+        SByte4_Norm = SByte4Norm,
+        UShort2_Norm = UShort2Norm,
+        UShort4_Norm = UShort4Norm,
+        Short2_Norm = Short2Norm,
+        Short4_Norm = Short4Norm
+#endif
     }
 }

@@ -8,11 +8,11 @@
         /// <summary>
         ///     Clockwise winding order.
         /// </summary>
-        Clockwise,
+        Clockwise = 0,
 
         /// <summary>
         ///     Counter-clockwise winding order.
         /// </summary>
-        CounterClockwise
+        CounterClockwise = 1
     }
 }

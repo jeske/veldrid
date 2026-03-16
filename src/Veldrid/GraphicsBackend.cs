@@ -8,26 +8,26 @@
         /// <summary>
         ///     Direct3D 11.
         /// </summary>
-        Direct3D11,
+        Direct3D11 = 0,
 
         /// <summary>
         ///     Vulkan.
         /// </summary>
-        Vulkan,
+        Vulkan = 1,
 
         /// <summary>
         ///     OpenGL.
         /// </summary>
-        OpenGL,
+        OpenGL = 2,
 
         /// <summary>
         ///     Metal.
         /// </summary>
-        Metal,
+        Metal = 3,
 
         /// <summary>
         ///     OpenGL ES.
         /// </summary>
-        OpenGLES
+        OpenGLES = 4
     }
 }

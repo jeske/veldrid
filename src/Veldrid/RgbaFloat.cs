@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Legacy Veldrid 4.9.0 compatibility: Support both SCREAMING_SNAKE_CASE and PascalCase naming
+#define SUPPORT_LEGACY_VELDRID_SYMBOLS
+
+using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -126,6 +129,24 @@ namespace Veldrid
         ///     Orange (1, 0.36f, 0, 1)
         /// </summary>
         public static readonly RgbaFloat ORANGE = new RgbaFloat(1f, 0.36f, 0f, 1);
+
+#if SUPPORT_LEGACY_VELDRID_SYMBOLS
+        // Legacy Veldrid 4.9.0 symbol aliases (PascalCase)
+        public static readonly RgbaFloat Red = RED;
+        public static readonly RgbaFloat DarkRed = DARK_RED;
+        public static readonly RgbaFloat Green = GREEN;
+        public static readonly RgbaFloat Blue = BLUE;
+        public static readonly RgbaFloat Yellow = YELLOW;
+        public static readonly RgbaFloat Grey = GREY;
+        public static readonly RgbaFloat LightGrey = LIGHT_GREY;
+        public static readonly RgbaFloat Cyan = CYAN;
+        public static readonly RgbaFloat White = WHITE;
+        public static readonly RgbaFloat CornflowerBlue = CORNFLOWER_BLUE;
+        public static readonly RgbaFloat Clear = CLEAR;
+        public static readonly RgbaFloat Black = BLACK;
+        public static readonly RgbaFloat Pink = PINK;
+        public static readonly RgbaFloat Orange = ORANGE;
+#endif
 
         /// <summary>
         ///     Converts this RgbaFloat into a Vector4.

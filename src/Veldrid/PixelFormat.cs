@@ -1,4 +1,7 @@
-﻿namespace Veldrid
+﻿// Legacy Veldrid 4.9.0 compatibility: Support both underscore and non-underscore naming
+#define SUPPORT_LEGACY_VELDRID_SYMBOLS
+
+namespace Veldrid
 {
     /// <summary>
     ///     The format of data stored in a <see cref="Texture" />.
@@ -329,6 +332,24 @@
         ///     BC7 block compressed format.
         ///     This is an sRGB format.
         /// </summary>
-        Bc7UNormSRgb
+        Bc7UNormSRgb,
+
+#if SUPPORT_LEGACY_VELDRID_SYMBOLS
+        // Legacy Veldrid 4.9.0 symbol aliases (with underscores)
+        // These allow old code to compile without changes
+        R8_UNorm = R8UNorm,
+        R16_UNorm = R16UNorm,
+        R8_G8_B8_A8_UNorm = R8G8B8A8UNorm,
+        B8_G8_R8_A8_UNorm = B8G8R8A8UNorm,
+        R16_G16_B16_A16_UInt = R16G16B16A16UInt,
+        R16_G16_B16_A16_UNorm = R16G16B16A16UNorm,
+        R32_Float = R32Float,
+        R32_G32_Float = R32G32Float,
+        R32_G32_B32_A32_Float = R32G32B32A32Float,
+        D24_UNorm_S8_UInt = D24UNormS8UInt,
+        D32_Float_S8_UInt = D32FloatS8UInt,
+        R8_G8_B8_A8_UNorm_SRgb = R8G8B8A8UNormSRgb,
+        B8_G8_R8_A8_UNorm_SRgb = B8G8R8A8UNormSRgb
+#endif
     }
 }

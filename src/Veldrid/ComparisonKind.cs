@@ -8,41 +8,41 @@
         /// <summary>
         ///     The comparison never succeeds.
         /// </summary>
-        Never,
+        Never = 0,
 
         /// <summary>
         ///     The comparison succeeds when the new value is less than the existing value.
         /// </summary>
-        Less,
+        Less = 1,
 
         /// <summary>
         ///     The comparison succeeds when the new value is equal to the existing value.
         /// </summary>
-        Equal,
+        Equal = 2,
 
         /// <summary>
         ///     The comparison succeeds when the new value is less than or equal to the existing value.
         /// </summary>
-        LessEqual,
+        LessEqual = 3,
 
         /// <summary>
         ///     The comparison succeeds when the new value is greater than the existing value.
         /// </summary>
-        Greater,
+        Greater = 4,
 
         /// <summary>
         ///     The comparison succeeds when the new value is not equal to the existing value.
         /// </summary>
-        NotEqual,
+        NotEqual = 5,
 
         /// <summary>
         ///     The comparison succeeds when the new value is greater than or equal to the existing value.
         /// </summary>
-        GreaterEqual,
+        GreaterEqual = 6,
 
         /// <summary>
         ///     The comparison always succeeds.
         /// </summary>
-        Always
+        Always = 7
     }
 }

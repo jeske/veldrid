@@ -8,16 +8,16 @@
         /// <summary>
         ///     The back face.
         /// </summary>
-        Back,
+        Back = 0,
 
         /// <summary>
         ///     The front face.
         /// </summary>
-        Front,
+        Front = 1,
 
         /// <summary>
         ///     No face culling.
         /// </summary>
-        None
+        None = 2
     }
 }

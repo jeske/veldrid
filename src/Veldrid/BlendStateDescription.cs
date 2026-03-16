@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Legacy Veldrid 4.9.0 compatibility: Support both SCREAMING_SNAKE_CASE and PascalCase naming
+#define SUPPORT_LEGACY_VELDRID_SYMBOLS
+
+using System;
 
 namespace Veldrid
 {
@@ -99,6 +102,14 @@ namespace Veldrid
         {
             AttachmentStates = Array.Empty<BlendAttachmentDescription>()
         };
+
+#if SUPPORT_LEGACY_VELDRID_SYMBOLS
+        // Legacy Veldrid 4.9.0 symbol aliases (PascalCase)
+        public static readonly BlendStateDescription SingleOverrideBlend = SINGLE_OVERRIDE_BLEND;
+        public static readonly BlendStateDescription SingleAlphaBlend = SINGLE_ALPHA_BLEND;
+        public static readonly BlendStateDescription SingleAdditiveBlend = SINGLE_ADDITIVE_BLEND;
+        public static readonly BlendStateDescription SingleDisabled = SINGLE_DISABLED;
+#endif
 
         /// <summary>
         ///     Element-wise equality.

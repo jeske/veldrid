@@ -1,4 +1,7 @@
-﻿namespace Veldrid
+﻿// Legacy Veldrid 4.9.0 compatibility: Support both underscore and non-underscore naming
+#define SUPPORT_LEGACY_VELDRID_SYMBOLS
+
+namespace Veldrid
 {
     /// <summary>
     ///     Determines how texture values are sampled from a texture.
@@ -50,6 +53,18 @@
         ///     Anisotropic filtering is used. The maximum anisotropy is controlled by
         ///     <see cref="SamplerDescription.MaximumAnisotropy" />.
         /// </summary>
-        Anisotropic
+        Anisotropic,
+
+#if SUPPORT_LEGACY_VELDRID_SYMBOLS
+        // Legacy Veldrid 4.9.0 symbol aliases (with underscores)
+        MinPoint_MagPoint_MipPoint = MinPointMagPointMipPoint,
+        MinPoint_MagPoint_MipLinear = MinPointMagPointMipLinear,
+        MinPoint_MagLinear_MipPoint = MinPointMagLinearMipPoint,
+        MinPoint_MagLinear_MipLinear = MinPointMagLinearMipLinear,
+        MinLinear_MagPoint_MipPoint = MinLinearMagPointMipPoint,
+        MinLinear_MagPoint_MipLinear = MinLinearMagPointMipLinear,
+        MinLinear_MagLinear_MipPoint = MinLinearMagLinearMipPoint,
+        MinLinear_MagLinear_MipLinear = MinLinearMagLinearMipLinear
+#endif
     }
 }

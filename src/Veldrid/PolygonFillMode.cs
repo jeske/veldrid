@@ -1,4 +1,4 @@
-﻿namespace Veldrid
+namespace Veldrid
 {
     /// <summary>
     ///     Indicates how the rasterizer will fill polygons.
@@ -8,11 +8,11 @@
         /// <summary>
         ///     Polygons are filled completely.
         /// </summary>
-        Solid,
+        Solid = 0,
 
         /// <summary>
         ///     Polygons are outlined in a "wireframe" style.
         /// </summary>
-        Wireframe
+        Wireframe = 1
     }
 }

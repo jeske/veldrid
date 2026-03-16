@@ -1,4 +1,4 @@
-﻿namespace Veldrid
+namespace Veldrid
 {
     /// <summary>
     ///     The data type of a shader constant.
@@ -8,46 +8,46 @@
         /// <summary>
         ///     A boolean.
         /// </summary>
-        Bool,
+        Bool = 0,
 
         /// <summary>
         ///     A 16-bit unsigned integer.
         /// </summary>
-        UInt16,
+        UInt16 = 1,
 
         /// <summary>
         ///     A 16-bit signed integer.
         /// </summary>
-        Int16,
+        Int16 = 2,
 
         /// <summary>
         ///     A 32-bit unsigned integer.
         /// </summary>
-        UInt32,
+        UInt32 = 3,
 
         /// <summary>
         ///     A 32-bit signed integer.
         /// </summary>
-        Int32,
+        Int32 = 4,
 
         /// <summary>
         ///     A 64-bit unsigned integer.
         /// </summary>
-        UInt64,
+        UInt64 = 5,
 
         /// <summary>
         ///     A 64-bit signed integer.
         /// </summary>
-        Int64,
+        Int64 = 6,
 
         /// <summary>
         ///     A 32-bit floating-point value.
         /// </summary>
-        Float,
+        Float = 7,
 
         /// <summary>
         ///     A 64-bit floating-point value.
         /// </summary>
-        Double
+        Double = 8
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Veldrid
+namespace Veldrid
 {
     /// <summary>
     ///     Identifies how a <see cref="IMappableResource" /> will be mapped into CPU address space.
@@ -9,7 +9,7 @@
         ///     A read-only resource mapping. The mapped data region is not writable, and cannot be used to transfer data into the
         ///     graphics resource. NOTE: This mode can only be used on resources created with the Staging usage flag.
         /// </summary>
-        Read,
+        Read = 0,
 
         /// <summary>
         ///     A write-only resource mapping. The mapped data region is writable, and will be transferred into the graphics
@@ -18,13 +18,13 @@
         ///     mode, the previous contents of the resource will be erased. This mode can only be used to entirely replace the
         ///     contents of a resource.
         /// </summary>
-        Write,
+        Write = 1,
 
         /// <summary>
         ///     A read-write resource mapping. The mapped data region is both readable and writable. NOTE: this mode can only be
         ///     used
         ///     on resources created with the Staging usage flag.
         /// </summary>
-        ReadWrite
+        ReadWrite = 2
     }
 }

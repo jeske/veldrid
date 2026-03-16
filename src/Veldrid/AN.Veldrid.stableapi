@@ -1,3 +1,4 @@
+__stableApiVersion: 2
 enum.BlendFactor.BlendFactor: 10
 enum.BlendFactor.DestinationAlpha: 4
 enum.BlendFactor.DestinationColor: 8
@@ -294,6 +295,733 @@ enum.VertexElementSemantic.Normal: 1
 enum.VertexElementSemantic.Position: 0
 enum.VertexElementSemantic.TextureCoordinate: 2
 enum.VertexElementSemantic._type: byte
+field.BackendInfoVulkan.ExtensionProperties.Name: readonly string
+field.BackendInfoVulkan.ExtensionProperties.SpecVersion: readonly uint
+field.BlendAttachmentDescription.ADDITIVE_BLEND: static readonly BlendAttachmentDescription
+field.BlendAttachmentDescription.ALPHA_BLEND: static readonly BlendAttachmentDescription
+field.BlendAttachmentDescription.AlphaFunction: BlendFunction
+field.BlendAttachmentDescription.BlendEnabled: bool
+field.BlendAttachmentDescription.ColorFunction: BlendFunction
+field.BlendAttachmentDescription.ColorWriteMask: Nullable`1<ColorWriteMask>
+field.BlendAttachmentDescription.DISABLED: static readonly BlendAttachmentDescription
+field.BlendAttachmentDescription.DestinationAlphaFactor: BlendFactor
+field.BlendAttachmentDescription.DestinationColorFactor: BlendFactor
+field.BlendAttachmentDescription.OVERRIDE_BLEND: static readonly BlendAttachmentDescription
+field.BlendAttachmentDescription.SourceAlphaFactor: BlendFactor
+field.BlendAttachmentDescription.SourceColorFactor: BlendFactor
+field.BlendStateDescription.AlphaToCoverageEnabled: bool
+field.BlendStateDescription.AttachmentStates: BlendAttachmentDescription[]
+field.BlendStateDescription.BlendFactor: RgbaFloat
+field.BlendStateDescription.EMPTY: static readonly BlendStateDescription
+field.BlendStateDescription.SINGLE_ADDITIVE_BLEND: static readonly BlendStateDescription
+field.BlendStateDescription.SINGLE_ALPHA_BLEND: static readonly BlendStateDescription
+field.BlendStateDescription.SINGLE_DISABLED: static readonly BlendStateDescription
+field.BlendStateDescription.SINGLE_OVERRIDE_BLEND: static readonly BlendStateDescription
+field.BlendStateDescription.SingleAdditiveBlend: static readonly BlendStateDescription
+field.BlendStateDescription.SingleAlphaBlend: static readonly BlendStateDescription
+field.BlendStateDescription.SingleDisabled: static readonly BlendStateDescription
+field.BlendStateDescription.SingleOverrideBlend: static readonly BlendStateDescription
+field.BufferDescription.RawBuffer: bool
+field.BufferDescription.SizeInBytes: uint
+field.BufferDescription.StructureByteStride: uint
+field.BufferDescription.Usage: BufferUsage
+field.ComputePipelineDescription.ComputeShader: Shader
+field.ComputePipelineDescription.ResourceLayouts: ResourceLayout[]
+field.ComputePipelineDescription.Specializations: SpecializationConstant[]
+field.ComputePipelineDescription.ThreadGroupSizeX: uint
+field.ComputePipelineDescription.ThreadGroupSizeY: uint
+field.ComputePipelineDescription.ThreadGroupSizeZ: uint
+field.D3D11DeviceOptions.AdapterPtr: IntPtr
+field.D3D11DeviceOptions.DeviceCreationFlags: uint
+field.DepthStencilStateDescription.DEPTH_ONLY_GREATER_EQUAL: static readonly DepthStencilStateDescription
+field.DepthStencilStateDescription.DEPTH_ONLY_GREATER_EQUAL_READ: static readonly DepthStencilStateDescription
+field.DepthStencilStateDescription.DEPTH_ONLY_LESS_EQUAL: static readonly DepthStencilStateDescription
+field.DepthStencilStateDescription.DEPTH_ONLY_LESS_EQUAL_READ: static readonly DepthStencilStateDescription
+field.DepthStencilStateDescription.DISABLED: static readonly DepthStencilStateDescription
+field.DepthStencilStateDescription.DepthComparison: ComparisonKind
+field.DepthStencilStateDescription.DepthTestEnabled: bool
+field.DepthStencilStateDescription.DepthWriteEnabled: bool
+field.DepthStencilStateDescription.StencilBack: StencilBehaviorDescription
+field.DepthStencilStateDescription.StencilFront: StencilBehaviorDescription
+field.DepthStencilStateDescription.StencilReadMask: byte
+field.DepthStencilStateDescription.StencilReference: uint
+field.DepthStencilStateDescription.StencilTestEnabled: bool
+field.DepthStencilStateDescription.StencilWriteMask: byte
+field.DeviceBufferRange.Buffer: DeviceBuffer
+field.DeviceBufferRange.Offset: uint
+field.DeviceBufferRange.SizeInBytes: uint
+field.FramebufferAttachmentDescription.ArrayLayer: uint
+field.FramebufferAttachmentDescription.MipLevel: uint
+field.FramebufferAttachmentDescription.Target: Texture
+field.FramebufferDescription.ColorTargets: FramebufferAttachmentDescription[]
+field.FramebufferDescription.DepthTarget: Nullable`1<FramebufferAttachmentDescription>
+field.GraphicsDeviceOptions.Debug: bool
+field.GraphicsDeviceOptions.HasMainSwapchain: bool
+field.GraphicsDeviceOptions.PreferDepthRangeZeroToOne: bool
+field.GraphicsDeviceOptions.PreferStandardClipSpaceYDirection: bool
+field.GraphicsDeviceOptions.ResourceBindingModel: ResourceBindingModel
+field.GraphicsDeviceOptions.SwapchainDepthFormat: Nullable`1<PixelFormat>
+field.GraphicsDeviceOptions.SwapchainSrgbFormat: bool
+field.GraphicsDeviceOptions.SyncToVerticalBlank: bool
+field.GraphicsPipelineDescription.BlendState: BlendStateDescription
+field.GraphicsPipelineDescription.DepthStencilState: DepthStencilStateDescription
+field.GraphicsPipelineDescription.Outputs: OutputDescription
+field.GraphicsPipelineDescription.PrimitiveTopology: PrimitiveTopology
+field.GraphicsPipelineDescription.RasterizerState: RasterizerStateDescription
+field.GraphicsPipelineDescription.ResourceBindingModel: Nullable`1<ResourceBindingModel>
+field.GraphicsPipelineDescription.ResourceLayouts: ResourceLayout[]
+field.GraphicsPipelineDescription.ShaderSet: ShaderSetDescription
+field.IndirectDispatchArguments.GroupCountX: uint
+field.IndirectDispatchArguments.GroupCountY: uint
+field.IndirectDispatchArguments.GroupCountZ: uint
+field.IndirectDrawArguments.FirstInstance: uint
+field.IndirectDrawArguments.FirstVertex: uint
+field.IndirectDrawArguments.InstanceCount: uint
+field.IndirectDrawArguments.VertexCount: uint
+field.IndirectDrawIndexedArguments.FirstIndex: uint
+field.IndirectDrawIndexedArguments.FirstInstance: uint
+field.IndirectDrawIndexedArguments.IndexCount: uint
+field.IndirectDrawIndexedArguments.InstanceCount: uint
+field.IndirectDrawIndexedArguments.VertexOffset: int
+field.MappedResource.Data: readonly IntPtr
+field.MappedResource.DepthPitch: readonly uint
+field.MappedResource.Mode: readonly MapMode
+field.MappedResource.Resource: readonly IMappableResource
+field.MappedResource.RowPitch: readonly uint
+field.MappedResource.SizeInBytes: readonly uint
+field.MappedResource.Subresource: readonly uint
+field.MappedResourceView`1.Count: readonly int
+field.MappedResourceView`1.MappedResource: readonly MappedResource
+field.MappedResourceView`1.SizeInBytes: readonly uint
+field.MetalDeviceOptions.PreferMemorylessDepthTargets: bool
+field.NoAllocSetResourceSetEntry.<DynamicOffsetsInline>e__FixedBuffer.FixedElementField: uint
+field.OutputAttachmentDescription.Format: PixelFormat
+field.OutputDescription.ColorAttachments: OutputAttachmentDescription[]
+field.OutputDescription.DepthAttachment: Nullable`1<OutputAttachmentDescription>
+field.OutputDescription.SampleCount: TextureSampleCount
+field.PixelFormatProperties.MaxArrayLayers: readonly uint
+field.PixelFormatProperties.MaxDepth: readonly uint
+field.PixelFormatProperties.MaxHeight: readonly uint
+field.PixelFormatProperties.MaxMipLevels: readonly uint
+field.PixelFormatProperties.MaxWidth: readonly uint
+field.RasterizerStateDescription.CULL_NONE: static readonly RasterizerStateDescription
+field.RasterizerStateDescription.CullMode: FaceCullMode
+field.RasterizerStateDescription.DEFAULT: static readonly RasterizerStateDescription
+field.RasterizerStateDescription.DepthClipEnabled: bool
+field.RasterizerStateDescription.FillMode: PolygonFillMode
+field.RasterizerStateDescription.FrontFace: FrontFace
+field.RasterizerStateDescription.ScissorTestEnabled: bool
+field.ResourceLayoutDescription.Elements: ResourceLayoutElementDescription[]
+field.ResourceLayoutElementDescription.Kind: ResourceKind
+field.ResourceLayoutElementDescription.Name: string
+field.ResourceLayoutElementDescription.Options: ResourceLayoutElementOptions
+field.ResourceLayoutElementDescription.Stages: ShaderStages
+field.ResourceSetDescription.BoundResources: IBindableResource[]
+field.ResourceSetDescription.Layout: ResourceLayout
+field.RgbaByte.A: readonly byte
+field.RgbaByte.B: readonly byte
+field.RgbaByte.BLACK: static readonly RgbaByte
+field.RgbaByte.BLUE: static readonly RgbaByte
+field.RgbaByte.CLEAR: static readonly RgbaByte
+field.RgbaByte.CORNFLOWER_BLUE: static readonly RgbaByte
+field.RgbaByte.CYAN: static readonly RgbaByte
+field.RgbaByte.DARK_RED: static readonly RgbaByte
+field.RgbaByte.G: readonly byte
+field.RgbaByte.GREEN: static readonly RgbaByte
+field.RgbaByte.GREY: static readonly RgbaByte
+field.RgbaByte.LIGHT_GREY: static readonly RgbaByte
+field.RgbaByte.ORANGE: static readonly RgbaByte
+field.RgbaByte.PINK: static readonly RgbaByte
+field.RgbaByte.R: readonly byte
+field.RgbaByte.RED: static readonly RgbaByte
+field.RgbaByte.WHITE: static readonly RgbaByte
+field.RgbaByte.YELLOW: static readonly RgbaByte
+field.RgbaFloat.BLACK: static readonly RgbaFloat
+field.RgbaFloat.BLUE: static readonly RgbaFloat
+field.RgbaFloat.Black: static readonly RgbaFloat
+field.RgbaFloat.Blue: static readonly RgbaFloat
+field.RgbaFloat.CLEAR: static readonly RgbaFloat
+field.RgbaFloat.CORNFLOWER_BLUE: static readonly RgbaFloat
+field.RgbaFloat.CYAN: static readonly RgbaFloat
+field.RgbaFloat.Clear: static readonly RgbaFloat
+field.RgbaFloat.CornflowerBlue: static readonly RgbaFloat
+field.RgbaFloat.Cyan: static readonly RgbaFloat
+field.RgbaFloat.DARK_RED: static readonly RgbaFloat
+field.RgbaFloat.DarkRed: static readonly RgbaFloat
+field.RgbaFloat.GREEN: static readonly RgbaFloat
+field.RgbaFloat.GREY: static readonly RgbaFloat
+field.RgbaFloat.Green: static readonly RgbaFloat
+field.RgbaFloat.Grey: static readonly RgbaFloat
+field.RgbaFloat.LIGHT_GREY: static readonly RgbaFloat
+field.RgbaFloat.LightGrey: static readonly RgbaFloat
+field.RgbaFloat.ORANGE: static readonly RgbaFloat
+field.RgbaFloat.Orange: static readonly RgbaFloat
+field.RgbaFloat.PINK: static readonly RgbaFloat
+field.RgbaFloat.Pink: static readonly RgbaFloat
+field.RgbaFloat.RED: static readonly RgbaFloat
+field.RgbaFloat.Red: static readonly RgbaFloat
+field.RgbaFloat.SIZE_IN_BYTES: static readonly int
+field.RgbaFloat.WHITE: static readonly RgbaFloat
+field.RgbaFloat.White: static readonly RgbaFloat
+field.RgbaFloat.YELLOW: static readonly RgbaFloat
+field.RgbaFloat.Yellow: static readonly RgbaFloat
+field.SamplerDescription.ANISO4_X: static readonly SamplerDescription
+field.SamplerDescription.AddressModeU: SamplerAddressMode
+field.SamplerDescription.AddressModeV: SamplerAddressMode
+field.SamplerDescription.AddressModeW: SamplerAddressMode
+field.SamplerDescription.BorderColor: SamplerBorderColor
+field.SamplerDescription.ComparisonKind: Nullable`1<ComparisonKind>
+field.SamplerDescription.Filter: SamplerFilter
+field.SamplerDescription.LINEAR: static readonly SamplerDescription
+field.SamplerDescription.LodBias: int
+field.SamplerDescription.MaximumAnisotropy: uint
+field.SamplerDescription.MaximumLod: uint
+field.SamplerDescription.MinimumLod: uint
+field.SamplerDescription.POINT: static readonly SamplerDescription
+field.ShaderDescription.Debug: bool
+field.ShaderDescription.EntryPoint: string
+field.ShaderDescription.ShaderBytes: byte[]
+field.ShaderDescription.Stage: ShaderStages
+field.ShaderSetDescription.Shaders: Shader[]
+field.ShaderSetDescription.Specializations: SpecializationConstant[]
+field.ShaderSetDescription.VertexLayouts: VertexLayoutDescription[]
+field.Size1024Bytes.<Data>e__FixedBuffer.FixedElementField: byte
+field.Size128Bytes.<Data>e__FixedBuffer.FixedElementField: byte
+field.Size16Bytes.<Data>e__FixedBuffer.FixedElementField: byte
+field.Size2048Bytes.<Data>e__FixedBuffer.FixedElementField: byte
+field.Size512Bytes.<Data>e__FixedBuffer.FixedElementField: byte
+field.Size64Bytes.<Data>e__FixedBuffer.FixedElementField: byte
+field.SmallFixedOrDynamicArray.<fixedData>e__FixedBuffer.FixedElementField: uint
+field.SpecializationConstant.Data: ulong
+field.SpecializationConstant.ID: uint
+field.SpecializationConstant.Type: ShaderConstantType
+field.StackList`1.<storage>e__FixedBuffer.FixedElementField: byte
+field.StencilBehaviorDescription.Comparison: ComparisonKind
+field.StencilBehaviorDescription.DepthFail: StencilOperation
+field.StencilBehaviorDescription.Fail: StencilOperation
+field.StencilBehaviorDescription.Pass: StencilOperation
+field.SwapchainDescription.ColorSrgb: bool
+field.SwapchainDescription.DepthFormat: Nullable`1<PixelFormat>
+field.SwapchainDescription.Height: uint
+field.SwapchainDescription.Source: SwapchainSource
+field.SwapchainDescription.SyncToVerticalBlank: bool
+field.SwapchainDescription.Width: uint
+field.TextureDescription.ArrayLayers: uint
+field.TextureDescription.Depth: uint
+field.TextureDescription.Format: PixelFormat
+field.TextureDescription.Height: uint
+field.TextureDescription.MipLevels: uint
+field.TextureDescription.SampleCount: TextureSampleCount
+field.TextureDescription.Type: TextureType
+field.TextureDescription.Usage: TextureUsage
+field.TextureDescription.Width: uint
+field.TextureViewDescription.ArrayLayers: uint
+field.TextureViewDescription.BaseArrayLayer: uint
+field.TextureViewDescription.BaseMipLevel: uint
+field.TextureViewDescription.Format: Nullable`1<PixelFormat>
+field.TextureViewDescription.MipLevels: uint
+field.TextureViewDescription.Target: Texture
+field.VertexElementDescription.Format: VertexElementFormat
+field.VertexElementDescription.Name: string
+field.VertexElementDescription.Offset: uint
+field.VertexElementDescription.Semantic: VertexElementSemantic
+field.VertexLayoutDescription.Elements: VertexElementDescription[]
+field.VertexLayoutDescription.InstanceStepRate: uint
+field.VertexLayoutDescription.Stride: uint
+field.Viewport.Height: float
+field.Viewport.MaxDepth: float
+field.Viewport.MinDepth: float
+field.Viewport.Width: float
+field.Viewport.X: float
+field.Viewport.Y: float
+field.VkPhysicalDeviceDriverProperties.<DriverInfo>e__FixedBuffer.FixedElementField: byte
+field.VkPhysicalDeviceDriverProperties.<DriverName>e__FixedBuffer.FixedElementField: byte
+field.VulkanDeviceOptions.DeviceExtensions: string[]
+field.VulkanDeviceOptions.InstanceExtensions: string[]
+method.BackendInfoD3D11.GetTexturePointer: IntPtr(Texture texture)
+method.BackendInfoOpenGL.ExecuteOnGLThread: void(Action action)
+method.BackendInfoOpenGL.FlushAndFinish: void()
+method.BackendInfoOpenGL.GetTextureName: uint(Texture texture)
+method.BackendInfoOpenGL.SetTextureTarget: void(Texture texture, uint textureTarget)
+method.BackendInfoVulkan.ExtensionProperties..ctor: void(string name, uint specVersion)
+method.BackendInfoVulkan.ExtensionProperties.ToString: string()
+method.BackendInfoVulkan.GetVkImage: ulong(Texture texture)
+method.BackendInfoVulkan.OverrideImageLayout: void(Texture texture, uint layout)
+method.BackendInfoVulkan.TransitionImageLayout: void(Texture texture, uint layout)
+method.BlendAttachmentDescription..ctor: void(bool blendEnabled, BlendFactor sourceColorFactor, BlendFactor destinationColorFactor, BlendFunction colorFunction, BlendFactor sourceAlphaFactor, BlendFactor destinationAlphaFactor, BlendFunction alphaFunction)
+method.BlendAttachmentDescription..ctor: void(bool blendEnabled, ColorWriteMask colorWriteMask, BlendFactor sourceColorFactor, BlendFactor destinationColorFactor, BlendFunction colorFunction, BlendFactor sourceAlphaFactor, BlendFactor destinationAlphaFactor, BlendFunction alphaFunction)
+method.BlendAttachmentDescription.Equals: bool(BlendAttachmentDescription other)
+method.BlendAttachmentDescription.GetHashCode: int()
+method.BlendStateDescription..ctor: void(RgbaFloat blendFactor, BlendAttachmentDescription[] attachmentStates)
+method.BlendStateDescription..ctor: void(RgbaFloat blendFactor, bool alphaToCoverageEnabled, BlendAttachmentDescription[] attachmentStates)
+method.BlendStateDescription.Equals: bool(BlendStateDescription other)
+method.BlendStateDescription.GetHashCode: int()
+method.BufferDescription..ctor: void(uint sizeInBytes, BufferUsage usage)
+method.BufferDescription..ctor: void(uint sizeInBytes, BufferUsage usage, uint structureByteStride)
+method.BufferDescription..ctor: void(uint sizeInBytes, BufferUsage usage, uint structureByteStride, bool rawBuffer)
+method.BufferDescription.Equals: bool(BufferDescription other)
+method.BufferDescription.GetHashCode: int()
+method.CommandBufferUsageList`1.ItemsEnumerator..ctor: void(List`1<ValueTuple`2<MTLCommandBuffer, !0>> list)
+method.CommandBufferUsageList`1.ItemsEnumerator.Dispose: void()
+method.CommandBufferUsageList`1.ItemsEnumerator.GetEnumerator: ItemsEnumerator<!0>()
+method.CommandBufferUsageList`1.ItemsEnumerator.MoveNext: bool()
+method.CommandBufferUsageList`1.ItemsEnumerator.Reset: void()
+method.CommandBufferUsageList`1.RemovalEnumerator..ctor: void(List`1<ValueTuple`2<MTLCommandBuffer, !0>> list, MTLCommandBuffer cb)
+method.CommandBufferUsageList`1.RemovalEnumerator.Dispose: void()
+method.CommandBufferUsageList`1.RemovalEnumerator.GetEnumerator: RemovalEnumerator<!0>()
+method.CommandBufferUsageList`1.RemovalEnumerator.MoveNext: bool()
+method.CommandBufferUsageList`1.RemovalEnumerator.Reset: void()
+method.CommandList.Begin: void()
+method.CommandList.ClearColorTarget: void(uint index, RgbaFloat clearColor)
+method.CommandList.ClearDepthStencil: void(float depth)
+method.CommandList.ClearDepthStencil: void(float depth, byte stencil)
+method.CommandList.CopyBuffer: void(DeviceBuffer source, uint sourceOffset, DeviceBuffer destination, uint destinationOffset, uint sizeInBytes)
+method.CommandList.CopyTexture: void(Texture source, Texture destination)
+method.CommandList.CopyTexture: void(Texture source, Texture destination, uint mipLevel, uint arrayLayer)
+method.CommandList.CopyTexture: void(Texture source, uint srcX, uint srcY, uint srcZ, uint srcMipLevel, uint srcBaseArrayLayer, Texture destination, uint dstX, uint dstY, uint dstZ, uint dstMipLevel, uint dstBaseArrayLayer, uint width, uint height, uint depth, uint layerCount)
+method.CommandList.Dispatch: void(uint groupCountX, uint groupCountY, uint groupCountZ)
+method.CommandList.DispatchIndirect: void(DeviceBuffer indirectBuffer, uint offset)
+method.CommandList.Dispose: void()
+method.CommandList.Draw: void(uint vertexCount)
+method.CommandList.Draw: void(uint vertexCount, uint instanceCount, uint vertexStart, uint instanceStart)
+method.CommandList.DrawIndexed: void(uint indexCount)
+method.CommandList.DrawIndexed: void(uint indexCount, uint instanceCount, uint indexStart, int vertexOffset, uint instanceStart)
+method.CommandList.DrawIndexedIndirect: void(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
+method.CommandList.DrawIndirect: void(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
+method.CommandList.End: void()
+method.CommandList.GenerateMipmaps: void(Texture texture)
+method.CommandList.InsertDebugMarker: void(string name)
+method.CommandList.PopDebugGroup: void()
+method.CommandList.PushDebugGroup: void(string name)
+method.CommandList.ResolveTexture: void(Texture source, Texture destination)
+method.CommandList.SetComputeResourceSet: void(uint slot, ResourceSet rs)
+method.CommandList.SetComputeResourceSet: void(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
+method.CommandList.SetComputeResourceSet: void(uint slot, ResourceSet rs, uint[] dynamicOffsets)
+method.CommandList.SetFramebuffer: void(Framebuffer fb)
+method.CommandList.SetFullScissorRect: void(uint index)
+method.CommandList.SetFullScissorRects: void()
+method.CommandList.SetFullViewport: void(uint index)
+method.CommandList.SetFullViewports: void()
+method.CommandList.SetGraphicsResourceSet: void(uint slot, ResourceSet rs)
+method.CommandList.SetGraphicsResourceSet: void(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
+method.CommandList.SetGraphicsResourceSet: void(uint slot, ResourceSet rs, uint[] dynamicOffsets)
+method.CommandList.SetIndexBuffer: void(DeviceBuffer buffer, IndexFormat format)
+method.CommandList.SetIndexBuffer: void(DeviceBuffer buffer, IndexFormat format, uint offset)
+method.CommandList.SetPipeline: void(Pipeline pipeline)
+method.CommandList.SetScissorRect: void(uint index, uint x, uint y, uint width, uint height)
+method.CommandList.SetVertexBuffer: void(uint index, DeviceBuffer buffer)
+method.CommandList.SetVertexBuffer: void(uint index, DeviceBuffer buffer, uint offset)
+method.CommandList.SetViewport: void(uint index, Viewport viewport)
+method.CommandList.SetViewport: void(uint index, ref Viewport viewport)
+method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, !!0 source)
+method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, !!0[] source)
+method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
+method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ReadOnlySpan`1<!!0> source)
+method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, Span`1<!!0> source)
+method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ref !!0 source)
+method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ref !!0 source, uint sizeInBytes)
+method.CommandListDescription.Equals: bool(CommandListDescription other)
+method.ComputePipelineDescription..ctor: void(Shader computeShader, ResourceLayout[] resourceLayouts, uint threadGroupSizeX, uint threadGroupSizeY, uint threadGroupSizeZ)
+method.ComputePipelineDescription..ctor: void(Shader shaderStage, ResourceLayout resourceLayout, uint threadGroupSizeX, uint threadGroupSizeY, uint threadGroupSizeZ)
+method.ComputePipelineDescription..ctor: void(Shader shaderStage, ResourceLayout resourceLayout, uint threadGroupSizeX, uint threadGroupSizeY, uint threadGroupSizeZ, SpecializationConstant[] specializations)
+method.ComputePipelineDescription.Equals: bool(ComputePipelineDescription other)
+method.ComputePipelineDescription.GetHashCode: int()
+method.DepthStencilStateDescription..ctor: void(bool depthTestEnabled, bool depthWriteEnabled, ComparisonKind comparisonKind)
+method.DepthStencilStateDescription..ctor: void(bool depthTestEnabled, bool depthWriteEnabled, ComparisonKind comparisonKind, bool stencilTestEnabled, StencilBehaviorDescription stencilFront, StencilBehaviorDescription stencilBack, byte stencilReadMask, byte stencilWriteMask, uint stencilReference)
+method.DepthStencilStateDescription.Equals: bool(DepthStencilStateDescription other)
+method.DepthStencilStateDescription.GetHashCode: int()
+method.DeviceBuffer.Dispose: void()
+method.DeviceBufferRange..ctor: void(DeviceBuffer buffer, uint offset, uint sizeInBytes)
+method.DeviceBufferRange.Equals: bool(DeviceBufferRange other)
+method.DeviceBufferRange.GetHashCode: int()
+method.Fence.Dispose: void()
+method.Fence.Reset: void()
+method.FormatSizeHelpers.GetSizeInBytes: uint(PixelFormat format)
+method.FormatSizeHelpers.GetSizeInBytes: uint(VertexElementFormat format)
+method.Framebuffer.Dispose: void()
+method.FramebufferAttachment..ctor: void(Texture target, uint arrayLayer)
+method.FramebufferAttachment..ctor: void(Texture target, uint arrayLayer, uint mipLevel)
+method.FramebufferAttachmentDescription..ctor: void(Texture target, uint arrayLayer)
+method.FramebufferAttachmentDescription..ctor: void(Texture target, uint arrayLayer, uint mipLevel)
+method.FramebufferAttachmentDescription.Equals: bool(FramebufferAttachmentDescription other)
+method.FramebufferAttachmentDescription.GetHashCode: int()
+method.FramebufferDescription..ctor: void(Nullable`1<FramebufferAttachmentDescription> depthTarget, FramebufferAttachmentDescription[] colorTargets)
+method.FramebufferDescription..ctor: void(Texture depthTarget, Texture[] colorTargets)
+method.FramebufferDescription.Equals: bool(FramebufferDescription other)
+method.FramebufferDescription.GetHashCode: int()
+method.GraphicsApiVersion..ctor: void(int major, int minor, int subminor, int patch)
+method.GraphicsApiVersion.ToString: string()
+method.GraphicsApiVersion.TryParseGLVersion: bool(string versionString, ref GraphicsApiVersion version)
+method.GraphicsDevice.CreateD3D11: GraphicsDevice(GraphicsDeviceOptions options)
+method.GraphicsDevice.CreateD3D11: GraphicsDevice(GraphicsDeviceOptions options, D3D11DeviceOptions d3d11Options)
+method.GraphicsDevice.CreateD3D11: GraphicsDevice(GraphicsDeviceOptions options, D3D11DeviceOptions d3d11Options, SwapchainDescription swapchainDescription)
+method.GraphicsDevice.CreateD3D11: GraphicsDevice(GraphicsDeviceOptions options, IntPtr hwnd, uint width, uint height)
+method.GraphicsDevice.CreateD3D11: GraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription swapchainDescription)
+method.GraphicsDevice.CreateD3D11: GraphicsDevice(GraphicsDeviceOptions options, object swapChainPanel, double renderWidth, double renderHeight, float logicalDpi)
+method.GraphicsDevice.CreateMetal: GraphicsDevice(GraphicsDeviceOptions options)
+method.GraphicsDevice.CreateMetal: GraphicsDevice(GraphicsDeviceOptions options, IntPtr nsWindow)
+method.GraphicsDevice.CreateMetal: GraphicsDevice(GraphicsDeviceOptions options, IntPtr nsWindow, MetalDeviceOptions metalOptions)
+method.GraphicsDevice.CreateMetal: GraphicsDevice(GraphicsDeviceOptions options, MetalDeviceOptions metalOptions)
+method.GraphicsDevice.CreateMetal: GraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription swapchainDescription)
+method.GraphicsDevice.CreateMetal: GraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription swapchainDescription, MetalDeviceOptions metalOptions)
+method.GraphicsDevice.CreateOpenGL: GraphicsDevice(GraphicsDeviceOptions options, OpenGLPlatformInfo platformInfo, uint width, uint height)
+method.GraphicsDevice.CreateOpenGLES: GraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription swapchainDescription)
+method.GraphicsDevice.CreateVulkan: GraphicsDevice(GraphicsDeviceOptions options)
+method.GraphicsDevice.CreateVulkan: GraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription swapchainDescription)
+method.GraphicsDevice.CreateVulkan: GraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription swapchainDescription, VulkanDeviceOptions vkOptions)
+method.GraphicsDevice.CreateVulkan: GraphicsDevice(GraphicsDeviceOptions options, VkSurfaceSource surfaceSource, uint width, uint height)
+method.GraphicsDevice.CreateVulkan: GraphicsDevice(GraphicsDeviceOptions options, VulkanDeviceOptions vkOptions)
+method.GraphicsDevice.Dispose: void()
+method.GraphicsDevice.DisposeWhenIdle: void(IDisposable disposable)
+method.GraphicsDevice.GetActualRefreshPeriod: double()
+method.GraphicsDevice.GetD3D11Info: BackendInfoD3D11()
+method.GraphicsDevice.GetD3D11Info: bool(ref BackendInfoD3D11 info)
+method.GraphicsDevice.GetMetalInfo: BackendInfoMetal()
+method.GraphicsDevice.GetMetalInfo: bool(ref BackendInfoMetal info)
+method.GraphicsDevice.GetOpenGLInfo: BackendInfoOpenGL()
+method.GraphicsDevice.GetOpenGLInfo: bool(ref BackendInfoOpenGL info)
+method.GraphicsDevice.GetPixelFormatSupport: bool(PixelFormat format, TextureType type, TextureUsage usage)
+method.GraphicsDevice.GetPixelFormatSupport: bool(PixelFormat format, TextureType type, TextureUsage usage, ref PixelFormatProperties properties)
+method.GraphicsDevice.GetSampleCountLimit: TextureSampleCount(PixelFormat format, bool depthFormat)
+method.GraphicsDevice.GetVulkanInfo: BackendInfoVulkan()
+method.GraphicsDevice.GetVulkanInfo: bool(ref BackendInfoVulkan info)
+method.GraphicsDevice.IsBackendSupported: bool(GraphicsBackend backend)
+method.GraphicsDevice.Map: MappedResource(IMappableResource resource, MapMode mode)
+method.GraphicsDevice.Map: MappedResource(IMappableResource resource, MapMode mode, uint subresource)
+method.GraphicsDevice.Map: MappedResourceView`1<!!0>(IMappableResource resource, MapMode mode)
+method.GraphicsDevice.Map: MappedResourceView`1<!!0>(IMappableResource resource, MapMode mode, uint subresource)
+method.GraphicsDevice.ResetFence: void(Fence fence)
+method.GraphicsDevice.ResizeMainWindow: void(uint width, uint height)
+method.GraphicsDevice.SubmitCommands: void(CommandList commandList)
+method.GraphicsDevice.SubmitCommands: void(CommandList commandList, Fence fence)
+method.GraphicsDevice.SwapBuffers: void()
+method.GraphicsDevice.SwapBuffers: void(Swapchain swapchain)
+method.GraphicsDevice.Unmap: void(IMappableResource resource)
+method.GraphicsDevice.Unmap: void(IMappableResource resource, uint subresource)
+method.GraphicsDevice.UpdateActiveDisplay: void(int x, int y, int w, int h)
+method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, !!0 source)
+method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, !!0[] source)
+method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
+method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ReadOnlySpan`1<!!0> source)
+method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, Span`1<!!0> source)
+method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ref !!0 source)
+method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ref !!0 source, uint sizeInBytes)
+method.GraphicsDevice.UpdateTexture: void(Texture texture, !!0[] source, uint x, uint y, uint z, uint width, uint height, uint depth, uint mipLevel, uint arrayLayer)
+method.GraphicsDevice.UpdateTexture: void(Texture texture, IntPtr source, uint sizeInBytes, uint x, uint y, uint z, uint width, uint height, uint depth, uint mipLevel, uint arrayLayer)
+method.GraphicsDevice.UpdateTexture: void(Texture texture, ReadOnlySpan`1<!!0> source, uint x, uint y, uint z, uint width, uint height, uint depth, uint mipLevel, uint arrayLayer)
+method.GraphicsDevice.UpdateTexture: void(Texture texture, Span`1<!!0> source, uint x, uint y, uint z, uint width, uint height, uint depth, uint mipLevel, uint arrayLayer)
+method.GraphicsDevice.WaitForFence: bool(Fence fence, TimeSpan timeout)
+method.GraphicsDevice.WaitForFence: bool(Fence fence, ulong nanosecondTimeout)
+method.GraphicsDevice.WaitForFence: void(Fence fence)
+method.GraphicsDevice.WaitForFences: bool(Fence[] fences, bool waitAll, TimeSpan timeout)
+method.GraphicsDevice.WaitForFences: bool(Fence[] fences, bool waitAll, ulong nanosecondTimeout)
+method.GraphicsDevice.WaitForFences: void(Fence[] fences, bool waitAll)
+method.GraphicsDevice.WaitForIdle: void()
+method.GraphicsDevice.WaitForNextFrameReady: void()
+method.GraphicsDeviceOptions..ctor: void(bool debug)
+method.GraphicsDeviceOptions..ctor: void(bool debug, Nullable`1<PixelFormat> swapchainDepthFormat, bool syncToVerticalBlank)
+method.GraphicsDeviceOptions..ctor: void(bool debug, Nullable`1<PixelFormat> swapchainDepthFormat, bool syncToVerticalBlank, ResourceBindingModel resourceBindingModel)
+method.GraphicsDeviceOptions..ctor: void(bool debug, Nullable`1<PixelFormat> swapchainDepthFormat, bool syncToVerticalBlank, ResourceBindingModel resourceBindingModel, bool preferDepthRangeZeroToOne)
+method.GraphicsDeviceOptions..ctor: void(bool debug, Nullable`1<PixelFormat> swapchainDepthFormat, bool syncToVerticalBlank, ResourceBindingModel resourceBindingModel, bool preferDepthRangeZeroToOne, bool preferStandardClipSpaceYDirection)
+method.GraphicsDeviceOptions..ctor: void(bool debug, Nullable`1<PixelFormat> swapchainDepthFormat, bool syncToVerticalBlank, ResourceBindingModel resourceBindingModel, bool preferDepthRangeZeroToOne, bool preferStandardClipSpaceYDirection, bool swapchainSrgbFormat)
+method.GraphicsPipelineDescription..ctor: void(BlendStateDescription blendState, DepthStencilStateDescription depthStencilStateDescription, RasterizerStateDescription rasterizerState, PrimitiveTopology primitiveTopology, ShaderSetDescription shaderSet, ResourceLayout resourceLayout, OutputDescription outputs)
+method.GraphicsPipelineDescription..ctor: void(BlendStateDescription blendState, DepthStencilStateDescription depthStencilStateDescription, RasterizerStateDescription rasterizerState, PrimitiveTopology primitiveTopology, ShaderSetDescription shaderSet, ResourceLayout[] resourceLayouts, OutputDescription outputs)
+method.GraphicsPipelineDescription..ctor: void(BlendStateDescription blendState, DepthStencilStateDescription depthStencilStateDescription, RasterizerStateDescription rasterizerState, PrimitiveTopology primitiveTopology, ShaderSetDescription shaderSet, ResourceLayout[] resourceLayouts, OutputDescription outputs, ResourceBindingModel resourceBindingModel)
+method.GraphicsPipelineDescription.Equals: bool(GraphicsPipelineDescription other)
+method.GraphicsPipelineDescription.GetHashCode: int()
+method.MappedResourceView`1..ctor: void(MappedResource rawResource)
+method.OpenGLPlatformInfo..ctor: void(IntPtr openGLContextHandle, Func`2<string, IntPtr> getProcAddress, Action`1<IntPtr> makeCurrent, Func`1<IntPtr> getCurrentContext, Action clearCurrentContext, Action`1<IntPtr> deleteContext, Action swapBuffers, Action`1<bool> setSyncToVerticalBlank)
+method.OpenGLPlatformInfo..ctor: void(IntPtr openGLContextHandle, Func`2<string, IntPtr> getProcAddress, Action`1<IntPtr> makeCurrent, Func`1<IntPtr> getCurrentContext, Action clearCurrentContext, Action`1<IntPtr> deleteContext, Action swapBuffers, Action`1<bool> setSyncToVerticalBlank, Action setSwapchainFramebuffer, Action`2<uint, uint> resizeSwapchain)
+method.OutputAttachmentDescription..ctor: void(PixelFormat format)
+method.OutputAttachmentDescription.Equals: bool(OutputAttachmentDescription other)
+method.OutputAttachmentDescription.GetHashCode: int()
+method.OutputDescription..ctor: void(Nullable`1<OutputAttachmentDescription> depthAttachment, OutputAttachmentDescription[] colorAttachments)
+method.OutputDescription..ctor: void(Nullable`1<OutputAttachmentDescription> depthAttachment, OutputAttachmentDescription[] colorAttachments, TextureSampleCount sampleCount)
+method.OutputDescription.Equals: bool(OutputDescription other)
+method.OutputDescription.GetHashCode: int()
+method.Pipeline.Dispose: void()
+method.PixelFormatProperties.IsSampleCountSupported: bool(TextureSampleCount count)
+method.RasterizerStateDescription..ctor: void(FaceCullMode cullMode, PolygonFillMode fillMode, FrontFace frontFace, bool depthClipEnabled, bool scissorTestEnabled)
+method.RasterizerStateDescription.Equals: bool(RasterizerStateDescription other)
+method.RasterizerStateDescription.GetHashCode: int()
+method.ResourceFactory.CreateBuffer: DeviceBuffer(BufferDescription description)
+method.ResourceFactory.CreateBuffer: DeviceBuffer(ref BufferDescription description)
+method.ResourceFactory.CreateCommandList: CommandList()
+method.ResourceFactory.CreateCommandList: CommandList(CommandListDescription description)
+method.ResourceFactory.CreateCommandList: CommandList(ref CommandListDescription description)
+method.ResourceFactory.CreateComputePipeline: Pipeline(ComputePipelineDescription description)
+method.ResourceFactory.CreateComputePipeline: Pipeline(ref ComputePipelineDescription description)
+method.ResourceFactory.CreateFence: Fence(bool signaled)
+method.ResourceFactory.CreateFramebuffer: Framebuffer(FramebufferDescription description)
+method.ResourceFactory.CreateFramebuffer: Framebuffer(ref FramebufferDescription description)
+method.ResourceFactory.CreateGraphicsPipeline: Pipeline(GraphicsPipelineDescription description)
+method.ResourceFactory.CreateGraphicsPipeline: Pipeline(ref GraphicsPipelineDescription description)
+method.ResourceFactory.CreateResourceLayout: ResourceLayout(ResourceLayoutDescription description)
+method.ResourceFactory.CreateResourceLayout: ResourceLayout(ref ResourceLayoutDescription description)
+method.ResourceFactory.CreateResourceSet: ResourceSet(ResourceSetDescription description)
+method.ResourceFactory.CreateResourceSet: ResourceSet(ref ResourceSetDescription description)
+method.ResourceFactory.CreateSampler: Sampler(SamplerDescription description)
+method.ResourceFactory.CreateSampler: Sampler(ref SamplerDescription description)
+method.ResourceFactory.CreateShader: Shader(ShaderDescription description)
+method.ResourceFactory.CreateShader: Shader(ref ShaderDescription description)
+method.ResourceFactory.CreateSwapchain: Swapchain(SwapchainDescription description)
+method.ResourceFactory.CreateSwapchain: Swapchain(ref SwapchainDescription description)
+method.ResourceFactory.CreateTexture: Texture(TextureDescription description)
+method.ResourceFactory.CreateTexture: Texture(ref TextureDescription description)
+method.ResourceFactory.CreateTexture: Texture(ulong nativeTexture, TextureDescription description)
+method.ResourceFactory.CreateTexture: Texture(ulong nativeTexture, ref TextureDescription description)
+method.ResourceFactory.CreateTextureView: TextureView(Texture target)
+method.ResourceFactory.CreateTextureView: TextureView(TextureViewDescription description)
+method.ResourceFactory.CreateTextureView: TextureView(ref TextureViewDescription description)
+method.ResourceLayout.Dispose: void()
+method.ResourceLayoutDescription..ctor: void(ResourceLayoutElementDescription[] elements)
+method.ResourceLayoutDescription.Equals: bool(ResourceLayoutDescription other)
+method.ResourceLayoutDescription.GetHashCode: int()
+method.ResourceLayoutElementDescription..ctor: void(string name, ResourceKind kind, ShaderStages stages)
+method.ResourceLayoutElementDescription..ctor: void(string name, ResourceKind kind, ShaderStages stages, ResourceLayoutElementOptions options)
+method.ResourceLayoutElementDescription.Equals: bool(ResourceLayoutElementDescription other)
+method.ResourceLayoutElementDescription.GetHashCode: int()
+method.ResourceSet.Dispose: void()
+method.ResourceSetDescription..ctor: void(ResourceLayout layout, IBindableResource[] boundResources)
+method.ResourceSetDescription.Equals: bool(ResourceSetDescription other)
+method.ResourceSetDescription.GetHashCode: int()
+method.RgbaByte..ctor: void(byte r, byte g, byte b, byte a)
+method.RgbaByte.Equals: bool(RgbaByte other)
+method.RgbaByte.Equals: bool(object obj)
+method.RgbaByte.GetHashCode: int()
+method.RgbaByte.ToString: string()
+method.RgbaByte.op_Equality: bool(RgbaByte left, RgbaByte right)
+method.RgbaByte.op_Inequality: bool(RgbaByte left, RgbaByte right)
+method.RgbaFloat..ctor: void(Vector4 channels)
+method.RgbaFloat..ctor: void(float r, float g, float b, float a)
+method.RgbaFloat.Equals: bool(RgbaFloat other)
+method.RgbaFloat.Equals: bool(object obj)
+method.RgbaFloat.GetHashCode: int()
+method.RgbaFloat.ToString: string()
+method.RgbaFloat.ToVector4: Vector4()
+method.RgbaFloat.op_Equality: bool(RgbaFloat left, RgbaFloat right)
+method.RgbaFloat.op_Inequality: bool(RgbaFloat left, RgbaFloat right)
+method.Sampler.Dispose: void()
+method.SamplerDescription..ctor: void(SamplerAddressMode addressModeU, SamplerAddressMode addressModeV, SamplerAddressMode addressModeW, SamplerFilter filter, Nullable`1<ComparisonKind> comparisonKind, uint maximumAnisotropy, uint minimumLod, uint maximumLod, int lodBias, SamplerBorderColor borderColor)
+method.SamplerDescription.Equals: bool(SamplerDescription other)
+method.SamplerDescription.GetHashCode: int()
+method.Shader.Dispose: void()
+method.ShaderDescription..ctor: void(ShaderStages stage, byte[] shaderBytes, string entryPoint)
+method.ShaderDescription..ctor: void(ShaderStages stage, byte[] shaderBytes, string entryPoint, bool debug)
+method.ShaderDescription.Equals: bool(ShaderDescription other)
+method.ShaderDescription.GetHashCode: int()
+method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts, Shader[] shaders)
+method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts, Shader[] shaders, SpecializationConstant[] specializations)
+method.ShaderSetDescription.Equals: bool(ShaderSetDescription other)
+method.ShaderSetDescription.GetHashCode: int()
+method.SpecializationConstant..ctor: void(uint id, ShaderConstantType type, ulong data)
+method.SpecializationConstant..ctor: void(uint id, bool value)
+method.SpecializationConstant..ctor: void(uint id, double value)
+method.SpecializationConstant..ctor: void(uint id, float value)
+method.SpecializationConstant..ctor: void(uint id, int value)
+method.SpecializationConstant..ctor: void(uint id, long value)
+method.SpecializationConstant..ctor: void(uint id, short value)
+method.SpecializationConstant..ctor: void(uint id, uint value)
+method.SpecializationConstant..ctor: void(uint id, ulong value)
+method.SpecializationConstant..ctor: void(uint id, ushort value)
+method.SpecializationConstant.Equals: bool(SpecializationConstant other)
+method.SpecializationConstant.GetHashCode: int()
+method.StencilBehaviorDescription..ctor: void(StencilOperation fail, StencilOperation pass, StencilOperation depthFail, ComparisonKind comparison)
+method.StencilBehaviorDescription.Equals: bool(StencilBehaviorDescription other)
+method.StencilBehaviorDescription.GetHashCode: int()
+method.Swapchain.Dispose: void()
+method.Swapchain.Resize: void(uint width, uint height)
+method.SwapchainDescription..ctor: void(SwapchainSource source, uint width, uint height, Nullable`1<PixelFormat> depthFormat, bool syncToVerticalBlank)
+method.SwapchainDescription..ctor: void(SwapchainSource source, uint width, uint height, Nullable`1<PixelFormat> depthFormat, bool syncToVerticalBlank, bool colorSrgb)
+method.SwapchainDescription.Equals: bool(SwapchainDescription other)
+method.SwapchainDescription.GetHashCode: int()
+method.SwapchainSource.CreateAndroidSurface: SwapchainSource(IntPtr surfaceHandle, IntPtr jniEnv)
+method.SwapchainSource.CreateNSView: SwapchainSource(IntPtr nsView)
+method.SwapchainSource.CreateNSWindow: SwapchainSource(IntPtr nsWindow)
+method.SwapchainSource.CreateUIView: SwapchainSource(IntPtr uiView)
+method.SwapchainSource.CreateUwp: SwapchainSource(object swapChainPanel, float logicalDpi)
+method.SwapchainSource.CreateWayland: SwapchainSource(IntPtr display, IntPtr surface)
+method.SwapchainSource.CreateWin32: SwapchainSource(IntPtr hwnd, IntPtr hinstance)
+method.SwapchainSource.CreateXlib: SwapchainSource(IntPtr display, IntPtr window)
+method.Texture.CalculateSubresource: uint(uint mipLevel, uint arrayLayer)
+method.Texture.Dispose: void()
+method.TextureDescription..ctor: void(uint width, uint height, uint depth, uint mipLevels, uint arrayLayers, PixelFormat format, TextureUsage usage, TextureType type)
+method.TextureDescription..ctor: void(uint width, uint height, uint depth, uint mipLevels, uint arrayLayers, PixelFormat format, TextureUsage usage, TextureType type, TextureSampleCount sampleCount)
+method.TextureDescription.Equals: bool(TextureDescription other)
+method.TextureDescription.GetHashCode: int()
+method.TextureDescription.Texture1D: TextureDescription(uint width, uint mipLevels, uint arrayLayers, PixelFormat format, TextureUsage usage)
+method.TextureDescription.Texture2D: TextureDescription(uint width, uint height, uint mipLevels, uint arrayLayers, PixelFormat format, TextureUsage usage)
+method.TextureDescription.Texture2D: TextureDescription(uint width, uint height, uint mipLevels, uint arrayLayers, PixelFormat format, TextureUsage usage, TextureSampleCount sampleCount)
+method.TextureDescription.Texture3D: TextureDescription(uint width, uint height, uint depth, uint mipLevels, PixelFormat format, TextureUsage usage)
+method.TextureView.Dispose: void()
+method.TextureViewDescription..ctor: void(Texture target)
+method.TextureViewDescription..ctor: void(Texture target, PixelFormat format)
+method.TextureViewDescription..ctor: void(Texture target, PixelFormat format, uint baseMipLevel, uint mipLevels, uint baseArrayLayer, uint arrayLayers)
+method.TextureViewDescription..ctor: void(Texture target, uint baseMipLevel, uint mipLevels, uint baseArrayLayer, uint arrayLayers)
+method.TextureViewDescription.Equals: bool(TextureViewDescription other)
+method.TextureViewDescription.GetHashCode: int()
+method.VeldridException..ctor: void()
+method.VeldridException..ctor: void(string message)
+method.VeldridException..ctor: void(string message, Exception innerException)
+method.VertexElementDescription..ctor: void(string name, VertexElementFormat format, VertexElementSemantic semantic)
+method.VertexElementDescription..ctor: void(string name, VertexElementSemantic semantic, VertexElementFormat format)
+method.VertexElementDescription..ctor: void(string name, VertexElementSemantic semantic, VertexElementFormat format, uint offset)
+method.VertexElementDescription.Equals: bool(VertexElementDescription other)
+method.VertexElementDescription.GetHashCode: int()
+method.VertexLayoutDescription..ctor: void(VertexElementDescription[] elements)
+method.VertexLayoutDescription..ctor: void(uint stride, VertexElementDescription[] elements)
+method.VertexLayoutDescription..ctor: void(uint stride, uint instanceStepRate, VertexElementDescription[] elements)
+method.VertexLayoutDescription.Equals: bool(VertexLayoutDescription other)
+method.VertexLayoutDescription.GetHashCode: int()
+method.Viewport..ctor: void(float x, float y, float width, float height, float minDepth, float maxDepth)
+method.Viewport.Equals: bool(Viewport other)
+method.Viewport.GetHashCode: int()
+method.VkSurfaceSource.CreateSurface: VkSurfaceKHR(VkInstance instance)
+method.VkSurfaceSource.CreateWin32: VkSurfaceSource(IntPtr hinstance, IntPtr hwnd)
+method.VkSurfaceSource.CreateXlib: VkSurfaceSource(Display* display, Window window)
+method.VulkanDeviceOptions..ctor: void(string[] instanceExtensions, string[] deviceExtensions)
+property.BackendInfoD3D11.Adapter: IntPtr { get; }
+property.BackendInfoD3D11.Device: IntPtr { get; }
+property.BackendInfoD3D11.DeviceId: int { get; }
+property.BackendInfoD3D11.FeatureLevel: FeatureLevel { get; }
+property.BackendInfoMetal.FeatureSet: ReadOnlyCollection`1<MTLFeatureSet> { get; }
+property.BackendInfoMetal.MaxFeatureSet: MTLFeatureSet { get; }
+property.BackendInfoOpenGL.Extensions: ReadOnlyCollection`1<string> { get; }
+property.BackendInfoOpenGL.ShadingLanguageVersion: string { get; }
+property.BackendInfoOpenGL.Version: string { get; }
+property.BackendInfoVulkan.AvailableDeviceExtensions: ReadOnlyCollection`1<ExtensionProperties> { get; }
+property.BackendInfoVulkan.AvailableInstanceExtensions: ReadOnlyCollection`1<string> { get; }
+property.BackendInfoVulkan.AvailableInstanceLayers: ReadOnlyCollection`1<string> { get; }
+property.BackendInfoVulkan.Device: IntPtr { get; }
+property.BackendInfoVulkan.DriverInfo: string { get; }
+property.BackendInfoVulkan.DriverName: string { get; }
+property.BackendInfoVulkan.GraphicsQueue: IntPtr { get; }
+property.BackendInfoVulkan.GraphicsQueueFamilyIndex: uint { get; }
+property.BackendInfoVulkan.Instance: IntPtr { get; }
+property.BackendInfoVulkan.PhysicalDevice: IntPtr { get; }
+property.CommandBufferUsageList`1.ItemsEnumerator.Current: !0 { get; }
+property.CommandBufferUsageList`1.RemovalEnumerator.Current: !0 { get; }
+property.CommandList.IsDisposed: bool { get; }
+property.CommandList.Name: string { get; set; }
+property.DeviceBuffer.IsDisposed: bool { get; }
+property.DeviceBuffer.Name: string { get; set; }
+property.DeviceBuffer.SizeInBytes: uint { get; }
+property.DeviceBuffer.Usage: BufferUsage { get; }
+property.Fence.IsDisposed: bool { get; }
+property.Fence.Name: string { get; set; }
+property.Fence.Signaled: bool { get; }
+property.Framebuffer.ColorTargets: IReadOnlyList`1<FramebufferAttachment> { get; }
+property.Framebuffer.DepthTarget: Nullable`1<FramebufferAttachment> { get; }
+property.Framebuffer.Height: uint { get; }
+property.Framebuffer.IsDisposed: bool { get; }
+property.Framebuffer.Name: string { get; set; }
+property.Framebuffer.OutputDescription: OutputDescription { get; }
+property.Framebuffer.Width: uint { get; }
+property.FramebufferAttachment.ArrayLayer: uint { get; }
+property.FramebufferAttachment.MipLevel: uint { get; }
+property.FramebufferAttachment.Target: Texture { get; }
+property.GraphicsApiVersion.IsKnown: bool { get; }
+property.GraphicsApiVersion.Major: int { get; }
+property.GraphicsApiVersion.Minor: int { get; }
+property.GraphicsApiVersion.Patch: int { get; }
+property.GraphicsApiVersion.Subminor: int { get; }
+property.GraphicsApiVersion.Unknown: GraphicsApiVersion { get; }
+property.GraphicsDevice.AllowTearing: bool { get; set; }
+property.GraphicsDevice.Aniso4XSampler: Sampler { get; }
+property.GraphicsDevice.ApiVersion: GraphicsApiVersion { get; }
+property.GraphicsDevice.BackendType: GraphicsBackend { get; }
+property.GraphicsDevice.DeviceName: string { get; }
+property.GraphicsDevice.Features: GraphicsDeviceFeatures { get; }
+property.GraphicsDevice.IsClipSpaceYInverted: bool { get; }
+property.GraphicsDevice.IsDepthRangeZeroToOne: bool { get; }
+property.GraphicsDevice.IsUvOriginTopLeft: bool { get; }
+property.GraphicsDevice.LinearSampler: Sampler { get; }
+property.GraphicsDevice.MainSwapchain: Swapchain { get; }
+property.GraphicsDevice.PointSampler: Sampler { get; }
+property.GraphicsDevice.ResourceFactory: ResourceFactory { get; }
+property.GraphicsDevice.StructuredBufferMinOffsetAlignment: uint { get; }
+property.GraphicsDevice.SwapchainFramebuffer: Framebuffer { get; }
+property.GraphicsDevice.SyncToVerticalBlank: bool { get; set; }
+property.GraphicsDevice.UniformBufferMinOffsetAlignment: uint { get; }
+property.GraphicsDevice.VendorName: string { get; }
+property.GraphicsDeviceFeatures.BufferRangeBinding: bool { get; }
+property.GraphicsDeviceFeatures.CommandListDebugMarkers: bool { get; }
+property.GraphicsDeviceFeatures.ComputeShader: bool { get; }
+property.GraphicsDeviceFeatures.DepthClipDisable: bool { get; }
+property.GraphicsDeviceFeatures.DrawBaseInstance: bool { get; }
+property.GraphicsDeviceFeatures.DrawBaseVertex: bool { get; }
+property.GraphicsDeviceFeatures.DrawIndirect: bool { get; }
+property.GraphicsDeviceFeatures.DrawIndirectBaseInstance: bool { get; }
+property.GraphicsDeviceFeatures.FillModeWireframe: bool { get; }
+property.GraphicsDeviceFeatures.GeometryShader: bool { get; }
+property.GraphicsDeviceFeatures.IndependentBlend: bool { get; }
+property.GraphicsDeviceFeatures.MultipleViewports: bool { get; }
+property.GraphicsDeviceFeatures.SamplerAnisotropy: bool { get; }
+property.GraphicsDeviceFeatures.SamplerLodBias: bool { get; }
+property.GraphicsDeviceFeatures.ShaderFloat64: bool { get; }
+property.GraphicsDeviceFeatures.StructuredBuffer: bool { get; }
+property.GraphicsDeviceFeatures.SubsetTextureView: bool { get; }
+property.GraphicsDeviceFeatures.TessellationShaders: bool { get; }
+property.GraphicsDeviceFeatures.Texture1D: bool { get; }
+property.IDeviceResource.Name: string { get; set; }
+property.MappedResourceView`1.Item: ref !0 { get; }
+property.MappedResourceView`1.Item: ref !0 { get; }
+property.MappedResourceView`1.Item: ref !0 { get; }
+property.MappedResourceView`1.Item: ref !0 { get; }
+property.MappedResourceView`1.Item: ref !0 { get; }
+property.MappedResourceView`1.Item: ref !0 { get; }
+property.OpenGLPlatformInfo.ClearCurrentContext: Action { get; }
+property.OpenGLPlatformInfo.DeleteContext: Action`1<IntPtr> { get; }
+property.OpenGLPlatformInfo.GetCurrentContext: Func`1<IntPtr> { get; }
+property.OpenGLPlatformInfo.GetProcAddress: Func`2<string, IntPtr> { get; }
+property.OpenGLPlatformInfo.MakeCurrent: Action`1<IntPtr> { get; }
+property.OpenGLPlatformInfo.OpenGLContextHandle: IntPtr { get; }
+property.OpenGLPlatformInfo.ResizeSwapchain: Action`2<uint, uint> { get; }
+property.OpenGLPlatformInfo.SetSwapchainFramebuffer: Action { get; }
+property.OpenGLPlatformInfo.SetSyncToVerticalBlank: Action`1<bool> { get; }
+property.OpenGLPlatformInfo.SwapBuffers: Action { get; }
+property.Pipeline.IsComputePipeline: bool { get; }
+property.Pipeline.IsDisposed: bool { get; }
+property.Pipeline.Name: string { get; set; }
+property.ResourceFactory.BackendType: GraphicsBackend { get; }
+property.ResourceFactory.Features: GraphicsDeviceFeatures { get; }
+property.ResourceLayout.IsDisposed: bool { get; }
+property.ResourceLayout.Name: string { get; set; }
+property.ResourceSet.IsDisposed: bool { get; }
+property.ResourceSet.Name: string { get; set; }
+property.RgbaFloat.A: float { get; }
+property.RgbaFloat.B: float { get; }
+property.RgbaFloat.G: float { get; }
+property.RgbaFloat.R: float { get; }
+property.Sampler.IsDisposed: bool { get; }
+property.Sampler.Name: string { get; set; }
+property.Shader.EntryPoint: string { get; }
+property.Shader.IsDisposed: bool { get; }
+property.Shader.Name: string { get; set; }
+property.Shader.Stage: ShaderStages { get; }
+property.Swapchain.Framebuffer: Framebuffer { get; }
+property.Swapchain.IsDisposed: bool { get; }
+property.Swapchain.Name: string { get; set; }
+property.Swapchain.SyncToVerticalBlank: bool { get; set; }
+property.Texture.ArrayLayers: uint { get; }
+property.Texture.Depth: uint { get; }
+property.Texture.Format: PixelFormat { get; }
+property.Texture.Height: uint { get; }
+property.Texture.IsDisposed: bool { get; }
+property.Texture.MipLevels: uint { get; }
+property.Texture.Name: string { get; set; }
+property.Texture.SampleCount: TextureSampleCount { get; }
+property.Texture.Type: TextureType { get; }
+property.Texture.Usage: TextureUsage { get; }
+property.Texture.Width: uint { get; }
+property.TextureView.ArrayLayers: uint { get; }
+property.TextureView.BaseArrayLayer: uint { get; }
+property.TextureView.BaseMipLevel: uint { get; }
+property.TextureView.Format: PixelFormat { get; }
+property.TextureView.IsDisposed: bool { get; }
+property.TextureView.MipLevels: uint { get; }
+property.TextureView.Name: string { get; set; }
+property.TextureView.Target: Texture { get; }
 struct.BackendInfoVulkan.ExtensionProperties._layout: Sequential
 struct.BackendInfoVulkan.ExtensionProperties._pack: 0
 struct.BackendInfoVulkan.ExtensionProperties._size: 0
@@ -653,3 +1381,113 @@ struct.VulkanDeviceOptions._pack: 0
 struct.VulkanDeviceOptions._size: 0
 struct.VulkanDeviceOptions.field0.InstanceExtensions: string[]
 struct.VulkanDeviceOptions.field1.DeviceExtensions: string[]
+type.BackendInfoD3D11: class
+type.BackendInfoMetal: class
+type.BackendInfoOpenGL: class
+type.BackendInfoVulkan.ExtensionProperties: struct
+type.BackendInfoVulkan: class
+type.BlendAttachmentDescription: struct
+type.BlendFactor: enum
+type.BlendFunction: enum
+type.BlendStateDescription: struct
+type.BufferDescription: struct
+type.BufferUsage: enum
+type.ColorWriteMask: enum
+type.CommandBufferUsageList`1.ItemsEnumerator: struct
+type.CommandBufferUsageList`1.RemovalEnumerator: struct
+type.CommandList: abstract class
+type.CommandListDescription: struct
+type.ComparisonKind: enum
+type.ComputePipelineDescription: struct
+type.D3D11DeviceOptions: struct
+type.DepthStencilStateDescription: struct
+type.DeviceBuffer: abstract class
+type.DeviceBufferRange: struct
+type.FaceCullMode: enum
+type.Fence: abstract class
+type.FormatSizeHelpers: static class
+type.Framebuffer: abstract class
+type.FramebufferAttachment: struct
+type.FramebufferAttachmentDescription: struct
+type.FramebufferDescription: struct
+type.FrontFace: enum
+type.GraphicsApiVersion: struct
+type.GraphicsBackend: enum
+type.GraphicsDevice: abstract class
+type.GraphicsDeviceFeatures: class
+type.GraphicsDeviceOptions: struct
+type.GraphicsPipelineDescription: struct
+type.IBindableResource: interface
+type.IDeviceResource: interface
+type.IMappableResource: interface
+type.IndexFormat: enum
+type.IndirectDispatchArguments: struct
+type.IndirectDrawArguments: struct
+type.IndirectDrawIndexedArguments: struct
+type.MapMode: enum
+type.MappedResource: struct
+type.MappedResourceView`1: struct
+type.MetalDeviceOptions: struct
+type.NoAllocSetResourceSetEntry.<DynamicOffsetsInline>e__FixedBuffer: struct
+type.OpenGLGraphicsDevice.WorkItemType: enum
+type.OpenGLPlatformInfo: class
+type.OutputAttachmentDescription: struct
+type.OutputDescription: struct
+type.Pipeline: abstract class
+type.PixelFormat: enum
+type.PixelFormatProperties: struct
+type.PolygonFillMode: enum
+type.PrimitiveTopology: enum
+type.RasterizerStateDescription: struct
+type.ResourceBindingModel: enum
+type.ResourceFactory: abstract class
+type.ResourceKind: enum
+type.ResourceLayout: abstract class
+type.ResourceLayoutDescription: struct
+type.ResourceLayoutElementDescription: struct
+type.ResourceLayoutElementOptions: enum
+type.ResourceSet: abstract class
+type.ResourceSetDescription: struct
+type.RgbaByte: struct
+type.RgbaFloat: struct
+type.Sampler: abstract class
+type.SamplerAddressMode: enum
+type.SamplerBorderColor: enum
+type.SamplerDescription: struct
+type.SamplerFilter: enum
+type.Shader: abstract class
+type.ShaderConstantType: enum
+type.ShaderDescription: struct
+type.ShaderSetDescription: struct
+type.ShaderStages: enum
+type.Size1024Bytes.<Data>e__FixedBuffer: struct
+type.Size128Bytes.<Data>e__FixedBuffer: struct
+type.Size16Bytes.<Data>e__FixedBuffer: struct
+type.Size2048Bytes.<Data>e__FixedBuffer: struct
+type.Size512Bytes.<Data>e__FixedBuffer: struct
+type.Size64Bytes.<Data>e__FixedBuffer: struct
+type.SmallFixedOrDynamicArray.<fixedData>e__FixedBuffer: struct
+type.SpecializationConstant: struct
+type.StackList`1.<storage>e__FixedBuffer: struct
+type.StencilBehaviorDescription: struct
+type.StencilOperation: enum
+type.Swapchain: abstract class
+type.SwapchainDescription: struct
+type.SwapchainSource: abstract class
+type.Texture: abstract class
+type.TextureDescription: struct
+type.TextureSampleCount: enum
+type.TextureType: enum
+type.TextureUsage: enum
+type.TextureView: abstract class
+type.TextureViewDescription: struct
+type.VeldridException: class
+type.VertexElementDescription: struct
+type.VertexElementFormat: enum
+type.VertexElementSemantic: enum
+type.VertexLayoutDescription: struct
+type.Viewport: struct
+type.VkPhysicalDeviceDriverProperties.<DriverInfo>e__FixedBuffer: struct
+type.VkPhysicalDeviceDriverProperties.<DriverName>e__FixedBuffer: struct
+type.VkSurfaceSource: abstract class
+type.VulkanDeviceOptions: struct

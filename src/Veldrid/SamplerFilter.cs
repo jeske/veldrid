@@ -1,4 +1,4 @@
-﻿// Legacy Veldrid 4.9.0 compatibility: Support both underscore and non-underscore naming
+// Legacy Veldrid 4.9.0 compatibility: Support both underscore and non-underscore naming
 #define SUPPORT_LEGACY_VELDRID_SYMBOLS
 
 namespace Veldrid
@@ -11,49 +11,49 @@ namespace Veldrid
         /// <summary>
         ///     Point sampling is used for minification, magnification, and mip-level sampling.
         /// </summary>
-        MinPointMagPointMipPoint,
+        MinPointMagPointMipPoint = 0,
 
         /// <summary>
         ///     Point sampling is used for minification and magnification; linear interpolation is used for mip-level sampling.
         /// </summary>
-        MinPointMagPointMipLinear,
+        MinPointMagPointMipLinear = 1,
 
         /// <summary>
         ///     Point sampling is used for minification and mip-level sampling; linear interpolation is used for mip-level
         ///     sampling.
         /// </summary>
-        MinPointMagLinearMipPoint,
+        MinPointMagLinearMipPoint = 2,
 
         /// <summary>
         ///     Point sampling is used for minification; linear interpolation is used for magnification and mip-level sampling.
         /// </summary>
-        MinPointMagLinearMipLinear,
+        MinPointMagLinearMipLinear = 3,
 
         /// <summary>
         ///     Linear interpolation is used for minifcation; point sampling is used for magnification and mip-level sampling.
         /// </summary>
-        MinLinearMagPointMipPoint,
+        MinLinearMagPointMipPoint = 4,
 
         /// <summary>
         ///     Linear interpolation is used for minification and mip-level sampling; point sampling is used for magnification.
         /// </summary>
-        MinLinearMagPointMipLinear,
+        MinLinearMagPointMipLinear = 5,
 
         /// <summary>
         ///     Linear interpolation is used for minification and magnification, and point sampling is used for mip-level sampling.
         /// </summary>
-        MinLinearMagLinearMipPoint,
+        MinLinearMagLinearMipPoint = 6,
 
         /// <summary>
         ///     Linear interpolation is used for minification, magnification, and mip-level sampling.
         /// </summary>
-        MinLinearMagLinearMipLinear,
+        MinLinearMagLinearMipLinear = 7,
 
         /// <summary>
         ///     Anisotropic filtering is used. The maximum anisotropy is controlled by
         ///     <see cref="SamplerDescription.MaximumAnisotropy" />.
         /// </summary>
-        Anisotropic,
+        Anisotropic = 8,
 
 #if SUPPORT_LEGACY_VELDRID_SYMBOLS
         // Legacy Veldrid 4.9.0 symbol aliases (with underscores)

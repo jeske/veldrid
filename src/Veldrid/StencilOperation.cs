@@ -1,4 +1,4 @@
-﻿namespace Veldrid
+namespace Veldrid
 {
     /// <summary>
     ///     Identifies an action taken on samples that pass or fail the stencil test.
@@ -8,42 +8,42 @@
         /// <summary>
         ///     Keep the existing value.
         /// </summary>
-        Keep,
+        Keep = 0,
 
         /// <summary>
         ///     Sets the value to 0.
         /// </summary>
-        Zero,
+        Zero = 1,
 
         /// <summary>
         ///     Replaces the existing value with <see cref="DepthStencilStateDescription.StencilReference" />.
         /// </summary>
-        Replace,
+        Replace = 2,
 
         /// <summary>
         ///     Increments the existing value and clamps it to the maximum representable unsigned value.
         /// </summary>
-        IncrementAndClamp,
+        IncrementAndClamp = 3,
 
         /// <summary>
         ///     Decrements the existing value and clamps it to 0.
         /// </summary>
-        DecrementAndClamp,
+        DecrementAndClamp = 4,
 
         /// <summary>
         ///     Bitwise-inverts the existing value.
         /// </summary>
-        Invert,
+        Invert = 5,
 
         /// <summary>
         ///     Increments the existing value and wraps it to 0 when it exceeds the maximum representable unsigned value.
         /// </summary>
-        IncrementAndWrap,
+        IncrementAndWrap = 6,
 
         /// <summary>
         ///     Decrements the existing value and wraps it to the maximum representable unsigned value if it would be reduced below
         ///     0.
         /// </summary>
-        DecrementAndWrap
+        DecrementAndWrap = 7
     }
 }

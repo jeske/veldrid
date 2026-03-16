@@ -1,4 +1,4 @@
-﻿namespace Veldrid
+namespace Veldrid
 {
     /// <summary>
     ///     Controls how the source and destination factors are combined in a blend operation.
@@ -8,26 +8,26 @@
         /// <summary>
         ///     Source and destination are added.
         /// </summary>
-        Add,
+        Add = 0,
 
         /// <summary>
         ///     Destination is subtracted from source.
         /// </summary>
-        Subtract,
+        Subtract = 1,
 
         /// <summary>
         ///     Source is subtracted from destination.
         /// </summary>
-        ReverseSubtract,
+        ReverseSubtract = 2,
 
         /// <summary>
         ///     The minimum of source and destination is selected.
         /// </summary>
-        Minimum,
+        Minimum = 3,
 
         /// <summary>
         ///     The maximum of source and destination is selected.
         /// </summary>
-        Maximum
+        Maximum = 4
     }
 }

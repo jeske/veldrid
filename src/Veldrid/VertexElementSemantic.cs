@@ -1,4 +1,4 @@
-﻿namespace Veldrid
+namespace Veldrid
 {
     /// <summary>
     ///     The type of a vertex element, describing how the element is interpreted.
@@ -11,21 +11,21 @@
         /// <summary>
         ///     A position.
         /// </summary>
-        Position,
+        Position = 0,
 
         /// <summary>
         ///     A normal direction.
         /// </summary>
-        Normal,
+        Normal = 1,
 
         /// <summary>
         ///     A texture coordinate.
         /// </summary>
-        TextureCoordinate,
+        TextureCoordinate = 2,
 
         /// <summary>
         ///     A color.
         /// </summary>
-        Color
+        Color = 3
     }
 }

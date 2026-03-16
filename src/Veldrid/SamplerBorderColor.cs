@@ -1,4 +1,4 @@
-﻿namespace Veldrid
+namespace Veldrid
 {
     /// <summary>
     ///     A constant color that is sampled when <see cref="SamplerAddressMode.Border" /> is used.
@@ -8,16 +8,16 @@
         /// <summary>
         ///     Transparent Black (0, 0, 0, 0)
         /// </summary>
-        TransparentBlack,
+        TransparentBlack = 0,
 
         /// <summary>
         ///     Opaque Black (0, 0, 0, 1)
         /// </summary>
-        OpaqueBlack,
+        OpaqueBlack = 1,
 
         /// <summary>
         ///     Opaque White (1, 1, 1, 1)
         /// </summary>
-        OpaqueWhite
+        OpaqueWhite = 2
     }
 }

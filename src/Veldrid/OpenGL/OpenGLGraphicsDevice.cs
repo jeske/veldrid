@@ -1689,17 +1689,17 @@ namespace Veldrid.OpenGL
 
         public enum WorkItemType : byte
         {
-            Map,
-            Unmap,
-            ExecuteList,
-            UpdateBuffer,
-            UpdateTexture,
-            GenericAction,
-            TerminateAction,
-            SetSyncToVerticalBlank,
-            SwapBuffers,
-            WaitForIdle,
-            InitializeResource
+            Map = 0,
+            Unmap = 1,
+            ExecuteList = 2,
+            UpdateBuffer = 3,
+            UpdateTexture = 4,
+            GenericAction = 5,
+            TerminateAction = 6,
+            SetSyncToVerticalBlank = 7,
+            SwapBuffers = 8,
+            WaitForIdle = 9,
+            InitializeResource = 10
         }
 
         private struct ExecutionThreadWorkItem

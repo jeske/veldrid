@@ -1,4 +1,4 @@
-﻿namespace Veldrid
+namespace Veldrid
 {
     /// <summary>
     ///     Describes the number of samples to use in a <see cref="Texture" />.
@@ -8,31 +8,31 @@
         /// <summary>
         ///     1 sample (no multi-sampling).
         /// </summary>
-        Count1,
+        Count1 = 0,
 
         /// <summary>
         ///     2 Samples.
         /// </summary>
-        Count2,
+        Count2 = 1,
 
         /// <summary>
         ///     4 Samples.
         /// </summary>
-        Count4,
+        Count4 = 2,
 
         /// <summary>
         ///     8 Samples.
         /// </summary>
-        Count8,
+        Count8 = 3,
 
         /// <summary>
         ///     16 Samples.
         /// </summary>
-        Count16,
+        Count16 = 4,
 
         /// <summary>
         ///     32 Samples.
         /// </summary>
-        Count32
+        Count32 = 5
     }
 }

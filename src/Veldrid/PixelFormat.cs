@@ -1,4 +1,4 @@
-﻿// Legacy Veldrid 4.9.0 compatibility: Support both underscore and non-underscore naming
+// Legacy Veldrid 4.9.0 compatibility: Support both underscore and non-underscore naming
 #define SUPPORT_LEGACY_VELDRID_SYMBOLS
 
 namespace Veldrid
@@ -17,322 +17,322 @@ namespace Veldrid
         /// <summary>
         ///     RGBA component order. Each component is an 8-bit unsigned normalized integer.
         /// </summary>
-        R8G8B8A8UNorm,
+        R8G8B8A8UNorm = 0,
 
         /// <summary>
         ///     BGRA component order. Each component is an 8-bit unsigned normalized integer.
         /// </summary>
-        B8G8R8A8UNorm,
+        B8G8R8A8UNorm = 1,
 
         /// <summary>
         ///     Single-channel, 8-bit unsigned normalized integer.
         /// </summary>
-        R8UNorm,
+        R8UNorm = 2,
 
         /// <summary>
         ///     Single-channel, 16-bit unsigned normalized integer. Can be used as a depth format.
         /// </summary>
-        R16UNorm,
+        R16UNorm = 3,
 
         /// <summary>
         ///     RGBA component order. Each component is a 32-bit signed floating-point value.
         /// </summary>
-        R32G32B32A32Float,
+        R32G32B32A32Float = 4,
 
         /// <summary>
         ///     Single-channel, 32-bit signed floating-point value. Can be used as a depth format.
         /// </summary>
-        R32Float,
+        R32Float = 5,
 
         /// <summary>
         ///     BC3 block compressed format.
         /// </summary>
-        Bc3UNorm,
+        Bc3UNorm = 6,
 
         /// <summary>
         ///     A depth-stencil format where the depth is stored in a 24-bit unsigned normalized integer, and the stencil is stored
         ///     in an 8-bit unsigned integer.
         /// </summary>
-        D24UNormS8UInt,
+        D24UNormS8UInt = 7,
 
         /// <summary>
         ///     A depth-stencil format where the depth is stored in a 32-bit signed floating-point value, and the stencil is stored
         ///     in an 8-bit unsigned integer.
         /// </summary>
-        D32FloatS8UInt,
+        D32FloatS8UInt = 8,
 
         /// <summary>
         ///     RGBA component order. Each component is a 32-bit unsigned integer.
         /// </summary>
-        R32G32B32A32UInt,
+        R32G32B32A32UInt = 9,
 
         /// <summary>
         ///     RG component order. Each component is an 8-bit signed normalized integer.
         /// </summary>
-        R8G8SNorm,
+        R8G8SNorm = 10,
 
         /// <summary>
         ///     BC1 block compressed format with no alpha.
         /// </summary>
-        Bc1RgbUNorm,
+        Bc1RgbUNorm = 11,
 
         /// <summary>
         ///     BC1 block compressed format with a single-bit alpha channel.
         /// </summary>
-        Bc1RgbaUNorm,
+        Bc1RgbaUNorm = 12,
 
         /// <summary>
         ///     BC2 block compressed format.
         /// </summary>
-        Bc2UNorm,
+        Bc2UNorm = 13,
 
         /// <summary>
         ///     A 32-bit packed format. The 10-bit R component occupies bits 0..9, the 10-bit G component occupies bits 10..19,
         ///     the 10-bit A component occupies 20..29, and the 2-bit A component occupies bits 30..31. Each value is an unsigned,
         ///     normalized integer.
         /// </summary>
-        R10G10B10A2UNorm,
+        R10G10B10A2UNorm = 14,
 
         /// <summary>
         ///     A 32-bit packed format. The 10-bit R component occupies bits 0..9, the 10-bit G component occupies bits 10..19,
         ///     the 10-bit A component occupies 20..29, and the 2-bit A component occupies bits 30..31. Each value is an unsigned
         ///     integer.
         /// </summary>
-        R10G10B10A2UInt,
+        R10G10B10A2UInt = 15,
 
         /// <summary>
         ///     A 32-bit packed format. The 11-bit R componnent occupies bits 0..10, the 11-bit G component occupies bits 11..21,
         ///     and the 10-bit B component occupies bits 22..31. Each value is an unsigned floating point value.
         /// </summary>
-        R11G11B10Float,
+        R11G11B10Float = 16,
 
         /// <summary>
         ///     Single-channel, 8-bit signed normalized integer.
         /// </summary>
-        R8SNorm,
+        R8SNorm = 17,
 
         /// <summary>
         ///     Single-channel, 8-bit unsigned integer.
         /// </summary>
-        R8UInt,
+        R8UInt = 18,
 
         /// <summary>
         ///     Single-channel, 8-bit signed integer.
         /// </summary>
-        R8SInt,
+        R8SInt = 19,
 
         /// <summary>
         ///     Single-channel, 16-bit signed normalized integer.
         /// </summary>
-        R16SNorm,
+        R16SNorm = 20,
 
         /// <summary>
         ///     Single-channel, 16-bit unsigned integer.
         /// </summary>
-        R16UInt,
+        R16UInt = 21,
 
         /// <summary>
         ///     Single-channel, 16-bit signed integer.
         /// </summary>
-        R16SInt,
+        R16SInt = 22,
 
         /// <summary>
         ///     Single-channel, 16-bit signed floating-point value.
         /// </summary>
-        R16Float,
+        R16Float = 23,
 
         /// <summary>
         ///     Single-channel, 32-bit unsigned integer
         /// </summary>
-        R32UInt,
+        R32UInt = 24,
 
         /// <summary>
         ///     Single-channel, 32-bit signed integer
         /// </summary>
-        R32SInt,
+        R32SInt = 25,
 
         /// <summary>
         ///     RG component order. Each component is an 8-bit unsigned normalized integer.
         /// </summary>
-        R8G8UNorm,
+        R8G8UNorm = 26,
 
         /// <summary>
         ///     RG component order. Each component is an 8-bit unsigned integer.
         /// </summary>
-        R8G8UInt,
+        R8G8UInt = 27,
 
         /// <summary>
         ///     RG component order. Each component is an 8-bit signed integer.
         /// </summary>
-        R8G8SInt,
+        R8G8SInt = 28,
 
         /// <summary>
         ///     RG component order. Each component is a 16-bit unsigned normalized integer.
         /// </summary>
-        R16G16UNorm,
+        R16G16UNorm = 29,
 
         /// <summary>
         ///     RG component order. Each component is a 16-bit signed normalized integer.
         /// </summary>
-        R16G16SNorm,
+        R16G16SNorm = 30,
 
         /// <summary>
         ///     RG component order. Each component is a 16-bit unsigned integer.
         /// </summary>
-        R16G16UInt,
+        R16G16UInt = 31,
 
         /// <summary>
         ///     RG component order. Each component is a 16-bit signed integer.
         /// </summary>
-        R16G16SInt,
+        R16G16SInt = 32,
 
         /// <summary>
         ///     RG component order. Each component is a 16-bit signed floating-point value.
         /// </summary>
-        R16G16Float,
+        R16G16Float = 33,
 
         /// <summary>
         ///     RG component order. Each component is a 32-bit unsigned integer.
         /// </summary>
-        R32G32UInt,
+        R32G32UInt = 34,
 
         /// <summary>
         ///     RG component order. Each component is a 32-bit signed integer.
         /// </summary>
-        R32G32SInt,
+        R32G32SInt = 35,
 
         /// <summary>
         ///     RG component order. Each component is a 32-bit signed floating-point value.
         /// </summary>
-        R32G32Float,
+        R32G32Float = 36,
 
         /// <summary>
         ///     RGBA component order. Each component is an 8-bit signed normalized integer.
         /// </summary>
-        R8G8B8A8SNorm,
+        R8G8B8A8SNorm = 37,
 
         /// <summary>
         ///     RGBA component order. Each component is an 8-bit unsigned integer.
         /// </summary>
-        R8G8B8A8UInt,
+        R8G8B8A8UInt = 38,
 
         /// <summary>
         ///     RGBA component order. Each component is an 8-bit signed integer.
         /// </summary>
-        R8G8B8A8SInt,
+        R8G8B8A8SInt = 39,
 
         /// <summary>
         ///     RGBA component order. Each component is a 16-bit unsigned normalized integer.
         /// </summary>
-        R16G16B16A16UNorm,
+        R16G16B16A16UNorm = 40,
 
         /// <summary>
         ///     RGBA component order. Each component is a 16-bit signed normalized integer.
         /// </summary>
-        R16G16B16A16SNorm,
+        R16G16B16A16SNorm = 41,
 
         /// <summary>
         ///     RGBA component order. Each component is a 16-bit unsigned integer.
         /// </summary>
-        R16G16B16A16UInt,
+        R16G16B16A16UInt = 42,
 
         /// <summary>
         ///     RGBA component order. Each component is a 16-bit signed integer.
         /// </summary>
-        R16G16B16A16SInt,
+        R16G16B16A16SInt = 43,
 
         /// <summary>
         ///     RGBA component order. Each component is a 16-bit floating-point value.
         /// </summary>
-        R16G16B16A16Float,
+        R16G16B16A16Float = 44,
 
         /// <summary>
         ///     RGBA component order. Each component is a 32-bit signed integer.
         /// </summary>
-        R32G32B32A32SInt,
+        R32G32B32A32SInt = 45,
 
         /// <summary>
         ///     A 64-bit, 4x4 block-compressed format storing unsigned normalized RGB data.
         /// </summary>
-        Etc2R8G8B8UNorm,
+        Etc2R8G8B8UNorm = 46,
 
         /// <summary>
         ///     A 64-bit, 4x4 block-compressed format storing unsigned normalized RGB data, as well as 1 bit of alpha data.
         /// </summary>
-        Etc2R8G8B8A1UNorm,
+        Etc2R8G8B8A1UNorm = 47,
 
         /// <summary>
         ///     A 128-bit, 4x4 block-compressed format storing 64 bits of unsigned normalized RGB data, as well as 64 bits of alpha
         ///     data.
         /// </summary>
-        Etc2R8G8B8A8UNorm,
+        Etc2R8G8B8A8UNorm = 48,
 
         /// <summary>
         ///     BC4 block compressed format, unsigned normalized values.
         /// </summary>
-        Bc4UNorm,
+        Bc4UNorm = 49,
 
         /// <summary>
         ///     BC4 block compressed format, signed normalized values.
         /// </summary>
-        Bc4SNorm,
+        Bc4SNorm = 50,
 
         /// <summary>
         ///     BC5 block compressed format, unsigned normalized values.
         /// </summary>
-        Bc5UNorm,
+        Bc5UNorm = 51,
 
         /// <summary>
         ///     BC5 block compressed format, signed normalized values.
         /// </summary>
-        Bc5SNorm,
+        Bc5SNorm = 52,
 
         /// <summary>
         ///     BC7 block compressed format.
         /// </summary>
-        Bc7UNorm,
+        Bc7UNorm = 53,
 
         /// <summary>
         ///     RGBA component order. Each component is an 8-bit unsigned normalized integer.
         ///     This is an sRGB format.
         /// </summary>
-        R8G8B8A8UNormSRgb,
+        R8G8B8A8UNormSRgb = 54,
 
         /// <summary>
         ///     BGRA component order. Each component is an 8-bit unsigned normalized integer.
         ///     This is an sRGB format.
         /// </summary>
-        B8G8R8A8UNormSRgb,
+        B8G8R8A8UNormSRgb = 55,
 
         /// <summary>
         ///     BC1 block compressed format with no alpha.
         ///     This is an sRGB format.
         /// </summary>
-        Bc1RgbUNormSRgb,
+        Bc1RgbUNormSRgb = 56,
 
         /// <summary>
         ///     BC1 block compressed format with a single-bit alpha channel.
         ///     This is an sRGB format.
         /// </summary>
-        Bc1RgbaUNormSRgb,
+        Bc1RgbaUNormSRgb = 57,
 
         /// <summary>
         ///     BC2 block compressed format.
         ///     This is an sRGB format.
         /// </summary>
-        Bc2UNormSRgb,
+        Bc2UNormSRgb = 58,
 
         /// <summary>
         ///     BC3 block compressed format.
         ///     This is an sRGB format.
         /// </summary>
-        Bc3UNormSRgb,
+        Bc3UNormSRgb = 59,
 
         /// <summary>
         ///     BC7 block compressed format.
         ///     This is an sRGB format.
         /// </summary>
-        Bc7UNormSRgb,
+        Bc7UNormSRgb = 60,
 
 #if SUPPORT_LEGACY_VELDRID_SYMBOLS
         // Legacy Veldrid 4.9.0 symbol aliases (with underscores)

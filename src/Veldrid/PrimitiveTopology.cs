@@ -1,4 +1,4 @@
-﻿namespace Veldrid
+namespace Veldrid
 {
     /// <summary>
     ///     Determines how a sequence of vertices is interepreted by the rasterizer.
@@ -8,26 +8,26 @@
         /// <summary>
         ///     A list of isolated, 3-element triangles.
         /// </summary>
-        TriangleList,
+        TriangleList = 0,
 
         /// <summary>
         ///     A series of connected triangles.
         /// </summary>
-        TriangleStrip,
+        TriangleStrip = 1,
 
         /// <summary>
         ///     A series of isolated, 2-element line segments.
         /// </summary>
-        LineList,
+        LineList = 2,
 
         /// <summary>
         ///     A series of connected line segments.
         /// </summary>
-        LineStrip,
+        LineStrip = 3,
 
         /// <summary>
         ///     A series of isolated points.
         /// </summary>
-        PointList
+        PointList = 4
     }
 }

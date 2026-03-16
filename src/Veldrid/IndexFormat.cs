@@ -1,4 +1,4 @@
-﻿namespace Veldrid
+namespace Veldrid
 {
     /// <summary>
     ///     The format of index data used in a <see cref="DeviceBuffer" />.
@@ -8,11 +8,11 @@
         /// <summary>
         ///     Each index is a 16-bit unsigned integer (System.UInt16).
         /// </summary>
-        UInt16,
+        UInt16 = 0,
 
         /// <summary>
         ///     Each index is a 32-bit unsigned integer (System.UInt32).
         /// </summary>
-        UInt32
+        UInt32 = 1
     }
 }

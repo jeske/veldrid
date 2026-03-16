@@ -11,7 +11,7 @@ namespace Veldrid
         /// <summary>
         ///     No color component will be written to.
         /// </summary>
-        None,
+        None = 0,
 
         /// <summary>
         ///     The red component will be written to.

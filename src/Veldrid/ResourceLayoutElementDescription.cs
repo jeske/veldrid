@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Veldrid
 {
@@ -89,7 +89,7 @@ namespace Veldrid
         /// <summary>
         ///     No special options.
         /// </summary>
-        None,
+        None = 0,
 
         /// <summary>
         ///     Can be applied to a buffer type resource (<see cref="ResourceKind.StructuredBufferReadOnly" />,

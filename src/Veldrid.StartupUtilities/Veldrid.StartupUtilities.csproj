@@ -2,8 +2,13 @@
 
   <Import Project="..\..\AN.Veldrid.Build.props" />
 
+  <PropertyGroup Label="Nuget">
+    <PackageId>ArtificialNecessity.Veldrid.StartupUtilities</PackageId>
+    <VersionPrefix>0.0.0</VersionPrefix>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
   <PropertyGroup>
-    <PackageVersion>$(AssemblyVersion)</PackageVersion>
     <TargetFramework>net9.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>

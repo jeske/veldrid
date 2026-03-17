@@ -29,7 +29,7 @@
     <EnforceExplicitEnumValues Condition="'$(EnforceExplicitEnumValues)' == ''">none</EnforceExplicitEnumValues>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ArtificialNecessity.CodeAnalyzers" Version="0.1.2" PrivateAssets="all" />
+    <PackageReference Include="ArtificialNecessity.CodeAnalyzers" Version="0.1.13" PrivateAssets="all" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -67,14 +67,25 @@
   </Target>
 
   <!-- ════════════════════════════════════════════════════════════════
-       Git-height versioning: {major}.{minor}.{buildNumberOffset}-{GitHeight}.{BuildNum}.g{GitHash}
-       Example: 4.9.3-1356.0.g3be210cd
-       Reads base version + buildNumberOffset from version.json at repo root
-       using the JsonPeek task from ArtificialNecessity.CodeAnalyzers.
-       Only runs for packable projects.
+       Version computation — two self-contained targets:
+
+       GeneratePrereleaseVersion  (default)
+         Produces: {major}.{minor}.{offset}-{gitHeight}.{buildNum}.g{hash}
+         Example:  4.9.3-1356.0.g3be210cd
+
+       GenerateReleaseVersion  (dotnet pack /p:NewRelease=true)
+         Produces a clean version using current buildNumberOffset.
+         Example:  4.9.3
+         The publish script increments buildNumberOffset in version.json
+         BEFORE invoking this target.
+
+       Both read version.json via the JsonPeek task from
+       ArtificialNecessity.CodeAnalyzers. Only runs for packable projects.
        ════════════════════════════════════════════════════════════════ -->
-  <Target Name="ComputeGitVersion" BeforeTargets="GenerateNuspecDependencies;GetPackageVersionInfo;Pack;GenerateAssemblyInfo"
-          Condition="'$(IsPackable)' == 'true'">
+
+  <Target Name="GeneratePrereleaseVersion"
+          BeforeTargets="GenerateNuspecDependencies;GetPackageVersionInfo;Pack;GenerateAssemblyInfo"
+          Condition="'$(IsPackable)' == 'true' AND '$(NewRelease)' != 'true'">
 
     <!-- Read base version and buildNumberOffset from version.json via JsonPeek (JSONC-tolerant) -->
     <JsonPeek File="$(RepositoryRootDirectory)version.json" KeyPath="version"
@@ -92,7 +103,7 @@
       <VersionPrefix>$(_BaseVersionFromJson).$(_BuildNumberOffsetFromJson)</VersionPrefix>
     </PropertyGroup>
 
-    <Error Text="ComputeGitVersion: No VersionPrefix found. Set VersionPrefix in the csproj or ensure version.json exists at $(RepositoryRootDirectory)"
+    <Error Text="GeneratePrereleaseVersion: No VersionPrefix found. Set VersionPrefix in the csproj or ensure version.json exists at $(RepositoryRootDirectory)"
            Condition="'$(VersionPrefix)' == ''" />
 
     <Exec Command="git rev-list --count HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low">
@@ -110,7 +121,38 @@
       <PackageVersion>$(Version)</PackageVersion>
       <InformationalVersion>$(Version)</InformationalVersion>
     </PropertyGroup>
-    <Message Importance="High" Text="$(PackageId): version $(Version)" />
+    <Message Importance="High" Text="$(PackageId): prerelease version $(Version)" />
+  </Target>
+
+  <Target Name="GenerateReleaseVersion"
+          BeforeTargets="GenerateNuspecDependencies;GetPackageVersionInfo;Pack;GenerateAssemblyInfo"
+          Condition="'$(IsPackable)' == 'true' AND '$(NewRelease)' == 'true'">
+
+    <!-- Read base version and buildNumberOffset from version.json via JsonPeek (JSONC-tolerant) -->
+    <JsonPeek File="$(RepositoryRootDirectory)version.json" KeyPath="version"
+              Condition="Exists('$(RepositoryRootDirectory)version.json')">
+      <Output TaskParameter="Value" PropertyName="_BaseVersionFromJson" />
+    </JsonPeek>
+    <JsonPeek File="$(RepositoryRootDirectory)version.json" KeyPath="buildNumberOffset"
+              Condition="Exists('$(RepositoryRootDirectory)version.json')">
+      <Output TaskParameter="Value" PropertyName="_BuildNumberOffsetFromJson" />
+    </JsonPeek>
+
+    <!-- Compose clean release version: {major}.{minor}.{buildNumberOffset} -->
+    <PropertyGroup Condition="'$(_BaseVersionFromJson)' != ''">
+      <_BuildNumberOffsetFromJson Condition="'$(_BuildNumberOffsetFromJson)' == ''">0</_BuildNumberOffsetFromJson>
+      <VersionPrefix>$(_BaseVersionFromJson).$(_BuildNumberOffsetFromJson)</VersionPrefix>
+    </PropertyGroup>
+
+    <Error Text="GenerateReleaseVersion: No VersionPrefix found. Set VersionPrefix in the csproj or ensure version.json exists at $(RepositoryRootDirectory)"
+           Condition="'$(VersionPrefix)' == ''" />
+
+    <PropertyGroup>
+      <Version>$(VersionPrefix)</Version>
+      <PackageVersion>$(Version)</PackageVersion>
+      <InformationalVersion>$(Version)</InformationalVersion>
+    </PropertyGroup>
+    <Message Importance="High" Text="$(PackageId): release version $(Version)" />
   </Target>
 
 </Project>

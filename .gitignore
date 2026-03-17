@@ -2,6 +2,7 @@ syntax: glob
 
 #NuGet things
 project.lock.json
+packages.lock.json
 
 ### VisualStudio ###
 

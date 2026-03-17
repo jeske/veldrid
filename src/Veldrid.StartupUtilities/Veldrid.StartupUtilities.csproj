@@ -23,7 +23,7 @@
   <!-- Use PackageReference when not building from source -->
   <!-- Version is inherited from consuming project -->
   <ItemGroup Condition="'$(UseLocalVeldrid)' != 'true'">
-    <PackageReference Include="ArtificialNecessity.Veldrid" />
+    <PackageReference Include="ArtificialNecessity.Veldrid" Version="4.10.0-1354.0.g86a863b4" />
   </ItemGroup>
 
   <ItemGroup>

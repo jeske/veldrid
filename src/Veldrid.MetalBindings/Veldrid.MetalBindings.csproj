@@ -1,8 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\AN.Veldrid.Build.props" />
+
   <PropertyGroup Label="Nuget">
     <PackageId>ArtificialNecessity.Veldrid.MetalBindings</PackageId>
-    <Version>0.0.0</Version>
+    <VersionPrefix>0.0.0</VersionPrefix>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 
@@ -10,6 +12,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>AN.Veldrid.MetalBindings</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Raw Metal bindings for .NET. Used by Veldrid for Metal interop on macOS/iOS.</Description>
+    <PackageTags>3D Graphics Metal macOS iOS Core Standard Game</PackageTags>
   </PropertyGroup>
 
 </Project>

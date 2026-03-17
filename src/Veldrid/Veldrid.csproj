@@ -4,7 +4,7 @@
 
   <PropertyGroup Label="Nuget">
     <PackageId>ArtificialNecessity.Veldrid</PackageId>
-    <VersionPrefix>4.10.0</VersionPrefix>
+    <VersionPrefix>0.0.0</VersionPrefix>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 
@@ -22,7 +22,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ArtificialNecessity.CodeAnalyzers" Version="0.1.1" PrivateAssets="all" />
     <PackageReference Include="ppy.Vk" Version="1.0.26" Condition="'$(ExcludeVulkan)' != 'true'"/>
     <PackageReference Include="Vortice.D3DCompiler" Version="$(VorticeWindowsVersion)"/>
     <PackageReference Include="Vortice.Direct3D11" Version="$(VorticeWindowsVersion)"/>
@@ -46,28 +45,5 @@
     <Description>A low-level, hardware-accelerated graphics and compute library for .NET, with backends for Vulkan, Metal, Direct3D 11, OpenGL, and OpenGL ES. Veldrid can be used to create high-performance 2D and 3D games, simulations, tools, and other graphical applications.</Description>
     <PackageTags>3D Graphics Direct3D DirectX Vulkan OpenGL Metal Core Standard Game</PackageTags>
   </PropertyGroup>
-
-  <!-- ════════════════════════════════════════════════════════════════
-       Git-height versioning: {VersionPrefix}-{GitHeight}.{BuildNum}.g{GitHash}
-       Example: 4.10.0-42.1.ga121087c
-       ════════════════════════════════════════════════════════════════ -->
-  <Target Name="ComputeGitVersion" BeforeTargets="GenerateNuspecDependencies;GetPackageVersionInfo;Pack;GenerateAssemblyInfo">
-    <Exec Command="git rev-list --count HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low">
-      <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHeight" />
-    </Exec>
-    <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low">
-      <Output TaskParameter="ConsoleOutput" PropertyName="GitShortHash" />
-    </Exec>
-    <ReadLinesFromFile File="$(MSBuildProjectDirectory)\buildnum.txt" Condition="Exists('$(MSBuildProjectDirectory)\buildnum.txt')">
-      <Output TaskParameter="Lines" PropertyName="LocalBuildNumber" />
-    </ReadLinesFromFile>
-    <PropertyGroup>
-      <LocalBuildNumber Condition="'$(LocalBuildNumber)' == ''">0</LocalBuildNumber>
-      <Version>$(VersionPrefix)-$(GitCommitHeight).$(LocalBuildNumber).g$(GitShortHash)</Version>
-      <PackageVersion>$(Version)</PackageVersion>
-      <InformationalVersion>$(Version)</InformationalVersion>
-    </PropertyGroup>
-    <Message Importance="High" Text="ArtificialNecessity.Veldrid version: $(Version)" />
-  </Target>
 
 </Project>

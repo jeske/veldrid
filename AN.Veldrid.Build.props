@@ -14,7 +14,6 @@
     <RepositoryRootDirectory>$(MSBuildThisFileDirectory)</RepositoryRootDirectory>
     <BinDir>$(RepositoryRootDirectory)bin</BinDir>
     <OutputPath>$([System.IO.Path]::GetFullPath('$(RepositoryRootDirectory)bin\$(Configuration)'))\$(MSBuildProjectName)</OutputPath>
-    <BaseIntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(RepositoryRootDirectory)bin\obj\$(MSBuildProjectName)'))\</BaseIntermediateOutputPath>
     <PackageOutputPath>$(BinDir)\Packages\$(Configuration)</PackageOutputPath>
   </PropertyGroup>
 
@@ -23,8 +22,18 @@
     <VorticeWindowsVersion>2.4.2</VorticeWindowsVersion>
   </PropertyGroup>
 
+  <!-- ArtificialNecessity.CodeAnalyzers provides the JsonPeek MSBuild task (JSONC-tolerant)
+       used by ComputeGitVersion to read version.json.
+       EnforceExplicitEnumValues defaults to none — projects opt in explicitly. -->
   <PropertyGroup>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/ppy/veldrid/master/LICENSE</PackageLicenseUrl>
+    <EnforceExplicitEnumValues Condition="'$(EnforceExplicitEnumValues)' == ''">none</EnforceExplicitEnumValues>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ArtificialNecessity.CodeAnalyzers" Version="0.1.2" PrivateAssets="all" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Copyright>Copyright 2024 (c) Eric Mellino and Veldrid contributors. All rights reserved.</Copyright>
     <Authors>Eric Mellino, ppy Pty Ltd</Authors>
@@ -55,6 +64,53 @@
           DestinationFolder="$(LocalNuGetFeedPath)"
           OverwriteReadOnlyFiles="true" />
     <Message Importance="High" Text="$(PackageId): Deployed $(PackageId).$(PackageVersion).nupkg to $(LocalNuGetFeedPath)" />
+  </Target>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       Git-height versioning: {major}.{minor}.{buildNumberOffset}-{GitHeight}.{BuildNum}.g{GitHash}
+       Example: 4.9.3-1356.0.g3be210cd
+       Reads base version + buildNumberOffset from version.json at repo root
+       using the JsonPeek task from ArtificialNecessity.CodeAnalyzers.
+       Only runs for packable projects.
+       ════════════════════════════════════════════════════════════════ -->
+  <Target Name="ComputeGitVersion" BeforeTargets="GenerateNuspecDependencies;GetPackageVersionInfo;Pack;GenerateAssemblyInfo"
+          Condition="'$(IsPackable)' == 'true'">
+
+    <!-- Read base version and buildNumberOffset from version.json via JsonPeek (JSONC-tolerant) -->
+    <JsonPeek File="$(RepositoryRootDirectory)version.json" KeyPath="version"
+              Condition="Exists('$(RepositoryRootDirectory)version.json')">
+      <Output TaskParameter="Value" PropertyName="_BaseVersionFromJson" />
+    </JsonPeek>
+    <JsonPeek File="$(RepositoryRootDirectory)version.json" KeyPath="buildNumberOffset"
+              Condition="Exists('$(RepositoryRootDirectory)version.json')">
+      <Output TaskParameter="Value" PropertyName="_BuildNumberOffsetFromJson" />
+    </JsonPeek>
+
+    <!-- Compose VersionPrefix: {major}.{minor}.{buildNumberOffset} — always from version.json -->
+    <PropertyGroup Condition="'$(_BaseVersionFromJson)' != ''">
+      <_BuildNumberOffsetFromJson Condition="'$(_BuildNumberOffsetFromJson)' == ''">0</_BuildNumberOffsetFromJson>
+      <VersionPrefix>$(_BaseVersionFromJson).$(_BuildNumberOffsetFromJson)</VersionPrefix>
+    </PropertyGroup>
+
+    <Error Text="ComputeGitVersion: No VersionPrefix found. Set VersionPrefix in the csproj or ensure version.json exists at $(RepositoryRootDirectory)"
+           Condition="'$(VersionPrefix)' == ''" />
+
+    <Exec Command="git rev-list --count HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHeight" />
+    </Exec>
+    <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitShortHash" />
+    </Exec>
+    <ReadLinesFromFile File="$(MSBuildProjectDirectory)\buildnum.txt" Condition="Exists('$(MSBuildProjectDirectory)\buildnum.txt')">
+      <Output TaskParameter="Lines" PropertyName="LocalBuildNumber" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <LocalBuildNumber Condition="'$(LocalBuildNumber)' == ''">0</LocalBuildNumber>
+      <Version>$(VersionPrefix)-$(GitCommitHeight).$(LocalBuildNumber).g$(GitShortHash)</Version>
+      <PackageVersion>$(Version)</PackageVersion>
+      <InformationalVersion>$(Version)</InformationalVersion>
+    </PropertyGroup>
+    <Message Importance="High" Text="$(PackageId): version $(Version)" />
   </Target>
 
 </Project>

@@ -21,10 +21,8 @@
     <StableABISnapshotScope>public</StableABISnapshotScope>
   </PropertyGroup>
 
-  <!-- Import AN.CodeAnalyzers targets (CompilerVisibleProperty declarations, AdditionalFiles) -->
-  <Import Project="..\..\..\AN_CodeAnalyzers\build\AN.CodeAnalyzers.targets" />
-
   <ItemGroup>
+    <PackageReference Include="AN.CodeAnalyzers" Version="0.1.0-13.9.g0777fa8" PrivateAssets="all" />
     <PackageReference Include="ppy.Vk" Version="1.0.26" Condition="'$(ExcludeVulkan)' != 'true'"/>
     <PackageReference Include="Vortice.D3DCompiler" Version="$(VorticeWindowsVersion)"/>
     <PackageReference Include="Vortice.Direct3D11" Version="$(VorticeWindowsVersion)"/>
@@ -33,9 +31,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Veldrid.MetalBindings\Veldrid.MetalBindings.csproj"/>
     <ProjectReference Include="..\Veldrid.OpenGLBindings\Veldrid.OpenGLBindings.csproj"/>
-    <ProjectReference Include="..\..\..\AN_CodeAnalyzers\AN.CodeAnalyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
-    <!-- Build the StableABIVerification MSBuild task so it's available for the GenerateStableABISnapshot target -->
-    <ProjectReference Include="..\..\..\AN_CodeAnalyzers\StableABIVerification\StableABIVerification.csproj" ReferenceOutputAssembly="false" Private="false"/>
   </ItemGroup>
 
   <ItemGroup>

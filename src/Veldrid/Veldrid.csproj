@@ -1,5 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\AN.Veldrid.Build.props" />
+
   <PropertyGroup Label="Nuget">
     <PackageId>AN.Veldrid</PackageId>
     <VersionPrefix>4.10.0</VersionPrefix>

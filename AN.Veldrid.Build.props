@@ -37,5 +37,22 @@
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
+  <!-- ════════════════════════════════════════════════════════════════
+       Local NuGet feed: set LOCAL_NUGET_REPO env var to auto-pack and deploy
+       on every build. Only affects projects with IsPackable=true.
+       ════════════════════════════════════════════════════════════════ -->
+  <PropertyGroup>
+    <LocalNuGetFeedPath>$(LOCAL_NUGET_REPO)</LocalNuGetFeedPath>
+    <GeneratePackageOnBuild Condition="'$(LocalNuGetFeedPath)' != ''">true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <!-- Deploy .nupkg to local NuGet feed after pack -->
+  <Target Name="DeployToLocalNuGet" AfterTargets="Pack" Condition="'$(LocalNuGetFeedPath)' != ''">
+    <MakeDir Directories="$(LocalNuGetFeedPath)" Condition="!Exists('$(LocalNuGetFeedPath)')" />
+    <Copy SourceFiles="$(PackageOutputPath)\$(PackageId).$(PackageVersion).nupkg"
+          DestinationFolder="$(LocalNuGetFeedPath)"
+          OverwriteReadOnlyFiles="true" />
+    <Message Importance="High" Text="$(PackageId): Deployed $(PackageId).$(PackageVersion).nupkg to $(LocalNuGetFeedPath)" />
+  </Target>
 
 </Project>

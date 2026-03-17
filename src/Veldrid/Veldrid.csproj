@@ -34,6 +34,8 @@
     <ProjectReference Include="..\Veldrid.MetalBindings\Veldrid.MetalBindings.csproj"/>
     <ProjectReference Include="..\Veldrid.OpenGLBindings\Veldrid.OpenGLBindings.csproj"/>
     <ProjectReference Include="..\..\..\AN_CodeAnalyzers\AN.CodeAnalyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+    <!-- Build the StableABIVerification MSBuild task so it's available for the GenerateStableABISnapshot target -->
+    <ProjectReference Include="..\..\..\AN_CodeAnalyzers\StableABIVerification\StableABIVerification.csproj" ReferenceOutputAssembly="false" Private="false"/>
   </ItemGroup>
 
   <ItemGroup>

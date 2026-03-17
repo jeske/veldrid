@@ -65,18 +65,6 @@ enum.MapMode.Read: 0
 enum.MapMode.ReadWrite: 2
 enum.MapMode.Write: 1
 enum.MapMode._type: byte
-enum.OpenGLGraphicsDevice.WorkItemType.ExecuteList: 2
-enum.OpenGLGraphicsDevice.WorkItemType.GenericAction: 5
-enum.OpenGLGraphicsDevice.WorkItemType.InitializeResource: 10
-enum.OpenGLGraphicsDevice.WorkItemType.Map: 0
-enum.OpenGLGraphicsDevice.WorkItemType.SetSyncToVerticalBlank: 7
-enum.OpenGLGraphicsDevice.WorkItemType.SwapBuffers: 8
-enum.OpenGLGraphicsDevice.WorkItemType.TerminateAction: 6
-enum.OpenGLGraphicsDevice.WorkItemType.Unmap: 1
-enum.OpenGLGraphicsDevice.WorkItemType.UpdateBuffer: 3
-enum.OpenGLGraphicsDevice.WorkItemType.UpdateTexture: 4
-enum.OpenGLGraphicsDevice.WorkItemType.WaitForIdle: 9
-enum.OpenGLGraphicsDevice.WorkItemType._type: byte
 enum.PixelFormat.B8G8R8A8UNorm: 1
 enum.PixelFormat.B8G8R8A8UNormSRgb: 55
 enum.PixelFormat.B8_G8_R8_A8_UNorm: 1
@@ -394,7 +382,6 @@ field.MappedResourceView`1.Count: readonly int
 field.MappedResourceView`1.MappedResource: readonly MappedResource
 field.MappedResourceView`1.SizeInBytes: readonly uint
 field.MetalDeviceOptions.PreferMemorylessDepthTargets: bool
-field.NoAllocSetResourceSetEntry.<DynamicOffsetsInline>e__FixedBuffer.FixedElementField: uint
 field.OutputAttachmentDescription.Format: PixelFormat
 field.OutputDescription.ColorAttachments: OutputAttachmentDescription[]
 field.OutputDescription.DepthAttachment: Nullable`1<OutputAttachmentDescription>
@@ -485,17 +472,9 @@ field.ShaderDescription.Stage: ShaderStages
 field.ShaderSetDescription.Shaders: Shader[]
 field.ShaderSetDescription.Specializations: SpecializationConstant[]
 field.ShaderSetDescription.VertexLayouts: VertexLayoutDescription[]
-field.Size1024Bytes.<Data>e__FixedBuffer.FixedElementField: byte
-field.Size128Bytes.<Data>e__FixedBuffer.FixedElementField: byte
-field.Size16Bytes.<Data>e__FixedBuffer.FixedElementField: byte
-field.Size2048Bytes.<Data>e__FixedBuffer.FixedElementField: byte
-field.Size512Bytes.<Data>e__FixedBuffer.FixedElementField: byte
-field.Size64Bytes.<Data>e__FixedBuffer.FixedElementField: byte
-field.SmallFixedOrDynamicArray.<fixedData>e__FixedBuffer.FixedElementField: uint
 field.SpecializationConstant.Data: ulong
 field.SpecializationConstant.ID: uint
 field.SpecializationConstant.Type: ShaderConstantType
-field.StackList`1.<storage>e__FixedBuffer.FixedElementField: byte
 field.StencilBehaviorDescription.Comparison: ComparisonKind
 field.StencilBehaviorDescription.DepthFail: StencilOperation
 field.StencilBehaviorDescription.Fail: StencilOperation
@@ -534,8 +513,6 @@ field.Viewport.MinDepth: float
 field.Viewport.Width: float
 field.Viewport.X: float
 field.Viewport.Y: float
-field.VkPhysicalDeviceDriverProperties.<DriverInfo>e__FixedBuffer.FixedElementField: byte
-field.VkPhysicalDeviceDriverProperties.<DriverName>e__FixedBuffer.FixedElementField: byte
 field.VulkanDeviceOptions.DeviceExtensions: string[]
 field.VulkanDeviceOptions.InstanceExtensions: string[]
 method.BackendInfoD3D11.GetTexturePointer: IntPtr(Texture texture)
@@ -561,16 +538,6 @@ method.BufferDescription..ctor: void(uint sizeInBytes, BufferUsage usage, uint s
 method.BufferDescription..ctor: void(uint sizeInBytes, BufferUsage usage, uint structureByteStride, bool rawBuffer)
 method.BufferDescription.Equals: bool(BufferDescription other)
 method.BufferDescription.GetHashCode: int()
-method.CommandBufferUsageList`1.ItemsEnumerator..ctor: void(List`1<ValueTuple`2<MTLCommandBuffer, !0>> list)
-method.CommandBufferUsageList`1.ItemsEnumerator.Dispose: void()
-method.CommandBufferUsageList`1.ItemsEnumerator.GetEnumerator: ItemsEnumerator<!0>()
-method.CommandBufferUsageList`1.ItemsEnumerator.MoveNext: bool()
-method.CommandBufferUsageList`1.ItemsEnumerator.Reset: void()
-method.CommandBufferUsageList`1.RemovalEnumerator..ctor: void(List`1<ValueTuple`2<MTLCommandBuffer, !0>> list, MTLCommandBuffer cb)
-method.CommandBufferUsageList`1.RemovalEnumerator.Dispose: void()
-method.CommandBufferUsageList`1.RemovalEnumerator.GetEnumerator: RemovalEnumerator<!0>()
-method.CommandBufferUsageList`1.RemovalEnumerator.MoveNext: bool()
-method.CommandBufferUsageList`1.RemovalEnumerator.Reset: void()
 method.CommandList.Begin: void()
 method.CommandList.ClearColorTarget: void(uint index, RgbaFloat clearColor)
 method.CommandList.ClearDepthStencil: void(float depth)
@@ -899,8 +866,6 @@ property.BackendInfoVulkan.GraphicsQueue: IntPtr { get; }
 property.BackendInfoVulkan.GraphicsQueueFamilyIndex: uint { get; }
 property.BackendInfoVulkan.Instance: IntPtr { get; }
 property.BackendInfoVulkan.PhysicalDevice: IntPtr { get; }
-property.CommandBufferUsageList`1.ItemsEnumerator.Current: !0 { get; }
-property.CommandBufferUsageList`1.RemovalEnumerator.Current: !0 { get; }
 property.CommandList.IsDisposed: bool { get; }
 property.CommandList.Name: string { get; set; }
 property.DeviceBuffer.IsDisposed: bool { get; }
@@ -1051,20 +1016,6 @@ struct.BufferDescription.field0.SizeInBytes: uint
 struct.BufferDescription.field1.Usage: BufferUsage
 struct.BufferDescription.field2.StructureByteStride: uint
 struct.BufferDescription.field3.RawBuffer: bool
-struct.CommandBufferUsageList`1.ItemsEnumerator._layout: Sequential
-struct.CommandBufferUsageList`1.ItemsEnumerator._pack: 0
-struct.CommandBufferUsageList`1.ItemsEnumerator._size: 0
-struct.CommandBufferUsageList`1.ItemsEnumerator.field0.list: List`1<ValueTuple`2<MTLCommandBuffer, !0>>
-struct.CommandBufferUsageList`1.ItemsEnumerator.field1.index: int
-struct.CommandBufferUsageList`1.ItemsEnumerator.field2.<Current>k__BackingField: !0
-struct.CommandBufferUsageList`1.RemovalEnumerator._layout: Sequential
-struct.CommandBufferUsageList`1.RemovalEnumerator._pack: 0
-struct.CommandBufferUsageList`1.RemovalEnumerator._size: 0
-struct.CommandBufferUsageList`1.RemovalEnumerator.field0.list: List`1<ValueTuple`2<MTLCommandBuffer, !0>>
-struct.CommandBufferUsageList`1.RemovalEnumerator.field1.cb: MTLCommandBuffer
-struct.CommandBufferUsageList`1.RemovalEnumerator.field2.count: int
-struct.CommandBufferUsageList`1.RemovalEnumerator.field3.index: int
-struct.CommandBufferUsageList`1.RemovalEnumerator.field4.<Current>k__BackingField: !0
 struct.CommandListDescription._layout: Sequential
 struct.CommandListDescription._pack: 0
 struct.CommandListDescription._size: 1
@@ -1187,10 +1138,6 @@ struct.MetalDeviceOptions._layout: Sequential
 struct.MetalDeviceOptions._pack: 0
 struct.MetalDeviceOptions._size: 0
 struct.MetalDeviceOptions.field0.PreferMemorylessDepthTargets: bool
-struct.NoAllocSetResourceSetEntry.<DynamicOffsetsInline>e__FixedBuffer._layout: Sequential
-struct.NoAllocSetResourceSetEntry.<DynamicOffsetsInline>e__FixedBuffer._pack: 0
-struct.NoAllocSetResourceSetEntry.<DynamicOffsetsInline>e__FixedBuffer._size: 40
-struct.NoAllocSetResourceSetEntry.<DynamicOffsetsInline>e__FixedBuffer.field0.FixedElementField: uint
 struct.OutputAttachmentDescription._layout: Sequential
 struct.OutputAttachmentDescription._pack: 0
 struct.OutputAttachmentDescription._size: 0
@@ -1271,44 +1218,12 @@ struct.ShaderSetDescription._size: 0
 struct.ShaderSetDescription.field0.VertexLayouts: VertexLayoutDescription[]
 struct.ShaderSetDescription.field1.Shaders: Shader[]
 struct.ShaderSetDescription.field2.Specializations: SpecializationConstant[]
-struct.Size1024Bytes.<Data>e__FixedBuffer._layout: Sequential
-struct.Size1024Bytes.<Data>e__FixedBuffer._pack: 0
-struct.Size1024Bytes.<Data>e__FixedBuffer._size: 1024
-struct.Size1024Bytes.<Data>e__FixedBuffer.field0.FixedElementField: byte
-struct.Size128Bytes.<Data>e__FixedBuffer._layout: Sequential
-struct.Size128Bytes.<Data>e__FixedBuffer._pack: 0
-struct.Size128Bytes.<Data>e__FixedBuffer._size: 64
-struct.Size128Bytes.<Data>e__FixedBuffer.field0.FixedElementField: byte
-struct.Size16Bytes.<Data>e__FixedBuffer._layout: Sequential
-struct.Size16Bytes.<Data>e__FixedBuffer._pack: 0
-struct.Size16Bytes.<Data>e__FixedBuffer._size: 16
-struct.Size16Bytes.<Data>e__FixedBuffer.field0.FixedElementField: byte
-struct.Size2048Bytes.<Data>e__FixedBuffer._layout: Sequential
-struct.Size2048Bytes.<Data>e__FixedBuffer._pack: 0
-struct.Size2048Bytes.<Data>e__FixedBuffer._size: 2048
-struct.Size2048Bytes.<Data>e__FixedBuffer.field0.FixedElementField: byte
-struct.Size512Bytes.<Data>e__FixedBuffer._layout: Sequential
-struct.Size512Bytes.<Data>e__FixedBuffer._pack: 0
-struct.Size512Bytes.<Data>e__FixedBuffer._size: 1024
-struct.Size512Bytes.<Data>e__FixedBuffer.field0.FixedElementField: byte
-struct.Size64Bytes.<Data>e__FixedBuffer._layout: Sequential
-struct.Size64Bytes.<Data>e__FixedBuffer._pack: 0
-struct.Size64Bytes.<Data>e__FixedBuffer._size: 64
-struct.Size64Bytes.<Data>e__FixedBuffer.field0.FixedElementField: byte
-struct.SmallFixedOrDynamicArray.<fixedData>e__FixedBuffer._layout: Sequential
-struct.SmallFixedOrDynamicArray.<fixedData>e__FixedBuffer._pack: 0
-struct.SmallFixedOrDynamicArray.<fixedData>e__FixedBuffer._size: 20
-struct.SmallFixedOrDynamicArray.<fixedData>e__FixedBuffer.field0.FixedElementField: uint
 struct.SpecializationConstant._layout: Sequential
 struct.SpecializationConstant._pack: 0
 struct.SpecializationConstant._size: 0
 struct.SpecializationConstant.field0.ID: uint
 struct.SpecializationConstant.field1.Type: ShaderConstantType
 struct.SpecializationConstant.field2.Data: ulong
-struct.StackList`1.<storage>e__FixedBuffer._layout: Sequential
-struct.StackList`1.<storage>e__FixedBuffer._pack: 0
-struct.StackList`1.<storage>e__FixedBuffer._size: 256
-struct.StackList`1.<storage>e__FixedBuffer.field0.FixedElementField: byte
 struct.StencilBehaviorDescription._layout: Sequential
 struct.StencilBehaviorDescription._pack: 0
 struct.StencilBehaviorDescription._size: 0
@@ -1368,14 +1283,6 @@ struct.Viewport.field2.Width: float
 struct.Viewport.field3.Height: float
 struct.Viewport.field4.MinDepth: float
 struct.Viewport.field5.MaxDepth: float
-struct.VkPhysicalDeviceDriverProperties.<DriverInfo>e__FixedBuffer._layout: Sequential
-struct.VkPhysicalDeviceDriverProperties.<DriverInfo>e__FixedBuffer._pack: 0
-struct.VkPhysicalDeviceDriverProperties.<DriverInfo>e__FixedBuffer._size: 256
-struct.VkPhysicalDeviceDriverProperties.<DriverInfo>e__FixedBuffer.field0.FixedElementField: byte
-struct.VkPhysicalDeviceDriverProperties.<DriverName>e__FixedBuffer._layout: Sequential
-struct.VkPhysicalDeviceDriverProperties.<DriverName>e__FixedBuffer._pack: 0
-struct.VkPhysicalDeviceDriverProperties.<DriverName>e__FixedBuffer._size: 256
-struct.VkPhysicalDeviceDriverProperties.<DriverName>e__FixedBuffer.field0.FixedElementField: byte
 struct.VulkanDeviceOptions._layout: Sequential
 struct.VulkanDeviceOptions._pack: 0
 struct.VulkanDeviceOptions._size: 0
@@ -1393,8 +1300,6 @@ type.BlendStateDescription: struct
 type.BufferDescription: struct
 type.BufferUsage: enum
 type.ColorWriteMask: enum
-type.CommandBufferUsageList`1.ItemsEnumerator: struct
-type.CommandBufferUsageList`1.RemovalEnumerator: struct
 type.CommandList: abstract class
 type.CommandListDescription: struct
 type.ComparisonKind: enum
@@ -1428,8 +1333,6 @@ type.MapMode: enum
 type.MappedResource: struct
 type.MappedResourceView`1: struct
 type.MetalDeviceOptions: struct
-type.NoAllocSetResourceSetEntry.<DynamicOffsetsInline>e__FixedBuffer: struct
-type.OpenGLGraphicsDevice.WorkItemType: enum
 type.OpenGLPlatformInfo: class
 type.OutputAttachmentDescription: struct
 type.OutputDescription: struct
@@ -1460,15 +1363,7 @@ type.ShaderConstantType: enum
 type.ShaderDescription: struct
 type.ShaderSetDescription: struct
 type.ShaderStages: enum
-type.Size1024Bytes.<Data>e__FixedBuffer: struct
-type.Size128Bytes.<Data>e__FixedBuffer: struct
-type.Size16Bytes.<Data>e__FixedBuffer: struct
-type.Size2048Bytes.<Data>e__FixedBuffer: struct
-type.Size512Bytes.<Data>e__FixedBuffer: struct
-type.Size64Bytes.<Data>e__FixedBuffer: struct
-type.SmallFixedOrDynamicArray.<fixedData>e__FixedBuffer: struct
 type.SpecializationConstant: struct
-type.StackList`1.<storage>e__FixedBuffer: struct
 type.StencilBehaviorDescription: struct
 type.StencilOperation: enum
 type.Swapchain: abstract class
@@ -1487,7 +1382,5 @@ type.VertexElementFormat: enum
 type.VertexElementSemantic: enum
 type.VertexLayoutDescription: struct
 type.Viewport: struct
-type.VkPhysicalDeviceDriverProperties.<DriverInfo>e__FixedBuffer: struct
-type.VkPhysicalDeviceDriverProperties.<DriverName>e__FixedBuffer: struct
 type.VkSurfaceSource: abstract class
 type.VulkanDeviceOptions: struct

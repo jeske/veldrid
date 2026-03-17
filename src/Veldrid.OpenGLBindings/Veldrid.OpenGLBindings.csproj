@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup Label="Nuget">
-    <PackageId>AN.Veldrid.OpenGLBindings</PackageId>
+    <PackageId>ArtificialNecessity.Veldrid.OpenGLBindings</PackageId>
     <Version>0.0.0</Version>
     <IsPackable>true</IsPackable>
   </PropertyGroup>

@@ -66,7 +66,7 @@
   <!-- Use PackageReference when not building from source -->
   <!-- Version is inherited from consuming project -->
   <ItemGroup Condition="'$(UseLocalVeldrid)' != 'true'">
-    <PackageReference Include="AN.Veldrid" />
+    <PackageReference Include="ArtificialNecessity.Veldrid" />
   </ItemGroup>
 
   <ItemGroup>

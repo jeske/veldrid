@@ -3,7 +3,7 @@
   <Import Project="..\..\AN.Veldrid.Build.props" />
 
   <PropertyGroup Label="Nuget">
-    <PackageId>AN.Veldrid</PackageId>
+    <PackageId>ArtificialNecessity.Veldrid</PackageId>
     <VersionPrefix>4.10.0</VersionPrefix>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
@@ -22,7 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AN.CodeAnalyzers" Version="0.1.0-13.9.g0777fa8" PrivateAssets="all" />
+    <PackageReference Include="ArtificialNecessity.CodeAnalyzers" Version="0.1.1" PrivateAssets="all" />
     <PackageReference Include="ppy.Vk" Version="1.0.26" Condition="'$(ExcludeVulkan)' != 'true'"/>
     <PackageReference Include="Vortice.D3DCompiler" Version="$(VorticeWindowsVersion)"/>
     <PackageReference Include="Vortice.Direct3D11" Version="$(VorticeWindowsVersion)"/>
@@ -67,7 +67,7 @@
       <PackageVersion>$(Version)</PackageVersion>
       <InformationalVersion>$(Version)</InformationalVersion>
     </PropertyGroup>
-    <Message Importance="High" Text="AN.Veldrid version: $(Version)" />
+    <Message Importance="High" Text="ArtificialNecessity.Veldrid version: $(Version)" />
   </Target>
 
 </Project>

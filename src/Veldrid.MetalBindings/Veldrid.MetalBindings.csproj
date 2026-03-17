@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup Label="Nuget">
-    <PackageId>AN.Veldrid.MetalBindings</PackageId>
+    <PackageId>ArtificialNecessity.Veldrid.MetalBindings</PackageId>
     <Version>0.0.0</Version>
     <IsPackable>true</IsPackable>
   </PropertyGroup>

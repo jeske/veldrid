@@ -1,0 +1,1375 @@
+__stableApiVersion: 2
+enum.MTLBlendFactor.BlendAlpha: 13
+enum.MTLBlendFactor.BlendColor: 11
+enum.MTLBlendFactor.DestinationAlpha: 8
+enum.MTLBlendFactor.DestinationColor: 6
+enum.MTLBlendFactor.One: 1
+enum.MTLBlendFactor.OneMinusBlendAlpha: 14
+enum.MTLBlendFactor.OneMinusBlendColor: 12
+enum.MTLBlendFactor.OneMinusDestinationAlpha: 9
+enum.MTLBlendFactor.OneMinusDestinationColor: 7
+enum.MTLBlendFactor.OneMinusSource1Alpha: 18
+enum.MTLBlendFactor.OneMinusSource1Color: 16
+enum.MTLBlendFactor.OneMinusSourceAlpha: 5
+enum.MTLBlendFactor.OneMinusSourceColor: 3
+enum.MTLBlendFactor.Source1Alpha: 17
+enum.MTLBlendFactor.Source1Color: 15
+enum.MTLBlendFactor.SourceAlpha: 4
+enum.MTLBlendFactor.SourceAlphaSaturated: 10
+enum.MTLBlendFactor.SourceColor: 2
+enum.MTLBlendFactor.Zero: 0
+enum.MTLBlendFactor._type: int
+enum.MTLBlendOperation.Add: 0
+enum.MTLBlendOperation.Max: 4
+enum.MTLBlendOperation.Min: 3
+enum.MTLBlendOperation.ReverseSubtract: 2
+enum.MTLBlendOperation.Subtract: 1
+enum.MTLBlendOperation._type: int
+enum.MTLCPUCacheMode.DefaultCache: 0
+enum.MTLCPUCacheMode.WriteCombined: 1
+enum.MTLCPUCacheMode._type: int
+enum.MTLColorWriteMask.All: 15
+enum.MTLColorWriteMask.Alpha: 1
+enum.MTLColorWriteMask.Blue: 2
+enum.MTLColorWriteMask.Green: 4
+enum.MTLColorWriteMask.None: 0
+enum.MTLColorWriteMask.Red: 8
+enum.MTLColorWriteMask._flags: true
+enum.MTLColorWriteMask._type: int
+enum.MTLCommandBufferStatus.Committed: 2
+enum.MTLCommandBufferStatus.Completed: 4
+enum.MTLCommandBufferStatus.Enqueued: 1
+enum.MTLCommandBufferStatus.Error: 5
+enum.MTLCommandBufferStatus.NotEnqueued: 0
+enum.MTLCommandBufferStatus.Scheduled: 3
+enum.MTLCommandBufferStatus._type: int
+enum.MTLCompareFunction.Always: 7
+enum.MTLCompareFunction.Equal: 2
+enum.MTLCompareFunction.Greater: 4
+enum.MTLCompareFunction.GreaterEqual: 6
+enum.MTLCompareFunction.Less: 1
+enum.MTLCompareFunction.LessEqual: 3
+enum.MTLCompareFunction.Never: 0
+enum.MTLCompareFunction.NotEqual: 5
+enum.MTLCompareFunction._type: int
+enum.MTLCullMode.Back: 2
+enum.MTLCullMode.Front: 1
+enum.MTLCullMode.None: 0
+enum.MTLCullMode._type: int
+enum.MTLDataType.Array: 2
+enum.MTLDataType.Bool2: 54
+enum.MTLDataType.Bool3: 55
+enum.MTLDataType.Bool4: 56
+enum.MTLDataType.Bool: 53
+enum.MTLDataType.Char2: 46
+enum.MTLDataType.Char3: 47
+enum.MTLDataType.Char4: 48
+enum.MTLDataType.Char: 45
+enum.MTLDataType.Float2: 4
+enum.MTLDataType.Float2x2: 7
+enum.MTLDataType.Float2x3: 8
+enum.MTLDataType.Float2x4: 9
+enum.MTLDataType.Float3: 5
+enum.MTLDataType.Float3x2: 10
+enum.MTLDataType.Float3x3: 11
+enum.MTLDataType.Float3x4: 12
+enum.MTLDataType.Float4: 6
+enum.MTLDataType.Float4x2: 13
+enum.MTLDataType.Float4x3: 14
+enum.MTLDataType.Float4x4: 15
+enum.MTLDataType.Float: 3
+enum.MTLDataType.Half2: 17
+enum.MTLDataType.Half2x2: 20
+enum.MTLDataType.Half2x3: 21
+enum.MTLDataType.Half2x4: 22
+enum.MTLDataType.Half3: 18
+enum.MTLDataType.Half3x2: 23
+enum.MTLDataType.Half3x3: 24
+enum.MTLDataType.Half3x4: 25
+enum.MTLDataType.Half4: 19
+enum.MTLDataType.Half4x2: 26
+enum.MTLDataType.Half4x3: 27
+enum.MTLDataType.Half4x4: 28
+enum.MTLDataType.Half: 16
+enum.MTLDataType.Int2: 30
+enum.MTLDataType.Int3: 31
+enum.MTLDataType.Int4: 32
+enum.MTLDataType.Int: 29
+enum.MTLDataType.None: 0
+enum.MTLDataType.Pointer: 60
+enum.MTLDataType.R16Snorm: 65
+enum.MTLDataType.R16Unorm: 64
+enum.MTLDataType.R8Snorm: 63
+enum.MTLDataType.R8Unorm: 62
+enum.MTLDataType.RG11B10Float: 76
+enum.MTLDataType.RG16Snorm: 69
+enum.MTLDataType.RG16Unorm: 68
+enum.MTLDataType.RG8Snorm: 67
+enum.MTLDataType.RG8Unorm: 66
+enum.MTLDataType.RGB10A2Unorm: 75
+enum.MTLDataType.RGB9E5Float: 77
+enum.MTLDataType.RGBA16Snorm: 74
+enum.MTLDataType.RGBA16Unorm: 73
+enum.MTLDataType.RGBA8Snorm: 72
+enum.MTLDataType.RGBA8Unorm: 70
+enum.MTLDataType.RGBA8Unorm_sRGB: 71
+enum.MTLDataType.Sampler: 59
+enum.MTLDataType.Short2: 38
+enum.MTLDataType.Short3: 39
+enum.MTLDataType.Short4: 40
+enum.MTLDataType.Short: 37
+enum.MTLDataType.Struct: 1
+enum.MTLDataType.Texture: 58
+enum.MTLDataType.UChar2: 50
+enum.MTLDataType.UChar3: 51
+enum.MTLDataType.UChar4: 52
+enum.MTLDataType.UChar: 49
+enum.MTLDataType.UInt2: 34
+enum.MTLDataType.UInt3: 35
+enum.MTLDataType.UInt4: 36
+enum.MTLDataType.UInt: 33
+enum.MTLDataType.UShort2: 42
+enum.MTLDataType.UShort3: 43
+enum.MTLDataType.UShort4: 44
+enum.MTLDataType.UShort: 41
+enum.MTLDataType._type: int
+enum.MTLDepthClipMode.Clamp: 1
+enum.MTLDepthClipMode.Clip: 0
+enum.MTLDepthClipMode._type: int
+enum.MTLFeatureSet._type: int
+enum.MTLFeatureSet.iOS_GPUFamily1_v1: 0
+enum.MTLFeatureSet.iOS_GPUFamily1_v2: 2
+enum.MTLFeatureSet.iOS_GPUFamily1_v3: 5
+enum.MTLFeatureSet.iOS_GPUFamily1_v4: 8
+enum.MTLFeatureSet.iOS_GPUFamily2_v1: 1
+enum.MTLFeatureSet.iOS_GPUFamily2_v2: 3
+enum.MTLFeatureSet.iOS_GPUFamily2_v3: 6
+enum.MTLFeatureSet.iOS_GPUFamily2_v4: 9
+enum.MTLFeatureSet.iOS_GPUFamily3_v1: 4
+enum.MTLFeatureSet.iOS_GPUFamily3_v2: 7
+enum.MTLFeatureSet.iOS_GPUFamily3_v3: 10
+enum.MTLFeatureSet.iOS_GPUFamily4_v1: 11
+enum.MTLFeatureSet.macOS_GPUFamily1_v1: 10000
+enum.MTLFeatureSet.macOS_GPUFamily1_v2: 10001
+enum.MTLFeatureSet.macOS_GPUFamily1_v3: 10003
+enum.MTLFeatureSet.macOS_GPUFamily1_v4: 10004
+enum.MTLFeatureSet.macOS_GPUFamily2_v1: 10005
+enum.MTLFeatureSet.tvOS_GPUFamily1_v1: 30000
+enum.MTLFeatureSet.tvOS_GPUFamily1_v2: 30001
+enum.MTLFeatureSet.tvOS_GPUFamily1_v3: 30002
+enum.MTLFeatureSet.tvOS_GPUFamily2_v1: 30003
+enum.MTLIndexType.UInt16: 0
+enum.MTLIndexType.UInt32: 1
+enum.MTLIndexType._type: int
+enum.MTLLanguageVersion.Version1_0: 65536
+enum.MTLLanguageVersion.Version1_1: 65537
+enum.MTLLanguageVersion.Version1_2: 65538
+enum.MTLLanguageVersion._type: uint
+enum.MTLLoadAction.Clear: 2
+enum.MTLLoadAction.DontCare: 0
+enum.MTLLoadAction.Load: 1
+enum.MTLLoadAction._type: int
+enum.MTLMutability.Default: 0
+enum.MTLMutability.Immutable: 2
+enum.MTLMutability.Mutable: 1
+enum.MTLMutability._type: int
+enum.MTLPixelFormat.A1BGR5Unorm: 41
+enum.MTLPixelFormat.A8Unorm: 1
+enum.MTLPixelFormat.ABGR4Unorm: 42
+enum.MTLPixelFormat.ASTC_10x10_LDR: 216
+enum.MTLPixelFormat.ASTC_10x10_sRGB: 198
+enum.MTLPixelFormat.ASTC_10x5_LDR: 213
+enum.MTLPixelFormat.ASTC_10x5_sRGB: 195
+enum.MTLPixelFormat.ASTC_10x6_LDR: 214
+enum.MTLPixelFormat.ASTC_10x6_sRGB: 196
+enum.MTLPixelFormat.ASTC_10x8_LDR: 215
+enum.MTLPixelFormat.ASTC_10x8_sRGB: 197
+enum.MTLPixelFormat.ASTC_12x10_LDR: 217
+enum.MTLPixelFormat.ASTC_12x10_sRGB: 199
+enum.MTLPixelFormat.ASTC_12x12_LDR: 218
+enum.MTLPixelFormat.ASTC_12x12_sRGB: 200
+enum.MTLPixelFormat.ASTC_4x4_LDR: 204
+enum.MTLPixelFormat.ASTC_4x4_sRGB: 186
+enum.MTLPixelFormat.ASTC_5x4_LDR: 205
+enum.MTLPixelFormat.ASTC_5x4_sRGB: 187
+enum.MTLPixelFormat.ASTC_5x5_LDR: 206
+enum.MTLPixelFormat.ASTC_5x5_sRGB: 188
+enum.MTLPixelFormat.ASTC_6x5_LDR: 207
+enum.MTLPixelFormat.ASTC_6x5_sRGB: 189
+enum.MTLPixelFormat.ASTC_6x6_LDR: 208
+enum.MTLPixelFormat.ASTC_6x6_sRGB: 190
+enum.MTLPixelFormat.ASTC_8x5_LDR: 210
+enum.MTLPixelFormat.ASTC_8x5_sRGB: 192
+enum.MTLPixelFormat.ASTC_8x6_LDR: 211
+enum.MTLPixelFormat.ASTC_8x6_sRGB: 193
+enum.MTLPixelFormat.ASTC_8x8_LDR: 212
+enum.MTLPixelFormat.ASTC_8x8_sRGB: 194
+enum.MTLPixelFormat.B5G6R5Unorm: 40
+enum.MTLPixelFormat.BC1_RGBA: 130
+enum.MTLPixelFormat.BC1_RGBA_sRGB: 131
+enum.MTLPixelFormat.BC2_RGBA: 132
+enum.MTLPixelFormat.BC2_RGBA_sRGB: 133
+enum.MTLPixelFormat.BC3_RGBA: 134
+enum.MTLPixelFormat.BC3_RGBA_sRGB: 135
+enum.MTLPixelFormat.BC4_RSnorm: 141
+enum.MTLPixelFormat.BC4_RUnorm: 140
+enum.MTLPixelFormat.BC5_RGSnorm: 143
+enum.MTLPixelFormat.BC5_RGUnorm: 142
+enum.MTLPixelFormat.BC6H_RGBFloat: 150
+enum.MTLPixelFormat.BC6H_RGBUfloat: 151
+enum.MTLPixelFormat.BC7_RGBAUnorm: 152
+enum.MTLPixelFormat.BC7_RGBAUnorm_sRGB: 153
+enum.MTLPixelFormat.BGR10_XR: 554
+enum.MTLPixelFormat.BGR10_XR_sRGB: 555
+enum.MTLPixelFormat.BGR5A1Unorm: 43
+enum.MTLPixelFormat.BGRA10_XR: 552
+enum.MTLPixelFormat.BGRA10_XR_sRGB: 553
+enum.MTLPixelFormat.BGRA8Unorm: 80
+enum.MTLPixelFormat.BGRA8Unorm_sRGB: 81
+enum.MTLPixelFormat.BGRG422: 241
+enum.MTLPixelFormat.Depth16Unorm: 250
+enum.MTLPixelFormat.Depth24Unorm_Stencil8: 255
+enum.MTLPixelFormat.Depth32Float: 252
+enum.MTLPixelFormat.Depth32Float_Stencil8: 260
+enum.MTLPixelFormat.EAC_R11Snorm: 172
+enum.MTLPixelFormat.EAC_R11Unorm: 170
+enum.MTLPixelFormat.EAC_RG11Snorm: 176
+enum.MTLPixelFormat.EAC_RG11Unorm: 174
+enum.MTLPixelFormat.EAC_RGBA8: 178
+enum.MTLPixelFormat.EAC_RGBA8_sRGB: 179
+enum.MTLPixelFormat.ETC2_RGB8: 180
+enum.MTLPixelFormat.ETC2_RGB8A1: 182
+enum.MTLPixelFormat.ETC2_RGB8A1_sRGB: 183
+enum.MTLPixelFormat.ETC2_RGB8_sRGB: 181
+enum.MTLPixelFormat.GBGR422: 240
+enum.MTLPixelFormat.Invalid: 0
+enum.MTLPixelFormat.PVRTC_RGBA_2BPP: 164
+enum.MTLPixelFormat.PVRTC_RGBA_2BPP_sRGB: 165
+enum.MTLPixelFormat.PVRTC_RGBA_4BPP: 166
+enum.MTLPixelFormat.PVRTC_RGBA_4BPP_sRGB: 167
+enum.MTLPixelFormat.PVRTC_RGB_2BPP: 160
+enum.MTLPixelFormat.PVRTC_RGB_2BPP_sRGB: 161
+enum.MTLPixelFormat.PVRTC_RGB_4BPP: 162
+enum.MTLPixelFormat.PVRTC_RGB_4BPP_sRGB: 163
+enum.MTLPixelFormat.R16Float: 25
+enum.MTLPixelFormat.R16Sint: 24
+enum.MTLPixelFormat.R16Snorm: 22
+enum.MTLPixelFormat.R16Uint: 23
+enum.MTLPixelFormat.R16Unorm: 20
+enum.MTLPixelFormat.R32Float: 55
+enum.MTLPixelFormat.R32Sint: 54
+enum.MTLPixelFormat.R32Uint: 53
+enum.MTLPixelFormat.R8Sint: 14
+enum.MTLPixelFormat.R8Snorm: 12
+enum.MTLPixelFormat.R8Uint: 13
+enum.MTLPixelFormat.R8Unorm: 10
+enum.MTLPixelFormat.R8Unorm_sRGB: 11
+enum.MTLPixelFormat.RG11B10Float: 92
+enum.MTLPixelFormat.RG16Float: 65
+enum.MTLPixelFormat.RG16Sint: 64
+enum.MTLPixelFormat.RG16Snorm: 62
+enum.MTLPixelFormat.RG16Uint: 63
+enum.MTLPixelFormat.RG16Unorm: 60
+enum.MTLPixelFormat.RG32Float: 105
+enum.MTLPixelFormat.RG32Sint: 104
+enum.MTLPixelFormat.RG32Uint: 103
+enum.MTLPixelFormat.RG8Sint: 34
+enum.MTLPixelFormat.RG8Snorm: 32
+enum.MTLPixelFormat.RG8Uint: 33
+enum.MTLPixelFormat.RG8Unorm: 30
+enum.MTLPixelFormat.RG8Unorm_sRGB: 31
+enum.MTLPixelFormat.RGB10A2Uint: 91
+enum.MTLPixelFormat.RGB10A2Unorm: 90
+enum.MTLPixelFormat.RGB9E5Float: 93
+enum.MTLPixelFormat.RGBA16Float: 115
+enum.MTLPixelFormat.RGBA16Sint: 114
+enum.MTLPixelFormat.RGBA16Snorm: 112
+enum.MTLPixelFormat.RGBA16Uint: 113
+enum.MTLPixelFormat.RGBA16Unorm: 110
+enum.MTLPixelFormat.RGBA32Float: 125
+enum.MTLPixelFormat.RGBA32Sint: 124
+enum.MTLPixelFormat.RGBA32Uint: 123
+enum.MTLPixelFormat.RGBA8Sint: 74
+enum.MTLPixelFormat.RGBA8Snorm: 72
+enum.MTLPixelFormat.RGBA8Uint: 73
+enum.MTLPixelFormat.RGBA8Unorm: 70
+enum.MTLPixelFormat.RGBA8Unorm_sRGB: 71
+enum.MTLPixelFormat.Stencil8: 253
+enum.MTLPixelFormat.X24_Stencil8: 262
+enum.MTLPixelFormat.X32_Stencil8: 261
+enum.MTLPixelFormat._type: uint
+enum.MTLPrimitiveType.Line: 1
+enum.MTLPrimitiveType.LineStrip: 2
+enum.MTLPrimitiveType.Point: 0
+enum.MTLPrimitiveType.Triangle: 3
+enum.MTLPrimitiveType.TriangleStrip: 4
+enum.MTLPrimitiveType._type: uint
+enum.MTLResourceOptions.CPUCacheModeDefaultCache: 0
+enum.MTLResourceOptions.CPUCacheModeWriteCombined: 1
+enum.MTLResourceOptions.HazardTrackingModeUntracked: 256
+enum.MTLResourceOptions.StorageModeManaged: 16
+enum.MTLResourceOptions.StorageModeMemoryless: 48
+enum.MTLResourceOptions.StorageModePrivate: 32
+enum.MTLResourceOptions.StorageModeShared: 0
+enum.MTLResourceOptions._type: ulong
+enum.MTLSamplerAddressMode.ClampToBorderColor: 5
+enum.MTLSamplerAddressMode.ClampToEdge: 0
+enum.MTLSamplerAddressMode.ClampToZero: 4
+enum.MTLSamplerAddressMode.MirrorClampToEdge: 1
+enum.MTLSamplerAddressMode.MirrorRepeat: 3
+enum.MTLSamplerAddressMode.Repeat: 2
+enum.MTLSamplerAddressMode._type: int
+enum.MTLSamplerBorderColor.OpaqueBlack: 1
+enum.MTLSamplerBorderColor.OpaqueWhite: 2
+enum.MTLSamplerBorderColor.TransparentBlack: 0
+enum.MTLSamplerBorderColor._type: int
+enum.MTLSamplerMinMagFilter.Linear: 1
+enum.MTLSamplerMinMagFilter.Nearest: 0
+enum.MTLSamplerMinMagFilter._type: int
+enum.MTLSamplerMipFilter.Linear: 2
+enum.MTLSamplerMipFilter.Nearest: 1
+enum.MTLSamplerMipFilter.NotMipmapped: 0
+enum.MTLSamplerMipFilter._type: int
+enum.MTLStencilOperation.DecrementClamp: 4
+enum.MTLStencilOperation.DecrementWrap: 7
+enum.MTLStencilOperation.IncrementClamp: 3
+enum.MTLStencilOperation.IncrementWrap: 6
+enum.MTLStencilOperation.Invert: 5
+enum.MTLStencilOperation.Keep: 0
+enum.MTLStencilOperation.Replace: 2
+enum.MTLStencilOperation.Zero: 1
+enum.MTLStencilOperation._type: int
+enum.MTLStorageMode.Managed: 1
+enum.MTLStorageMode.Memoryless: 3
+enum.MTLStorageMode.Private: 2
+enum.MTLStorageMode.Shared: 0
+enum.MTLStorageMode._type: ulong
+enum.MTLStoreAction.CustomSampleDepthStore: 5
+enum.MTLStoreAction.DontCare: 0
+enum.MTLStoreAction.MultisampleResolve: 2
+enum.MTLStoreAction.Store: 1
+enum.MTLStoreAction.StoreAndMultisampleResolve: 3
+enum.MTLStoreAction.Unknown: 4
+enum.MTLStoreAction._type: int
+enum.MTLTextureType.Type1D: 0
+enum.MTLTextureType.Type1DArray: 1
+enum.MTLTextureType.Type2D: 2
+enum.MTLTextureType.Type2DArray: 3
+enum.MTLTextureType.Type2DMultisample: 4
+enum.MTLTextureType.Type3D: 7
+enum.MTLTextureType.TypeCube: 5
+enum.MTLTextureType.TypeCubeArray: 6
+enum.MTLTextureType._type: int
+enum.MTLTextureUsage.PixelFormatView: 16
+enum.MTLTextureUsage.RenderTarget: 4
+enum.MTLTextureUsage.ShaderRead: 1
+enum.MTLTextureUsage.ShaderWrite: 2
+enum.MTLTextureUsage.Unknown: 0
+enum.MTLTextureUsage._flags: true
+enum.MTLTextureUsage._type: int
+enum.MTLTriangleFillMode.Fill: 0
+enum.MTLTriangleFillMode.Lines: 1
+enum.MTLTriangleFillMode._type: uint
+enum.MTLVertexFormat._type: int
+enum.MTLVertexFormat.char2: 4
+enum.MTLVertexFormat.char2Normalized: 10
+enum.MTLVertexFormat.char3: 5
+enum.MTLVertexFormat.char3Normalized: 11
+enum.MTLVertexFormat.char4: 6
+enum.MTLVertexFormat.char4Normalized: 12
+enum.MTLVertexFormat.float2: 29
+enum.MTLVertexFormat.float3: 30
+enum.MTLVertexFormat.float4: 31
+enum.MTLVertexFormat.float: 28
+enum.MTLVertexFormat.half2: 25
+enum.MTLVertexFormat.half3: 26
+enum.MTLVertexFormat.half4: 27
+enum.MTLVertexFormat.half: 53
+enum.MTLVertexFormat.int1010102Normalized: 40
+enum.MTLVertexFormat.int2: 33
+enum.MTLVertexFormat.int3: 34
+enum.MTLVertexFormat.int4: 35
+enum.MTLVertexFormat.int: 32
+enum.MTLVertexFormat.invalid: 0
+enum.MTLVertexFormat.short2: 16
+enum.MTLVertexFormat.short2Normalized: 22
+enum.MTLVertexFormat.short3: 17
+enum.MTLVertexFormat.short3Normalized: 23
+enum.MTLVertexFormat.short4: 18
+enum.MTLVertexFormat.short4Normalized: 24
+enum.MTLVertexFormat.uchar2: 1
+enum.MTLVertexFormat.uchar2Normalized: 7
+enum.MTLVertexFormat.uchar3: 2
+enum.MTLVertexFormat.uchar3Normalized: 8
+enum.MTLVertexFormat.uchar4: 3
+enum.MTLVertexFormat.uchar4Normalized: 9
+enum.MTLVertexFormat.uint1010102Normalized: 41
+enum.MTLVertexFormat.uint2: 37
+enum.MTLVertexFormat.uint3: 38
+enum.MTLVertexFormat.uint4: 39
+enum.MTLVertexFormat.uint: 36
+enum.MTLVertexFormat.ushort2: 13
+enum.MTLVertexFormat.ushort2Normalized: 19
+enum.MTLVertexFormat.ushort3: 14
+enum.MTLVertexFormat.ushort3Normalized: 20
+enum.MTLVertexFormat.ushort4: 15
+enum.MTLVertexFormat.ushort4Normalized: 21
+enum.MTLVertexStepFunction.Constant: 0
+enum.MTLVertexStepFunction.PerInstance: 2
+enum.MTLVertexStepFunction.PerPatch: 3
+enum.MTLVertexStepFunction.PerPatchControlPoint: 4
+enum.MTLVertexStepFunction.PerVertex: 1
+enum.MTLVertexStepFunction._type: int
+enum.MTLWinding.Clockwise: 0
+enum.MTLWinding.CounterClockwise: 1
+enum.MTLWinding._type: int
+enum.QualityOfServiceLevel.QOS_CLASS_BACKGROUND: 9
+enum.QualityOfServiceLevel.QOS_CLASS_DEFAULT: 21
+enum.QualityOfServiceLevel.QOS_CLASS_UNSPECIFIED: 0
+enum.QualityOfServiceLevel.QOS_CLASS_USER_INITIATED: 25
+enum.QualityOfServiceLevel.QOS_CLASS_USER_INTERACTIVE: 33
+enum.QualityOfServiceLevel.QOS_CLASS_UTILITY: 17
+enum.QualityOfServiceLevel._type: long
+field.BlockDescriptor.Block_size: ulong
+field.BlockDescriptor.reserved: ulong
+field.BlockLiteral.descriptor: BlockDescriptor*
+field.BlockLiteral.flags: int
+field.BlockLiteral.invoke: IntPtr
+field.BlockLiteral.isa: IntPtr
+field.BlockLiteral.reserved: int
+field.Bool8.Value: readonly byte
+field.CALayer.NativePtr: readonly IntPtr
+field.CAMetalDrawable.NativePtr: readonly IntPtr
+field.CAMetalLayer.NativePtr: readonly IntPtr
+field.CGPoint.x: CGFloat
+field.CGPoint.y: CGFloat
+field.CGRect.origin: CGPoint
+field.CGRect.size: CGSize
+field.CGSize.height: double
+field.CGSize.width: double
+field.CVDisplayLink.NativePtr: readonly IntPtr
+field.CVSMPTETime.flags: ulong
+field.CVSMPTETime.hostTime: ulong
+field.CVSMPTETime.rateScalar: double
+field.CVSMPTETime.reserved: ulong
+field.CVSMPTETime.version: uint
+field.CVSMPTETime.videoRefreshPeriod: long
+field.CVSMPTETime.videoTime: long
+field.CVSMPTETime.videoTimeScale: int
+field.CVTimeStamp.flags: ulong
+field.CVTimeStamp.hostTime: ulong
+field.CVTimeStamp.rateScalar: double
+field.CVTimeStamp.reserved: ulong
+field.CVTimeStamp.smpteTime: CVSMPTETime
+field.CVTimeStamp.version: uint
+field.CVTimeStamp.videoRefreshPeriod: long
+field.CVTimeStamp.videoTime: long
+field.CVTimeStamp.videoTimeScale: int
+field.DispatchData.NativePtr: readonly IntPtr
+field.DispatchQueue.NativePtr: readonly IntPtr
+field.MTLBlitCommandEncoder.NativePtr: readonly IntPtr
+field.MTLBuffer.NativePtr: readonly IntPtr
+field.MTLClearColor.alpha: double
+field.MTLClearColor.blue: double
+field.MTLClearColor.green: double
+field.MTLClearColor.red: double
+field.MTLCommandBuffer.NativePtr: readonly IntPtr
+field.MTLCommandQueue.NativePtr: readonly IntPtr
+field.MTLCompileOptions.NativePtr: readonly IntPtr
+field.MTLComputeCommandEncoder.NativePtr: readonly IntPtr
+field.MTLComputePipelineDescriptor.NativePtr: readonly IntPtr
+field.MTLComputePipelineState.NativePtr: readonly IntPtr
+field.MTLDepthStencilDescriptor.NativePtr: readonly IntPtr
+field.MTLDepthStencilState.NativePtr: readonly IntPtr
+field.MTLDevice.NativePtr: readonly IntPtr
+field.MTLFunction.NativePtr: readonly IntPtr
+field.MTLFunctionConstantValues.NativePtr: readonly IntPtr
+field.MTLLibrary.NativePtr: readonly IntPtr
+field.MTLOrigin.x: UIntPtr
+field.MTLOrigin.y: UIntPtr
+field.MTLOrigin.z: UIntPtr
+field.MTLPipelineBufferDescriptor.NativePtr: readonly IntPtr
+field.MTLPipelineBufferDescriptorArray.NativePtr: readonly IntPtr
+field.MTLRegion.origin: MTLOrigin
+field.MTLRegion.size: MTLSize
+field.MTLRenderCommandEncoder.NativePtr: readonly IntPtr
+field.MTLRenderPassColorAttachmentDescriptor.NativePtr: readonly IntPtr
+field.MTLRenderPassColorAttachmentDescriptorArray.NativePtr: readonly IntPtr
+field.MTLRenderPassDepthAttachmentDescriptor.NativePtr: readonly IntPtr
+field.MTLRenderPassDescriptor.NativePtr: readonly IntPtr
+field.MTLRenderPassStencilAttachmentDescriptor.NativePtr: readonly IntPtr
+field.MTLRenderPipelineColorAttachmentDescriptor.NativePtr: readonly IntPtr
+field.MTLRenderPipelineColorAttachmentDescriptorArray.NativePtr: readonly IntPtr
+field.MTLRenderPipelineDescriptor.NativePtr: readonly IntPtr
+field.MTLRenderPipelineState.NativePtr: readonly IntPtr
+field.MTLSamplerDescriptor.NativePtr: readonly IntPtr
+field.MTLSamplerState.NativePtr: readonly IntPtr
+field.MTLScissorRect.height: UIntPtr
+field.MTLScissorRect.width: UIntPtr
+field.MTLScissorRect.x: UIntPtr
+field.MTLScissorRect.y: UIntPtr
+field.MTLSize.Depth: UIntPtr
+field.MTLSize.Height: UIntPtr
+field.MTLSize.Width: UIntPtr
+field.MTLStencilDescriptor.NativePtr: readonly IntPtr
+field.MTLTexture.NativePtr: readonly IntPtr
+field.MTLTextureDescriptor.NativePtr: readonly IntPtr
+field.MTLVertexAttributeDescriptor.NativePtr: readonly IntPtr
+field.MTLVertexAttributeDescriptorArray.NativePtr: readonly IntPtr
+field.MTLVertexBufferLayoutDescriptor.NativePtr: readonly IntPtr
+field.MTLVertexBufferLayoutDescriptorArray.NativePtr: readonly IntPtr
+field.MTLVertexDescriptor.NativePtr: readonly IntPtr
+field.MTLViewport.height: double
+field.MTLViewport.originX: double
+field.MTLViewport.originY: double
+field.MTLViewport.width: double
+field.MTLViewport.zfar: double
+field.MTLViewport.znear: double
+field.NSArray.NativePtr: readonly IntPtr
+field.NSAutoreleasePool.NativePtr: readonly IntPtr
+field.NSDictionary.NativePtr: readonly IntPtr
+field.NSError.NativePtr: readonly IntPtr
+field.NSObject.NativePtr: readonly IntPtr
+field.NSRange.length: UIntPtr
+field.NSRange.location: UIntPtr
+field.NSString.NativePtr: readonly IntPtr
+field.NSView.NativePtr: readonly IntPtr
+field.NSWindow.NativePtr: readonly IntPtr
+field.ObjCClass.NativePtr: readonly IntPtr
+field.ObjectiveCMethod.NativePtr: readonly IntPtr
+field.Selector.NativePtr: readonly IntPtr
+field.UIScreen.NativePtr: readonly IntPtr
+field.UIView.NativePtr: readonly IntPtr
+method.Bool8..ctor: void(bool value)
+method.Bool8..ctor: void(byte value)
+method.Bool8.op_Implicit: Bool8(bool b)
+method.Bool8.op_Implicit: bool(Bool8 b)
+method.Bool8.op_Implicit: byte(Bool8 b)
+method.CALayer..ctor: void(IntPtr ptr)
+method.CALayer.addSublayer: void(IntPtr layer)
+method.CALayer.op_Implicit: IntPtr(CALayer c)
+method.CAMetalLayer..ctor: void(IntPtr ptr)
+method.CAMetalLayer.New: CAMetalLayer()
+method.CAMetalLayer.TryCast: bool(IntPtr layerPointer, ref CAMetalLayer metalLayer)
+method.CAMetalLayer.nextDrawable: CAMetalDrawable()
+method.CGFloat..ctor: void(double value)
+method.CGFloat.ToString: string()
+method.CGFloat.op_Implicit: CGFloat(double value)
+method.CGFloat.op_Implicit: double(CGFloat cgf)
+method.CGPoint..ctor: void(double x, double y)
+method.CGPoint.ToString: string()
+method.CGRect..ctor: void(CGPoint origin, CGSize size)
+method.CGRect.ToString: string()
+method.CGSize..ctor: void(double width, double height)
+method.CGSize.ToString: string()
+method.CVDisplayLink..ctor: void(IntPtr ptr)
+method.CVDisplayLink.CreateWithActiveCGDisplays: CVDisplayLink()
+method.CVDisplayLink.GetActualOutputVideoRefreshPeriod: double()
+method.CVDisplayLink.Release: void()
+method.CVDisplayLink.SetOutputCallback: void(CVDisplayLinkOutputCallbackDelegate callback, IntPtr userData)
+method.CVDisplayLink.Start: void()
+method.CVDisplayLink.Stop: void()
+method.CVDisplayLink.UpdateActiveMonitor: void(int x, int y, int w, int h)
+method.CVDisplayLink.op_Implicit: IntPtr(CVDisplayLink c)
+method.CVDisplayLinkOutputCallbackDelegate..ctor: void(object object, IntPtr method)
+method.CVDisplayLinkOutputCallbackDelegate.BeginInvoke: IAsyncResult(CVDisplayLink displayLink, CVTimeStamp* inNow, CVTimeStamp* inOutputTime, long flagsIn, long flagsOut, IntPtr userData, AsyncCallback callback, object object)
+method.CVDisplayLinkOutputCallbackDelegate.EndInvoke: int(IAsyncResult result)
+method.CVDisplayLinkOutputCallbackDelegate.Invoke: int(CVDisplayLink displayLink, CVTimeStamp* inNow, CVTimeStamp* inOutputTime, long flagsIn, long flagsOut, IntPtr userData)
+method.Dispatch.dispatch_data_create: DispatchData(void* buffer, UIntPtr size, DispatchQueue queue, IntPtr destructorBlock)
+method.Dispatch.dispatch_get_global_queue: DispatchQueue(QualityOfServiceLevel identifier, ulong flags)
+method.Dispatch.dispatch_release: void(IntPtr nativePtr)
+method.MTLBlitCommandEncoder.copy: void(MTLBuffer sourceBuffer, UIntPtr sourceOffset, MTLBuffer destinationBuffer, UIntPtr destinationOffset, UIntPtr size)
+method.MTLBlitCommandEncoder.copyFromBuffer: void(MTLBuffer sourceBuffer, UIntPtr sourceOffset, UIntPtr sourceBytesPerRow, UIntPtr sourceBytesPerImage, MTLSize sourceSize, MTLTexture destinationTexture, UIntPtr destinationSlice, UIntPtr destinationLevel, MTLOrigin destinationOrigin, bool isMacOS)
+method.MTLBlitCommandEncoder.copyFromTexture: void(MTLTexture sourceTexture, UIntPtr sourceSlice, UIntPtr sourceLevel, MTLOrigin sourceOrigin, MTLSize sourceSize, MTLTexture destinationTexture, UIntPtr destinationSlice, UIntPtr destinationLevel, MTLOrigin destinationOrigin, bool isMacOS)
+method.MTLBlitCommandEncoder.copyTextureToBuffer: void(MTLTexture sourceTexture, UIntPtr sourceSlice, UIntPtr sourceLevel, MTLOrigin sourceOrigin, MTLSize sourceSize, MTLBuffer destinationBuffer, UIntPtr destinationOffset, UIntPtr destinationBytesPerRow, UIntPtr destinationBytesPerImage)
+method.MTLBlitCommandEncoder.endEncoding: void()
+method.MTLBlitCommandEncoder.generateMipmapsForTexture: void(MTLTexture texture)
+method.MTLBlitCommandEncoder.insertDebugSignpost: void(NSString string)
+method.MTLBlitCommandEncoder.popDebugGroup: void()
+method.MTLBlitCommandEncoder.pushDebugGroup: void(NSString string)
+method.MTLBlitCommandEncoder.synchronizeResource: void(IntPtr resource)
+method.MTLBuffer..ctor: void(IntPtr ptr)
+method.MTLBuffer.addDebugMarker: void(NSString marker, NSRange range)
+method.MTLBuffer.contents: void*()
+method.MTLBuffer.didModifyRange: void(NSRange range)
+method.MTLBuffer.removeAllDebugMarkers: void()
+method.MTLClearColor..ctor: void(double r, double g, double b, double a)
+method.MTLCommandBuffer.Equals: bool(MTLCommandBuffer other)
+method.MTLCommandBuffer.Equals: bool(object obj)
+method.MTLCommandBuffer.GetHashCode: int()
+method.MTLCommandBuffer.addCompletedHandler: void(IntPtr block)
+method.MTLCommandBuffer.addCompletedHandler: void(MTLCommandBufferHandler block)
+method.MTLCommandBuffer.blitCommandEncoder: MTLBlitCommandEncoder()
+method.MTLCommandBuffer.commit: void()
+method.MTLCommandBuffer.computeCommandEncoder: MTLComputeCommandEncoder()
+method.MTLCommandBuffer.presentDrawable: void(IntPtr drawable)
+method.MTLCommandBuffer.renderCommandEncoderWithDescriptor: MTLRenderCommandEncoder(MTLRenderPassDescriptor desc)
+method.MTLCommandBuffer.waitUntilCompleted: void()
+method.MTLCommandBufferHandler..ctor: void(object object, IntPtr method)
+method.MTLCommandBufferHandler.BeginInvoke: IAsyncResult(IntPtr block, MTLCommandBuffer buffer, AsyncCallback callback, object object)
+method.MTLCommandBufferHandler.EndInvoke: void(IAsyncResult result)
+method.MTLCommandBufferHandler.Invoke: void(IntPtr block, MTLCommandBuffer buffer)
+method.MTLCommandQueue.commandBuffer: MTLCommandBuffer()
+method.MTLCommandQueue.insertDebugCaptureBoundary: void()
+method.MTLCompileOptions.New: MTLCompileOptions()
+method.MTLCompileOptions.op_Implicit: IntPtr(MTLCompileOptions mco)
+method.MTLComputeCommandEncoder.dispatchThreadGroups: void(MTLSize threadgroupsPerGrid, MTLSize threadsPerThreadgroup)
+method.MTLComputeCommandEncoder.dispatchThreadgroupsWithIndirectBuffer: void(MTLBuffer indirectBuffer, UIntPtr indirectBufferOffset, MTLSize threadsPerThreadgroup)
+method.MTLComputeCommandEncoder.endEncoding: void()
+method.MTLComputeCommandEncoder.insertDebugSignpost: void(NSString string)
+method.MTLComputeCommandEncoder.popDebugGroup: void()
+method.MTLComputeCommandEncoder.pushDebugGroup: void(NSString string)
+method.MTLComputeCommandEncoder.setBuffer: void(MTLBuffer buffer, UIntPtr offset, UIntPtr index)
+method.MTLComputeCommandEncoder.setBytes: void(void* bytes, UIntPtr length, UIntPtr index)
+method.MTLComputeCommandEncoder.setComputePipelineState: void(MTLComputePipelineState state)
+method.MTLComputeCommandEncoder.setSamplerState: void(MTLSamplerState sampler, UIntPtr index)
+method.MTLComputeCommandEncoder.setTexture: void(MTLTexture texture, UIntPtr index)
+method.MTLComputePipelineState..ctor: void(IntPtr ptr)
+method.MTLDepthStencilDescriptor..ctor: void(IntPtr ptr)
+method.MTLDevice..ctor: void(IntPtr nativePtr)
+method.MTLDevice.MTLCopyAllDevices: NSArray()
+method.MTLDevice.MTLCreateSystemDefaultDevice: MTLDevice()
+method.MTLDevice.newBuffer: MTLBuffer(void* pointer, UIntPtr length, MTLResourceOptions options)
+method.MTLDevice.newBufferWithLengthOptions: MTLBuffer(UIntPtr length, MTLResourceOptions options)
+method.MTLDevice.newCommandQueue: MTLCommandQueue()
+method.MTLDevice.newComputePipelineStateWithDescriptor: MTLComputePipelineState(MTLComputePipelineDescriptor descriptor)
+method.MTLDevice.newDepthStencilStateWithDescriptor: MTLDepthStencilState(MTLDepthStencilDescriptor descriptor)
+method.MTLDevice.newLibraryWithData: MTLLibrary(DispatchData data)
+method.MTLDevice.newLibraryWithSource: MTLLibrary(string source, MTLCompileOptions options)
+method.MTLDevice.newRenderPipelineStateWithDescriptor: MTLRenderPipelineState(MTLRenderPipelineDescriptor desc)
+method.MTLDevice.newSamplerStateWithDescriptor: MTLSamplerState(MTLSamplerDescriptor descriptor)
+method.MTLDevice.newTextureWithDescriptor: MTLTexture(MTLTextureDescriptor descriptor)
+method.MTLDevice.op_Implicit: IntPtr(MTLDevice device)
+method.MTLDevice.supportsFeatureSet: Bool8(MTLFeatureSet featureSet)
+method.MTLDevice.supportsTextureSampleCount: Bool8(UIntPtr sampleCount)
+method.MTLFunction..ctor: void(IntPtr ptr)
+method.MTLFunctionConstantValues.New: MTLFunctionConstantValues()
+method.MTLFunctionConstantValues.setConstantValuetypeatIndex: void(void* value, MTLDataType type, UIntPtr index)
+method.MTLLibrary..ctor: void(IntPtr ptr)
+method.MTLLibrary.newFunctionWithName: MTLFunction(string name)
+method.MTLLibrary.newFunctionWithNameConstantValues: MTLFunction(string name, MTLFunctionConstantValues constantValues)
+method.MTLOrigin..ctor: void(uint x, uint y, uint z)
+method.MTLPipelineBufferDescriptor..ctor: void(IntPtr ptr)
+method.MTLRegion..ctor: void(MTLOrigin origin, MTLSize size)
+method.MTLRenderCommandEncoder..ctor: void(IntPtr ptr)
+method.MTLRenderCommandEncoder.drawIndexedPrimitives: void(MTLPrimitiveType primitiveType, MTLIndexType indexType, MTLBuffer indexBuffer, UIntPtr indexBufferOffset, MTLBuffer indirectBuffer, UIntPtr indirectBufferOffset)
+method.MTLRenderCommandEncoder.drawIndexedPrimitives: void(MTLPrimitiveType primitiveType, UIntPtr indexCount, MTLIndexType indexType, MTLBuffer indexBuffer, UIntPtr indexBufferOffset, UIntPtr instanceCount)
+method.MTLRenderCommandEncoder.drawIndexedPrimitives: void(MTLPrimitiveType primitiveType, UIntPtr indexCount, MTLIndexType indexType, MTLBuffer indexBuffer, UIntPtr indexBufferOffset, UIntPtr instanceCount, IntPtr baseVertex, UIntPtr baseInstance)
+method.MTLRenderCommandEncoder.drawPrimitives: void(MTLPrimitiveType primitiveType, MTLBuffer indirectBuffer, UIntPtr indirectBufferOffset)
+method.MTLRenderCommandEncoder.drawPrimitives: void(MTLPrimitiveType primitiveType, UIntPtr vertexStart, UIntPtr vertexCount, UIntPtr instanceCount)
+method.MTLRenderCommandEncoder.drawPrimitives: void(MTLPrimitiveType primitiveType, UIntPtr vertexStart, UIntPtr vertexCount, UIntPtr instanceCount, UIntPtr baseInstance)
+method.MTLRenderCommandEncoder.endEncoding: void()
+method.MTLRenderCommandEncoder.insertDebugSignpost: void(NSString string)
+method.MTLRenderCommandEncoder.popDebugGroup: void()
+method.MTLRenderCommandEncoder.pushDebugGroup: void(NSString string)
+method.MTLRenderCommandEncoder.setBlendColor: void(float red, float green, float blue, float alpha)
+method.MTLRenderCommandEncoder.setCullMode: void(MTLCullMode cullMode)
+method.MTLRenderCommandEncoder.setDepthClipMode: void(MTLDepthClipMode depthClipMode)
+method.MTLRenderCommandEncoder.setDepthStencilState: void(MTLDepthStencilState depthStencilState)
+method.MTLRenderCommandEncoder.setFragmentBuffer: void(MTLBuffer buffer, UIntPtr offset, UIntPtr index)
+method.MTLRenderCommandEncoder.setFragmentBufferOffset: void(UIntPtr offset, UIntPtr index)
+method.MTLRenderCommandEncoder.setFragmentSamplerState: void(MTLSamplerState sampler, UIntPtr index)
+method.MTLRenderCommandEncoder.setFragmentTexture: void(MTLTexture texture, UIntPtr index)
+method.MTLRenderCommandEncoder.setFrontFacing: void(MTLWinding frontFaceWinding)
+method.MTLRenderCommandEncoder.setRenderPipelineState: void(MTLRenderPipelineState pipelineState)
+method.MTLRenderCommandEncoder.setScissorRect: void(MTLScissorRect scissorRect)
+method.MTLRenderCommandEncoder.setScissorRects: void(MTLScissorRect* scissorRects, UIntPtr count)
+method.MTLRenderCommandEncoder.setStencilReferenceValue: void(uint stencilReference)
+method.MTLRenderCommandEncoder.setTriangleFillMode: void(MTLTriangleFillMode fillMode)
+method.MTLRenderCommandEncoder.setVertexBuffer: void(MTLBuffer buffer, UIntPtr offset, UIntPtr index)
+method.MTLRenderCommandEncoder.setVertexBufferOffset: void(UIntPtr offset, UIntPtr index)
+method.MTLRenderCommandEncoder.setVertexSamplerState: void(MTLSamplerState sampler, UIntPtr index)
+method.MTLRenderCommandEncoder.setVertexTexture: void(MTLTexture texture, UIntPtr index)
+method.MTLRenderCommandEncoder.setViewport: void(MTLViewport viewport)
+method.MTLRenderCommandEncoder.setViewports: void(MTLViewport* viewports, UIntPtr count)
+method.MTLRenderPassColorAttachmentDescriptor..ctor: void(IntPtr ptr)
+method.MTLRenderPassDepthAttachmentDescriptor..ctor: void(IntPtr ptr)
+method.MTLRenderPassDescriptor.New: MTLRenderPassDescriptor()
+method.MTLRenderPipelineColorAttachmentDescriptor..ctor: void(IntPtr ptr)
+method.MTLRenderPipelineDescriptor..ctor: void(IntPtr ptr)
+method.MTLRenderPipelineDescriptor.New: MTLRenderPipelineDescriptor()
+method.MTLRenderPipelineState..ctor: void(IntPtr ptr)
+method.MTLSamplerDescriptor.New: MTLSamplerDescriptor()
+method.MTLScissorRect..ctor: void(uint x, uint y, uint width, uint height)
+method.MTLScissorRect.Equals: bool(MTLScissorRect other)
+method.MTLSize..ctor: void(uint width, uint height, uint depth)
+method.MTLTexture..ctor: void(IntPtr ptr)
+method.MTLTexture.newTextureView: MTLTexture(MTLPixelFormat pixelFormat, MTLTextureType textureType, NSRange levelRange, NSRange sliceRange)
+method.MTLTexture.replaceRegion: void(MTLRegion region, UIntPtr mipmapLevel, UIntPtr slice, void* pixelBytes, UIntPtr bytesPerRow, UIntPtr bytesPerImage)
+method.MTLTextureDescriptor.New: MTLTextureDescriptor()
+method.MTLUtil.AllocInit: !!0(string typeName)
+method.MTLUtil.GetUtf8String: string(byte* stringStart)
+method.MTLVertexAttributeDescriptor..ctor: void(IntPtr ptr)
+method.MTLVertexBufferLayoutDescriptor..ctor: void(IntPtr ptr)
+method.MTLViewport..ctor: void(double originX, double originY, double width, double height, double znear, double zfar)
+method.NSArray..ctor: void(IntPtr ptr)
+method.NSAutoreleasePool..ctor: void(IntPtr ptr)
+method.NSAutoreleasePool.Begin: NSAutoreleasePool()
+method.NSAutoreleasePool.Dispose: void()
+method.NSObject..ctor: void(IntPtr ptr)
+method.NSObject.IsKindOfClass: Bool8(IntPtr class)
+method.NSRange..ctor: void(UIntPtr location, UIntPtr length)
+method.NSRange..ctor: void(uint location, uint length)
+method.NSString..ctor: void(IntPtr ptr)
+method.NSString.GetValue: string()
+method.NSString.New: NSString(string s)
+method.NSString.op_Implicit: IntPtr(NSString nss)
+method.NSView..ctor: void(IntPtr ptr)
+method.NSView.op_Implicit: IntPtr(NSView nsView)
+method.NSWindow..ctor: void(IntPtr ptr)
+method.ObjCClass..ctor: void(string name)
+method.ObjCClass.Alloc: !!0()
+method.ObjCClass.AllocInit: !!0()
+method.ObjCClass.GetProperty: IntPtr(string propertyName)
+method.ObjCClass.class_copyMethodList: ObjectiveCMethod*(ref uint count)
+method.ObjCClass.op_Implicit: IntPtr(ObjCClass c)
+method.ObjectiveCMethod..ctor: void(IntPtr ptr)
+method.ObjectiveCMethod.GetName: string()
+method.ObjectiveCMethod.GetSelector: Selector()
+method.ObjectiveCMethod.op_Implicit: IntPtr(ObjectiveCMethod method)
+method.ObjectiveCMethod.op_Implicit: ObjectiveCMethod(IntPtr ptr)
+method.ObjectiveCRuntime.CGFloat_objc_msgSend: CGFloat(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.CGRect_objc_msgSend: CGRect(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.CGSize_objc_msgSend: CGSize(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.GetRetainCount: ulong(IntPtr receiver)
+method.ObjectiveCRuntime.IntPtr_objc_msgSend: IntPtr(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.IntPtr_objc_msgSend: IntPtr(IntPtr receiver, Selector selector, IntPtr a)
+method.ObjectiveCRuntime.IntPtr_objc_msgSend: IntPtr(IntPtr receiver, Selector selector, IntPtr a, IntPtr b, ref NSError error)
+method.ObjectiveCRuntime.IntPtr_objc_msgSend: IntPtr(IntPtr receiver, Selector selector, IntPtr a, UIntPtr b)
+method.ObjectiveCRuntime.IntPtr_objc_msgSend: IntPtr(IntPtr receiver, Selector selector, IntPtr a, ref NSError error)
+method.ObjectiveCRuntime.IntPtr_objc_msgSend: IntPtr(IntPtr receiver, Selector selector, MTLComputePipelineDescriptor a, uint b, IntPtr c, ref NSError error)
+method.ObjectiveCRuntime.IntPtr_objc_msgSend: IntPtr(IntPtr receiver, Selector selector, UIntPtr a)
+method.ObjectiveCRuntime.IntPtr_objc_msgSend: IntPtr(IntPtr receiver, Selector selector, UIntPtr b, MTLResourceOptions c)
+method.ObjectiveCRuntime.IntPtr_objc_msgSend: IntPtr(IntPtr receiver, Selector selector, uint a)
+method.ObjectiveCRuntime.IntPtr_objc_msgSend: IntPtr(IntPtr receiver, Selector selector, uint a, uint b, NSRange c, NSRange d)
+method.ObjectiveCRuntime.IntPtr_objc_msgSend: IntPtr(IntPtr receiver, Selector selector, void* a, UIntPtr b, MTLResourceOptions c)
+method.ObjectiveCRuntime.MTLClearColor_objc_msgSend: MTLClearColor(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.MTLSize_objc_msgSend: MTLSize(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.UIntPtr_objc_msgSend: UIntPtr(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.UseStret: bool()
+method.ObjectiveCRuntime.bool8_objc_msgSend: Bool8(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.bool8_objc_msgSend: Bool8(IntPtr receiver, Selector selector, IntPtr a)
+method.ObjectiveCRuntime.bool8_objc_msgSend: Bool8(IntPtr receiver, Selector selector, UIntPtr a)
+method.ObjectiveCRuntime.bool8_objc_msgSend: Bool8(IntPtr receiver, Selector selector, UIntPtr a, IntPtr b)
+method.ObjectiveCRuntime.bool8_objc_msgSend: Bool8(IntPtr receiver, Selector selector, uint a)
+method.ObjectiveCRuntime.bytePtr_objc_msgSend: byte*(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.byte_objc_msgSend: byte(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.class_copyMethodList: ObjectiveCMethod*(ObjCClass cls, ref uint outCount)
+method.ObjectiveCRuntime.class_getName: byte*(ObjCClass cls)
+method.ObjectiveCRuntime.class_getProperty: IntPtr(ObjCClass cls, byte* namePtr)
+method.ObjectiveCRuntime.double_objc_msgSend: double(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.float_objc_msgSend: float(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.free: void(IntPtr receiver)
+method.ObjectiveCRuntime.method_getName: Selector(ObjectiveCMethod method)
+method.ObjectiveCRuntime.objc_getClass: IntPtr(byte* namePtr)
+method.ObjectiveCRuntime.objc_msgSend: !!0(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.objc_msgSend: !!0(IntPtr receiver, Selector selector, IntPtr a)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, Bool8 b)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, CGRect a)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, CGSize a)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, IntPtr a, NSRange b)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, IntPtr a, UIntPtr b)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, IntPtr a, UIntPtr b, UIntPtr c)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, IntPtr a, UIntPtr b, UIntPtr c, UIntPtr d, MTLSize e, IntPtr f, UIntPtr g, UIntPtr h, MTLOrigin i)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, IntPtr a, uint b)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, IntPtr b)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, IntPtr c, UIntPtr d, MTLSize e)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLBuffer a, UIntPtr b, MTLBuffer c, UIntPtr d, UIntPtr e)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLClearColor a)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLCommandBufferHandler a)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLPrimitiveType a, MTLBuffer b, UIntPtr c)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLPrimitiveType a, MTLIndexType b, MTLBuffer c, UIntPtr d, MTLBuffer e, UIntPtr f)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLPrimitiveType a, UIntPtr b, MTLIndexType c, IntPtr d, UIntPtr e, UIntPtr f)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLPrimitiveType a, UIntPtr b, MTLIndexType c, IntPtr d, UIntPtr e, UIntPtr f, IntPtr g, UIntPtr h)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLPrimitiveType a, UIntPtr b, UIntPtr c, UIntPtr d)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLPrimitiveType a, UIntPtr b, UIntPtr c, UIntPtr d, UIntPtr e)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLRegion a, UIntPtr b, UIntPtr c, IntPtr d, UIntPtr e, UIntPtr f)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLScissorRect a)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLSize a, MTLSize b)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLTexture a, UIntPtr b, UIntPtr c, MTLOrigin d, MTLSize e, MTLBuffer f, UIntPtr g, UIntPtr h, UIntPtr i)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLTexture sourceTexture, UIntPtr sourceSlice, UIntPtr sourceLevel, MTLOrigin sourceOrigin, MTLSize sourceSize, MTLTexture destinationTexture, UIntPtr destinationSlice, UIntPtr destinationLevel, MTLOrigin destinationOrigin)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, MTLViewport a)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, NSRange a)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, UIntPtr a)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, UIntPtr b, UIntPtr c)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, byte b)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, double a)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, float a)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, float a, float b, float c, float d)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, uint b)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, void* a, UIntPtr b)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, void* a, UIntPtr b, UIntPtr c)
+method.ObjectiveCRuntime.objc_msgSend: void(IntPtr receiver, Selector selector, void* a, uint b, UIntPtr c)
+method.ObjectiveCRuntime.objc_msgSend_stret: !!0(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.objc_msgSend_stret: void(void* retPtr, IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.object_getClass: ObjCClass(IntPtr obj)
+method.ObjectiveCRuntime.property_copyAttributeValue: byte*(IntPtr property, byte* attributeNamePtr)
+method.ObjectiveCRuntime.release: void(IntPtr receiver)
+method.ObjectiveCRuntime.retain: void(IntPtr receiver)
+method.ObjectiveCRuntime.sel_getName: byte*(IntPtr selector)
+method.ObjectiveCRuntime.sel_registerName: IntPtr(byte* namePtr)
+method.ObjectiveCRuntime.string_objc_msgSend: string(IntPtr receiver, Selector selector)
+method.ObjectiveCRuntime.uint_objc_msgSend: uint(IntPtr receiver, Selector selector)
+method.Selector..ctor: void(IntPtr ptr)
+method.Selector..ctor: void(string name)
+method.Selector.op_Implicit: Selector(string s)
+method.UIScreen..ctor: void(IntPtr ptr)
+method.UIView..ctor: void(IntPtr ptr)
+property.CAMetalDrawable.IsNull: bool { get; }
+property.CAMetalDrawable.texture: MTLTexture { get; }
+property.CAMetalLayer.device: MTLDevice { get; set; }
+property.CAMetalLayer.displaySyncEnabled: Bool8 { get; set; }
+property.CAMetalLayer.drawableSize: CGSize { get; set; }
+property.CAMetalLayer.frame: CGRect { get; set; }
+property.CAMetalLayer.framebufferOnly: Bool8 { get; set; }
+property.CAMetalLayer.opaque: Bool8 { get; set; }
+property.CAMetalLayer.pixelFormat: MTLPixelFormat { get; set; }
+property.CGFloat.Value: double { get; }
+property.MTLBlitCommandEncoder.IsNull: bool { get; }
+property.MTLBuffer.IsNull: bool { get; }
+property.MTLBuffer.length: UIntPtr { get; }
+property.MTLCommandBuffer.status: MTLCommandBufferStatus { get; }
+property.MTLCompileOptions.fastMathEnabled: Bool8 { get; set; }
+property.MTLCompileOptions.languageVersion: MTLLanguageVersion { get; set; }
+property.MTLComputeCommandEncoder.IsNull: bool { get; }
+property.MTLComputePipelineDescriptor.buffers: MTLPipelineBufferDescriptorArray { get; }
+property.MTLComputePipelineDescriptor.computeFunction: MTLFunction { get; set; }
+property.MTLComputePipelineState.IsNull: bool { get; }
+property.MTLDepthStencilDescriptor.backFaceStencil: MTLStencilDescriptor { get; set; }
+property.MTLDepthStencilDescriptor.depthCompareFunction: MTLCompareFunction { get; set; }
+property.MTLDepthStencilDescriptor.depthWriteEnabled: Bool8 { get; set; }
+property.MTLDepthStencilDescriptor.frontFaceStencil: MTLStencilDescriptor { get; set; }
+property.MTLDevice.isDepth24Stencil8PixelFormatSupported: Bool8 { get; }
+property.MTLDevice.maxThreadsPerThreadgroup: MTLSize { get; }
+property.MTLDevice.name: string { get; }
+property.MTLFunction.functionConstantsDictionary: NSDictionary { get; }
+property.MTLPipelineBufferDescriptor.mutability: MTLMutability { get; set; }
+property.MTLPipelineBufferDescriptorArray.Item: MTLPipelineBufferDescriptor { get; set; }
+property.MTLRenderCommandEncoder.IsNull: bool { get; }
+property.MTLRenderPassColorAttachmentDescriptor.clearColor: MTLClearColor { get; set; }
+property.MTLRenderPassColorAttachmentDescriptor.level: UIntPtr { get; set; }
+property.MTLRenderPassColorAttachmentDescriptor.loadAction: MTLLoadAction { get; set; }
+property.MTLRenderPassColorAttachmentDescriptor.resolveTexture: MTLTexture { get; set; }
+property.MTLRenderPassColorAttachmentDescriptor.slice: UIntPtr { get; set; }
+property.MTLRenderPassColorAttachmentDescriptor.storeAction: MTLStoreAction { get; set; }
+property.MTLRenderPassColorAttachmentDescriptor.texture: MTLTexture { get; set; }
+property.MTLRenderPassColorAttachmentDescriptorArray.Item: MTLRenderPassColorAttachmentDescriptor { get; set; }
+property.MTLRenderPassDepthAttachmentDescriptor.clearDepth: double { get; set; }
+property.MTLRenderPassDepthAttachmentDescriptor.level: UIntPtr { get; set; }
+property.MTLRenderPassDepthAttachmentDescriptor.loadAction: MTLLoadAction { get; set; }
+property.MTLRenderPassDepthAttachmentDescriptor.slice: UIntPtr { get; set; }
+property.MTLRenderPassDepthAttachmentDescriptor.storeAction: MTLStoreAction { get; set; }
+property.MTLRenderPassDepthAttachmentDescriptor.texture: MTLTexture { get; set; }
+property.MTLRenderPassDescriptor.colorAttachments: MTLRenderPassColorAttachmentDescriptorArray { get; }
+property.MTLRenderPassDescriptor.depthAttachment: MTLRenderPassDepthAttachmentDescriptor { get; }
+property.MTLRenderPassDescriptor.stencilAttachment: MTLRenderPassStencilAttachmentDescriptor { get; }
+property.MTLRenderPassStencilAttachmentDescriptor.clearStencil: uint { get; set; }
+property.MTLRenderPassStencilAttachmentDescriptor.loadAction: MTLLoadAction { get; set; }
+property.MTLRenderPassStencilAttachmentDescriptor.slice: UIntPtr { get; set; }
+property.MTLRenderPassStencilAttachmentDescriptor.storeAction: MTLStoreAction { get; set; }
+property.MTLRenderPassStencilAttachmentDescriptor.texture: MTLTexture { get; set; }
+property.MTLRenderPipelineColorAttachmentDescriptor.alphaBlendOperation: MTLBlendOperation { get; set; }
+property.MTLRenderPipelineColorAttachmentDescriptor.blendingEnabled: Bool8 { get; set; }
+property.MTLRenderPipelineColorAttachmentDescriptor.destinationAlphaBlendFactor: MTLBlendFactor { get; set; }
+property.MTLRenderPipelineColorAttachmentDescriptor.destinationRGBBlendFactor: MTLBlendFactor { get; set; }
+property.MTLRenderPipelineColorAttachmentDescriptor.pixelFormat: MTLPixelFormat { get; set; }
+property.MTLRenderPipelineColorAttachmentDescriptor.rgbBlendOperation: MTLBlendOperation { get; set; }
+property.MTLRenderPipelineColorAttachmentDescriptor.sourceAlphaBlendFactor: MTLBlendFactor { get; set; }
+property.MTLRenderPipelineColorAttachmentDescriptor.sourceRGBBlendFactor: MTLBlendFactor { get; set; }
+property.MTLRenderPipelineColorAttachmentDescriptor.writeMask: MTLColorWriteMask { get; set; }
+property.MTLRenderPipelineColorAttachmentDescriptorArray.Item: MTLRenderPipelineColorAttachmentDescriptor { get; set; }
+property.MTLRenderPipelineDescriptor.alphaToCoverageEnabled: Bool8 { get; set; }
+property.MTLRenderPipelineDescriptor.colorAttachments: MTLRenderPipelineColorAttachmentDescriptorArray { get; }
+property.MTLRenderPipelineDescriptor.depthAttachmentPixelFormat: MTLPixelFormat { get; set; }
+property.MTLRenderPipelineDescriptor.fragmentFunction: MTLFunction { get; set; }
+property.MTLRenderPipelineDescriptor.sampleCount: UIntPtr { get; set; }
+property.MTLRenderPipelineDescriptor.stencilAttachmentPixelFormat: MTLPixelFormat { get; set; }
+property.MTLRenderPipelineDescriptor.vertexDescriptor: MTLVertexDescriptor { get; }
+property.MTLRenderPipelineDescriptor.vertexFunction: MTLFunction { get; set; }
+property.MTLSamplerDescriptor.borderColor: MTLSamplerBorderColor { get; set; }
+property.MTLSamplerDescriptor.compareFunction: MTLCompareFunction { get; set; }
+property.MTLSamplerDescriptor.lodAverage: Bool8 { get; set; }
+property.MTLSamplerDescriptor.lodMaxClamp: float { get; set; }
+property.MTLSamplerDescriptor.lodMinClamp: float { get; set; }
+property.MTLSamplerDescriptor.magFilter: MTLSamplerMinMagFilter { get; set; }
+property.MTLSamplerDescriptor.maxAnisotropy: UIntPtr { get; set; }
+property.MTLSamplerDescriptor.minFilter: MTLSamplerMinMagFilter { get; set; }
+property.MTLSamplerDescriptor.mipFilter: MTLSamplerMipFilter { get; set; }
+property.MTLSamplerDescriptor.rAddressMode: MTLSamplerAddressMode { get; set; }
+property.MTLSamplerDescriptor.sAddressMode: MTLSamplerAddressMode { get; set; }
+property.MTLSamplerDescriptor.tAddressMode: MTLSamplerAddressMode { get; set; }
+property.MTLStencilDescriptor.depthFailureOperation: MTLStencilOperation { get; set; }
+property.MTLStencilDescriptor.depthStencilPassOperation: MTLStencilOperation { get; set; }
+property.MTLStencilDescriptor.readMask: uint { get; set; }
+property.MTLStencilDescriptor.stencilCompareFunction: MTLCompareFunction { get; set; }
+property.MTLStencilDescriptor.stencilFailureOperation: MTLStencilOperation { get; set; }
+property.MTLStencilDescriptor.writeMask: uint { get; set; }
+property.MTLTexture.IsNull: bool { get; }
+property.MTLTextureDescriptor.arrayLength: UIntPtr { get; set; }
+property.MTLTextureDescriptor.cpuCacheMode: MTLCPUCacheMode { get; set; }
+property.MTLTextureDescriptor.depth: UIntPtr { get; set; }
+property.MTLTextureDescriptor.height: UIntPtr { get; set; }
+property.MTLTextureDescriptor.mipmapLevelCount: UIntPtr { get; set; }
+property.MTLTextureDescriptor.pixelFormat: MTLPixelFormat { get; set; }
+property.MTLTextureDescriptor.resourceOptions: MTLResourceOptions { get; set; }
+property.MTLTextureDescriptor.sampleCount: UIntPtr { get; set; }
+property.MTLTextureDescriptor.storageMode: MTLStorageMode { get; set; }
+property.MTLTextureDescriptor.textureType: MTLTextureType { get; set; }
+property.MTLTextureDescriptor.textureUsage: MTLTextureUsage { get; set; }
+property.MTLTextureDescriptor.width: UIntPtr { get; set; }
+property.MTLVertexAttributeDescriptor.bufferIndex: UIntPtr { get; set; }
+property.MTLVertexAttributeDescriptor.format: MTLVertexFormat { get; set; }
+property.MTLVertexAttributeDescriptor.offset: UIntPtr { get; set; }
+property.MTLVertexAttributeDescriptorArray.Item: MTLVertexAttributeDescriptor { get; set; }
+property.MTLVertexBufferLayoutDescriptor.stepFunction: MTLVertexStepFunction { get; set; }
+property.MTLVertexBufferLayoutDescriptor.stepRate: UIntPtr { get; set; }
+property.MTLVertexBufferLayoutDescriptor.stride: UIntPtr { get; set; }
+property.MTLVertexBufferLayoutDescriptorArray.Item: MTLVertexBufferLayoutDescriptor { get; set; }
+property.MTLVertexDescriptor.attributes: MTLVertexAttributeDescriptorArray { get; }
+property.MTLVertexDescriptor.layouts: MTLVertexBufferLayoutDescriptorArray { get; }
+property.NSArray.count: UIntPtr { get; }
+property.NSDictionary.count: UIntPtr { get; }
+property.NSError.domain: string { get; }
+property.NSError.localizedDescription: string { get; }
+property.NSView.frame: CGRect { get; }
+property.NSView.layer: IntPtr { get; set; }
+property.NSView.wantsLayer: Bool8 { get; set; }
+property.NSWindow.contentView: NSView { get; }
+property.ObjCClass.Name: string { get; }
+property.Selector.Name: string { get; }
+property.UIScreen.mainScreen: UIScreen { get; }
+property.UIScreen.nativeScale: CGFloat { get; }
+property.UIView.frame: CGRect { get; }
+property.UIView.layer: CALayer { get; }
+struct.BlockDescriptor._layout: Sequential
+struct.BlockDescriptor._pack: 0
+struct.BlockDescriptor._size: 0
+struct.BlockDescriptor.field0.reserved: ulong
+struct.BlockDescriptor.field1.Block_size: ulong
+struct.BlockLiteral._layout: Sequential
+struct.BlockLiteral._pack: 0
+struct.BlockLiteral._size: 0
+struct.BlockLiteral.field0.isa: IntPtr
+struct.BlockLiteral.field1.flags: int
+struct.BlockLiteral.field2.reserved: int
+struct.BlockLiteral.field3.invoke: IntPtr
+struct.BlockLiteral.field4.descriptor: BlockDescriptor*
+struct.Bool8._layout: Sequential
+struct.Bool8._pack: 0
+struct.Bool8._size: 0
+struct.Bool8.field0.Value: byte
+struct.CALayer._layout: Sequential
+struct.CALayer._pack: 0
+struct.CALayer._size: 0
+struct.CALayer.field0.NativePtr: IntPtr
+struct.CAMetalDrawable._layout: Sequential
+struct.CAMetalDrawable._pack: 0
+struct.CAMetalDrawable._size: 0
+struct.CAMetalDrawable.field0.NativePtr: IntPtr
+struct.CAMetalLayer._layout: Sequential
+struct.CAMetalLayer._pack: 0
+struct.CAMetalLayer._size: 0
+struct.CAMetalLayer.field0.NativePtr: IntPtr
+struct.CGFloat._layout: Sequential
+struct.CGFloat._pack: 0
+struct.CGFloat._size: 0
+struct.CGFloat.field0._value: double
+struct.CGPoint._layout: Sequential
+struct.CGPoint._pack: 0
+struct.CGPoint._size: 0
+struct.CGPoint.field0.x: CGFloat
+struct.CGPoint.field1.y: CGFloat
+struct.CGRect._layout: Sequential
+struct.CGRect._pack: 0
+struct.CGRect._size: 0
+struct.CGRect.field0.origin: CGPoint
+struct.CGRect.field1.size: CGSize
+struct.CGSize._layout: Sequential
+struct.CGSize._pack: 0
+struct.CGSize._size: 0
+struct.CGSize.field0.width: double
+struct.CGSize.field1.height: double
+struct.CVDisplayLink._layout: Sequential
+struct.CVDisplayLink._pack: 0
+struct.CVDisplayLink._size: 0
+struct.CVDisplayLink.field0.NativePtr: IntPtr
+struct.CVSMPTETime._layout: Sequential
+struct.CVSMPTETime._pack: 0
+struct.CVSMPTETime._size: 0
+struct.CVSMPTETime.field0.flags: ulong
+struct.CVSMPTETime.field1.hostTime: ulong
+struct.CVSMPTETime.field2.rateScalar: double
+struct.CVSMPTETime.field3.reserved: ulong
+struct.CVSMPTETime.field4.version: uint
+struct.CVSMPTETime.field5.videoRefreshPeriod: long
+struct.CVSMPTETime.field6.videoTime: long
+struct.CVSMPTETime.field7.videoTimeScale: int
+struct.CVTimeStamp._layout: Sequential
+struct.CVTimeStamp._pack: 0
+struct.CVTimeStamp._size: 0
+struct.CVTimeStamp.field0.flags: ulong
+struct.CVTimeStamp.field1.hostTime: ulong
+struct.CVTimeStamp.field2.rateScalar: double
+struct.CVTimeStamp.field3.reserved: ulong
+struct.CVTimeStamp.field4.smpteTime: CVSMPTETime
+struct.CVTimeStamp.field5.version: uint
+struct.CVTimeStamp.field6.videoRefreshPeriod: long
+struct.CVTimeStamp.field7.videoTime: long
+struct.CVTimeStamp.field8.videoTimeScale: int
+struct.DispatchData._layout: Sequential
+struct.DispatchData._pack: 0
+struct.DispatchData._size: 0
+struct.DispatchData.field0.NativePtr: IntPtr
+struct.DispatchQueue._layout: Sequential
+struct.DispatchQueue._pack: 0
+struct.DispatchQueue._size: 0
+struct.DispatchQueue.field0.NativePtr: IntPtr
+struct.MTLBlitCommandEncoder._layout: Sequential
+struct.MTLBlitCommandEncoder._pack: 0
+struct.MTLBlitCommandEncoder._size: 0
+struct.MTLBlitCommandEncoder.field0.NativePtr: IntPtr
+struct.MTLBuffer._layout: Sequential
+struct.MTLBuffer._pack: 0
+struct.MTLBuffer._size: 0
+struct.MTLBuffer.field0.NativePtr: IntPtr
+struct.MTLClearColor._layout: Sequential
+struct.MTLClearColor._pack: 0
+struct.MTLClearColor._size: 0
+struct.MTLClearColor.field0.red: double
+struct.MTLClearColor.field1.green: double
+struct.MTLClearColor.field2.blue: double
+struct.MTLClearColor.field3.alpha: double
+struct.MTLCommandBuffer._layout: Sequential
+struct.MTLCommandBuffer._pack: 0
+struct.MTLCommandBuffer._size: 0
+struct.MTLCommandBuffer.field0.NativePtr: IntPtr
+struct.MTLCommandQueue._layout: Sequential
+struct.MTLCommandQueue._pack: 0
+struct.MTLCommandQueue._size: 0
+struct.MTLCommandQueue.field0.NativePtr: IntPtr
+struct.MTLCompileOptions._layout: Sequential
+struct.MTLCompileOptions._pack: 0
+struct.MTLCompileOptions._size: 0
+struct.MTLCompileOptions.field0.NativePtr: IntPtr
+struct.MTLComputeCommandEncoder._layout: Sequential
+struct.MTLComputeCommandEncoder._pack: 0
+struct.MTLComputeCommandEncoder._size: 0
+struct.MTLComputeCommandEncoder.field0.NativePtr: IntPtr
+struct.MTLComputePipelineDescriptor._layout: Sequential
+struct.MTLComputePipelineDescriptor._pack: 0
+struct.MTLComputePipelineDescriptor._size: 0
+struct.MTLComputePipelineDescriptor.field0.NativePtr: IntPtr
+struct.MTLComputePipelineState._layout: Sequential
+struct.MTLComputePipelineState._pack: 0
+struct.MTLComputePipelineState._size: 0
+struct.MTLComputePipelineState.field0.NativePtr: IntPtr
+struct.MTLDepthStencilDescriptor._layout: Sequential
+struct.MTLDepthStencilDescriptor._pack: 0
+struct.MTLDepthStencilDescriptor._size: 0
+struct.MTLDepthStencilDescriptor.field0.NativePtr: IntPtr
+struct.MTLDepthStencilState._layout: Sequential
+struct.MTLDepthStencilState._pack: 0
+struct.MTLDepthStencilState._size: 0
+struct.MTLDepthStencilState.field0.NativePtr: IntPtr
+struct.MTLDevice._layout: Sequential
+struct.MTLDevice._pack: 0
+struct.MTLDevice._size: 0
+struct.MTLDevice.field0.NativePtr: IntPtr
+struct.MTLFunction._layout: Sequential
+struct.MTLFunction._pack: 0
+struct.MTLFunction._size: 0
+struct.MTLFunction.field0.NativePtr: IntPtr
+struct.MTLFunctionConstantValues._layout: Sequential
+struct.MTLFunctionConstantValues._pack: 0
+struct.MTLFunctionConstantValues._size: 0
+struct.MTLFunctionConstantValues.field0.NativePtr: IntPtr
+struct.MTLLibrary._layout: Sequential
+struct.MTLLibrary._pack: 0
+struct.MTLLibrary._size: 0
+struct.MTLLibrary.field0.NativePtr: IntPtr
+struct.MTLOrigin._layout: Sequential
+struct.MTLOrigin._pack: 0
+struct.MTLOrigin._size: 0
+struct.MTLOrigin.field0.x: UIntPtr
+struct.MTLOrigin.field1.y: UIntPtr
+struct.MTLOrigin.field2.z: UIntPtr
+struct.MTLPipelineBufferDescriptor._layout: Sequential
+struct.MTLPipelineBufferDescriptor._pack: 0
+struct.MTLPipelineBufferDescriptor._size: 0
+struct.MTLPipelineBufferDescriptor.field0.NativePtr: IntPtr
+struct.MTLPipelineBufferDescriptorArray._layout: Sequential
+struct.MTLPipelineBufferDescriptorArray._pack: 0
+struct.MTLPipelineBufferDescriptorArray._size: 0
+struct.MTLPipelineBufferDescriptorArray.field0.NativePtr: IntPtr
+struct.MTLRegion._layout: Sequential
+struct.MTLRegion._pack: 0
+struct.MTLRegion._size: 0
+struct.MTLRegion.field0.origin: MTLOrigin
+struct.MTLRegion.field1.size: MTLSize
+struct.MTLRenderCommandEncoder._layout: Sequential
+struct.MTLRenderCommandEncoder._pack: 0
+struct.MTLRenderCommandEncoder._size: 0
+struct.MTLRenderCommandEncoder.field0.NativePtr: IntPtr
+struct.MTLRenderPassColorAttachmentDescriptor._layout: Sequential
+struct.MTLRenderPassColorAttachmentDescriptor._pack: 0
+struct.MTLRenderPassColorAttachmentDescriptor._size: 0
+struct.MTLRenderPassColorAttachmentDescriptor.field0.NativePtr: IntPtr
+struct.MTLRenderPassColorAttachmentDescriptorArray._layout: Sequential
+struct.MTLRenderPassColorAttachmentDescriptorArray._pack: 0
+struct.MTLRenderPassColorAttachmentDescriptorArray._size: 0
+struct.MTLRenderPassColorAttachmentDescriptorArray.field0.NativePtr: IntPtr
+struct.MTLRenderPassDepthAttachmentDescriptor._layout: Sequential
+struct.MTLRenderPassDepthAttachmentDescriptor._pack: 0
+struct.MTLRenderPassDepthAttachmentDescriptor._size: 0
+struct.MTLRenderPassDepthAttachmentDescriptor.field0.NativePtr: IntPtr
+struct.MTLRenderPassDescriptor._layout: Sequential
+struct.MTLRenderPassDescriptor._pack: 0
+struct.MTLRenderPassDescriptor._size: 0
+struct.MTLRenderPassDescriptor.field0.NativePtr: IntPtr
+struct.MTLRenderPassStencilAttachmentDescriptor._layout: Sequential
+struct.MTLRenderPassStencilAttachmentDescriptor._pack: 0
+struct.MTLRenderPassStencilAttachmentDescriptor._size: 0
+struct.MTLRenderPassStencilAttachmentDescriptor.field0.NativePtr: IntPtr
+struct.MTLRenderPipelineColorAttachmentDescriptor._layout: Sequential
+struct.MTLRenderPipelineColorAttachmentDescriptor._pack: 0
+struct.MTLRenderPipelineColorAttachmentDescriptor._size: 0
+struct.MTLRenderPipelineColorAttachmentDescriptor.field0.NativePtr: IntPtr
+struct.MTLRenderPipelineColorAttachmentDescriptorArray._layout: Sequential
+struct.MTLRenderPipelineColorAttachmentDescriptorArray._pack: 0
+struct.MTLRenderPipelineColorAttachmentDescriptorArray._size: 0
+struct.MTLRenderPipelineColorAttachmentDescriptorArray.field0.NativePtr: IntPtr
+struct.MTLRenderPipelineDescriptor._layout: Sequential
+struct.MTLRenderPipelineDescriptor._pack: 0
+struct.MTLRenderPipelineDescriptor._size: 0
+struct.MTLRenderPipelineDescriptor.field0.NativePtr: IntPtr
+struct.MTLRenderPipelineState._layout: Sequential
+struct.MTLRenderPipelineState._pack: 0
+struct.MTLRenderPipelineState._size: 0
+struct.MTLRenderPipelineState.field0.NativePtr: IntPtr
+struct.MTLSamplerDescriptor._layout: Sequential
+struct.MTLSamplerDescriptor._pack: 0
+struct.MTLSamplerDescriptor._size: 0
+struct.MTLSamplerDescriptor.field0.NativePtr: IntPtr
+struct.MTLSamplerState._layout: Sequential
+struct.MTLSamplerState._pack: 0
+struct.MTLSamplerState._size: 0
+struct.MTLSamplerState.field0.NativePtr: IntPtr
+struct.MTLScissorRect._layout: Sequential
+struct.MTLScissorRect._pack: 0
+struct.MTLScissorRect._size: 0
+struct.MTLScissorRect.field0.x: UIntPtr
+struct.MTLScissorRect.field1.y: UIntPtr
+struct.MTLScissorRect.field2.width: UIntPtr
+struct.MTLScissorRect.field3.height: UIntPtr
+struct.MTLSize._layout: Sequential
+struct.MTLSize._pack: 0
+struct.MTLSize._size: 0
+struct.MTLSize.field0.Width: UIntPtr
+struct.MTLSize.field1.Height: UIntPtr
+struct.MTLSize.field2.Depth: UIntPtr
+struct.MTLStencilDescriptor._layout: Sequential
+struct.MTLStencilDescriptor._pack: 0
+struct.MTLStencilDescriptor._size: 0
+struct.MTLStencilDescriptor.field0.NativePtr: IntPtr
+struct.MTLTexture._layout: Sequential
+struct.MTLTexture._pack: 0
+struct.MTLTexture._size: 0
+struct.MTLTexture.field0.NativePtr: IntPtr
+struct.MTLTextureDescriptor._layout: Sequential
+struct.MTLTextureDescriptor._pack: 0
+struct.MTLTextureDescriptor._size: 0
+struct.MTLTextureDescriptor.field0.NativePtr: IntPtr
+struct.MTLVertexAttributeDescriptor._layout: Sequential
+struct.MTLVertexAttributeDescriptor._pack: 0
+struct.MTLVertexAttributeDescriptor._size: 0
+struct.MTLVertexAttributeDescriptor.field0.NativePtr: IntPtr
+struct.MTLVertexAttributeDescriptorArray._layout: Sequential
+struct.MTLVertexAttributeDescriptorArray._pack: 0
+struct.MTLVertexAttributeDescriptorArray._size: 0
+struct.MTLVertexAttributeDescriptorArray.field0.NativePtr: IntPtr
+struct.MTLVertexBufferLayoutDescriptor._layout: Sequential
+struct.MTLVertexBufferLayoutDescriptor._pack: 0
+struct.MTLVertexBufferLayoutDescriptor._size: 0
+struct.MTLVertexBufferLayoutDescriptor.field0.NativePtr: IntPtr
+struct.MTLVertexBufferLayoutDescriptorArray._layout: Sequential
+struct.MTLVertexBufferLayoutDescriptorArray._pack: 0
+struct.MTLVertexBufferLayoutDescriptorArray._size: 0
+struct.MTLVertexBufferLayoutDescriptorArray.field0.NativePtr: IntPtr
+struct.MTLVertexDescriptor._layout: Sequential
+struct.MTLVertexDescriptor._pack: 0
+struct.MTLVertexDescriptor._size: 0
+struct.MTLVertexDescriptor.field0.NativePtr: IntPtr
+struct.MTLViewport._layout: Sequential
+struct.MTLViewport._pack: 0
+struct.MTLViewport._size: 0
+struct.MTLViewport.field0.originX: double
+struct.MTLViewport.field1.originY: double
+struct.MTLViewport.field2.width: double
+struct.MTLViewport.field3.height: double
+struct.MTLViewport.field4.znear: double
+struct.MTLViewport.field5.zfar: double
+struct.NSArray._layout: Sequential
+struct.NSArray._pack: 0
+struct.NSArray._size: 0
+struct.NSArray.field0.NativePtr: IntPtr
+struct.NSAutoreleasePool._layout: Sequential
+struct.NSAutoreleasePool._pack: 0
+struct.NSAutoreleasePool._size: 0
+struct.NSAutoreleasePool.field0.NativePtr: IntPtr
+struct.NSDictionary._layout: Sequential
+struct.NSDictionary._pack: 0
+struct.NSDictionary._size: 0
+struct.NSDictionary.field0.NativePtr: IntPtr
+struct.NSError._layout: Sequential
+struct.NSError._pack: 0
+struct.NSError._size: 0
+struct.NSError.field0.NativePtr: IntPtr
+struct.NSObject._layout: Sequential
+struct.NSObject._pack: 0
+struct.NSObject._size: 0
+struct.NSObject.field0.NativePtr: IntPtr
+struct.NSRange._layout: Sequential
+struct.NSRange._pack: 0
+struct.NSRange._size: 0
+struct.NSRange.field0.location: UIntPtr
+struct.NSRange.field1.length: UIntPtr
+struct.NSString._layout: Sequential
+struct.NSString._pack: 0
+struct.NSString._size: 0
+struct.NSString.field0.NativePtr: IntPtr
+struct.NSView._layout: Sequential
+struct.NSView._pack: 0
+struct.NSView._size: 0
+struct.NSView.field0.NativePtr: IntPtr
+struct.NSWindow._layout: Sequential
+struct.NSWindow._pack: 0
+struct.NSWindow._size: 0
+struct.NSWindow.field0.NativePtr: IntPtr
+struct.ObjCClass._layout: Sequential
+struct.ObjCClass._pack: 0
+struct.ObjCClass._size: 0
+struct.ObjCClass.field0.NativePtr: IntPtr
+struct.ObjectiveCMethod._layout: Sequential
+struct.ObjectiveCMethod._pack: 0
+struct.ObjectiveCMethod._size: 0
+struct.ObjectiveCMethod.field0.NativePtr: IntPtr
+struct.Selector._layout: Sequential
+struct.Selector._pack: 0
+struct.Selector._size: 0
+struct.Selector.field0.NativePtr: IntPtr
+struct.UIScreen._layout: Sequential
+struct.UIScreen._pack: 0
+struct.UIScreen._size: 0
+struct.UIScreen.field0.NativePtr: IntPtr
+struct.UIView._layout: Sequential
+struct.UIView._pack: 0
+struct.UIView._size: 0
+struct.UIView.field0.NativePtr: IntPtr
+type.BlockDescriptor: struct
+type.BlockLiteral: struct
+type.Bool8: struct
+type.CALayer: struct
+type.CAMetalDrawable: struct
+type.CAMetalLayer: struct
+type.CGFloat: struct
+type.CGPoint: struct
+type.CGRect: struct
+type.CGSize: struct
+type.CVDisplayLink: struct
+type.CVDisplayLinkOutputCallbackDelegate: delegate
+type.CVSMPTETime: struct
+type.CVTimeStamp: struct
+type.Dispatch: static class
+type.DispatchData: struct
+type.DispatchQueue: struct
+type.MTLBlendFactor: enum
+type.MTLBlendOperation: enum
+type.MTLBlitCommandEncoder: struct
+type.MTLBuffer: struct
+type.MTLCPUCacheMode: enum
+type.MTLClearColor: struct
+type.MTLColorWriteMask: enum
+type.MTLCommandBuffer: struct
+type.MTLCommandBufferHandler: delegate
+type.MTLCommandBufferStatus: enum
+type.MTLCommandQueue: struct
+type.MTLCompareFunction: enum
+type.MTLCompileOptions: struct
+type.MTLComputeCommandEncoder: struct
+type.MTLComputePipelineDescriptor: struct
+type.MTLComputePipelineState: struct
+type.MTLCullMode: enum
+type.MTLDataType: enum
+type.MTLDepthClipMode: enum
+type.MTLDepthStencilDescriptor: struct
+type.MTLDepthStencilState: struct
+type.MTLDevice: struct
+type.MTLFeatureSet: enum
+type.MTLFunction: struct
+type.MTLFunctionConstantValues: struct
+type.MTLIndexType: enum
+type.MTLLanguageVersion: enum
+type.MTLLibrary: struct
+type.MTLLoadAction: enum
+type.MTLMutability: enum
+type.MTLOrigin: struct
+type.MTLPipelineBufferDescriptor: struct
+type.MTLPipelineBufferDescriptorArray: struct
+type.MTLPixelFormat: enum
+type.MTLPrimitiveType: enum
+type.MTLRegion: struct
+type.MTLRenderCommandEncoder: struct
+type.MTLRenderPassColorAttachmentDescriptor: struct
+type.MTLRenderPassColorAttachmentDescriptorArray: struct
+type.MTLRenderPassDepthAttachmentDescriptor: struct
+type.MTLRenderPassDescriptor: struct
+type.MTLRenderPassStencilAttachmentDescriptor: struct
+type.MTLRenderPipelineColorAttachmentDescriptor: struct
+type.MTLRenderPipelineColorAttachmentDescriptorArray: struct
+type.MTLRenderPipelineDescriptor: struct
+type.MTLRenderPipelineState: struct
+type.MTLResourceOptions: enum
+type.MTLSamplerAddressMode: enum
+type.MTLSamplerBorderColor: enum
+type.MTLSamplerDescriptor: struct
+type.MTLSamplerMinMagFilter: enum
+type.MTLSamplerMipFilter: enum
+type.MTLSamplerState: struct
+type.MTLScissorRect: struct
+type.MTLSize: struct
+type.MTLStencilDescriptor: struct
+type.MTLStencilOperation: enum
+type.MTLStorageMode: enum
+type.MTLStoreAction: enum
+type.MTLTexture: struct
+type.MTLTextureDescriptor: struct
+type.MTLTextureType: enum
+type.MTLTextureUsage: enum
+type.MTLTriangleFillMode: enum
+type.MTLUtil: static class
+type.MTLVertexAttributeDescriptor: struct
+type.MTLVertexAttributeDescriptorArray: struct
+type.MTLVertexBufferLayoutDescriptor: struct
+type.MTLVertexBufferLayoutDescriptorArray: struct
+type.MTLVertexDescriptor: struct
+type.MTLVertexFormat: enum
+type.MTLVertexStepFunction: enum
+type.MTLViewport: struct
+type.MTLWinding: enum
+type.NSArray: struct
+type.NSAutoreleasePool: struct
+type.NSDictionary: struct
+type.NSError: struct
+type.NSObject: struct
+type.NSRange: struct
+type.NSString: struct
+type.NSView: struct
+type.NSWindow: struct
+type.ObjCClass: struct
+type.ObjectiveCMethod: struct
+type.ObjectiveCRuntime: static class
+type.QualityOfServiceLevel: enum
+type.Selector: struct
+type.UIScreen: struct
+type.UIView: struct

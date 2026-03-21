@@ -40,6 +40,13 @@ namespace Veldrid
         #endregion
 
         /// <summary>
+        ///     Gets or sets the compositor background color for areas not covered by the backbuffer
+        ///     when <see cref="SwapchainScalingMode.None"/> is used. Platform-specific; no-op on
+        ///     backends that don't support it (Vulkan, OpenGL).
+        /// </summary>
+        public virtual RgbaFloat? CompositorBackgroundColor { get; set; }
+
+        /// <summary>
         ///     Resizes the renderable Textures managed by this instance to the given dimensions.
         /// </summary>
         /// <param name="width">The new width of the Swapchain.</param>

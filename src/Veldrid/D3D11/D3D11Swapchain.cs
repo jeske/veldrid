@@ -7,6 +7,7 @@ using SharpGen.Runtime;
 using Vortice;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
+using Vortice.Mathematics;
 
 namespace Veldrid.D3D11
 {
@@ -253,23 +254,31 @@ namespace Veldrid.D3D11
 
             if (description.Source is Win32SwapchainSource win32Source)
             {
-                var dxgiScDesc = new SwapChainDescription
+                var win32SwapChainDesc = new SwapChainDescription1
                 {
                     BufferCount = 2,
-                    Windowed = true,
-                    BufferDescription = new ModeDescription(
-                        (int)width, (int)height, colorFormat),
-                    OutputWindow = win32Source.Hwnd,
+                    Width = (int)width,
+                    Height = (int)height,
+                    Format = colorFormat,
                     SampleDescription = new SampleDescription(1, 0),
                     SwapEffect = swapEffect,
                     BufferUsage = Usage.RenderTargetOutput,
-                    Flags = flags
+                    Flags = flags,
+                    Scaling = description.ScalingMode == SwapchainScalingMode.None
+                        ? Scaling.None
+                        : Scaling.Stretch,
                 };
 
-                using (var dxgiFactory = gd.Adapter.GetParent<IDXGIFactory>())
+                var fullscreenDesc = new SwapChainFullscreenDescription
                 {
-                    DxgiSwapChain = dxgiFactory.CreateSwapChain(gd.Device, dxgiScDesc);
-                    dxgiFactory.MakeWindowAssociation(win32Source.Hwnd, WindowAssociationFlags.IgnoreAltEnter);
+                    Windowed = true,
+                };
+
+                using (var dxgiFactory2 = gd.Adapter.GetParent<IDXGIFactory2>())
+                {
+                    DxgiSwapChain = dxgiFactory2.CreateSwapChainForHwnd(
+                        gd.Device, win32Source.Hwnd, win32SwapChainDesc, fullscreenDesc);
+                    dxgiFactory2.MakeWindowAssociation(win32Source.Hwnd, WindowAssociationFlags.IgnoreAltEnter);
                 }
             }
             else if (description.Source is UwpSwapchainSource uwpSource)
@@ -310,6 +319,18 @@ namespace Veldrid.D3D11
                 }
             }
 
+            // Apply compositor background color for DXGI_SCALING_NONE mode.
+            // This color fills the area not covered by the backbuffer during resize.
+            if (description.CompositorBackgroundColor.HasValue)
+            {
+                using var swapChain1ForBgColor = DxgiSwapChain.QueryInterfaceOrNull<IDXGISwapChain1>();
+                if (swapChain1ForBgColor != null)
+                {
+                    var bgColor = description.CompositorBackgroundColor.Value;
+                    swapChain1ForBgColor.BackgroundColor = new Color4(bgColor.R, bgColor.G, bgColor.B, bgColor.A);
+                }
+            }
+
             if ((flags & SwapChainFlags.FrameLatencyWaitableObject) > 0)
             {
                 using (var swapChain2 = DxgiSwapChain.QueryInterfaceOrNull<IDXGISwapChain2>())
@@ -324,6 +345,25 @@ namespace Veldrid.D3D11
 
             Resize(width, height);
         }
+
+        public override RgbaFloat? CompositorBackgroundColor
+        {
+            get => compositorBackgroundColor;
+            set
+            {
+                compositorBackgroundColor = value;
+                if (DxgiSwapChain == null) return;
+
+                using var swapChain1ForBgColor = DxgiSwapChain.QueryInterfaceOrNull<IDXGISwapChain1>();
+                if (swapChain1ForBgColor != null && value.HasValue)
+                {
+                    var bgColor = value.Value;
+                    swapChain1ForBgColor.BackgroundColor = new Color4(bgColor.R, bgColor.G, bgColor.B, bgColor.A);
+                }
+            }
+        }
+
+        private RgbaFloat? compositorBackgroundColor;
 
         private class FrameLatencyWaitHandle : WaitHandle
         {

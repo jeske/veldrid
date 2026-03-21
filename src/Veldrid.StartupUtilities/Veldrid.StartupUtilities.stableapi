@@ -1,0 +1,35 @@
+__stableApiVersion: 2
+field.WindowCreateInfo.WindowHeight: int
+field.WindowCreateInfo.WindowInitialState: WindowState
+field.WindowCreateInfo.WindowTitle: string
+field.WindowCreateInfo.WindowWidth: int
+field.WindowCreateInfo.X: int
+field.WindowCreateInfo.Y: int
+method.VeldridStartup.CreateDefaultD3D11GraphicsDevice: GraphicsDevice(GraphicsDeviceOptions options, Sdl2Window window)
+method.VeldridStartup.CreateDefaultOpenGLGraphicsDevice: GraphicsDevice(GraphicsDeviceOptions options, Sdl2Window window, GraphicsBackend backend)
+method.VeldridStartup.CreateGraphicsDevice: GraphicsDevice(Sdl2Window window)
+method.VeldridStartup.CreateGraphicsDevice: GraphicsDevice(Sdl2Window window, GraphicsBackend preferredBackend)
+method.VeldridStartup.CreateGraphicsDevice: GraphicsDevice(Sdl2Window window, GraphicsDeviceOptions options)
+method.VeldridStartup.CreateGraphicsDevice: GraphicsDevice(Sdl2Window window, GraphicsDeviceOptions options, GraphicsBackend preferredBackend)
+method.VeldridStartup.CreateVulkanGraphicsDevice: GraphicsDevice(GraphicsDeviceOptions options, Sdl2Window window)
+method.VeldridStartup.CreateVulkanGraphicsDevice: GraphicsDevice(GraphicsDeviceOptions options, Sdl2Window window, bool colorSrgb)
+method.VeldridStartup.CreateWindow: Sdl2Window(WindowCreateInfo windowCI)
+method.VeldridStartup.CreateWindow: Sdl2Window(ref WindowCreateInfo windowCI)
+method.VeldridStartup.CreateWindowAndGraphicsDevice: void(WindowCreateInfo windowCI, GraphicsDeviceOptions deviceOptions, GraphicsBackend preferredBackend, ref Sdl2Window window, ref GraphicsDevice gd)
+method.VeldridStartup.CreateWindowAndGraphicsDevice: void(WindowCreateInfo windowCI, GraphicsDeviceOptions deviceOptions, ref Sdl2Window window, ref GraphicsDevice gd)
+method.VeldridStartup.CreateWindowAndGraphicsDevice: void(WindowCreateInfo windowCI, ref Sdl2Window window, ref GraphicsDevice gd)
+method.VeldridStartup.GetPlatformDefaultBackend: GraphicsBackend()
+method.VeldridStartup.GetSwapchainSource: SwapchainSource(Sdl2Window window)
+method.VeldridStartup.SetSDLGLContextAttributes: void(GraphicsDeviceOptions options, GraphicsBackend backend)
+method.WindowCreateInfo..ctor: void(int x, int y, int windowWidth, int windowHeight, WindowState windowInitialState, string windowTitle)
+struct.WindowCreateInfo._layout: Sequential
+struct.WindowCreateInfo._pack: 0
+struct.WindowCreateInfo._size: 0
+struct.WindowCreateInfo.field0.X: int
+struct.WindowCreateInfo.field1.Y: int
+struct.WindowCreateInfo.field2.WindowWidth: int
+struct.WindowCreateInfo.field3.WindowHeight: int
+struct.WindowCreateInfo.field4.WindowInitialState: WindowState
+struct.WindowCreateInfo.field5.WindowTitle: string
+type.VeldridStartup: static class
+type.WindowCreateInfo: struct

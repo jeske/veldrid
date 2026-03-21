@@ -1,0 +1,1504 @@
+__stableApiVersion: 2
+const.SDL_TextInputEvent.MaxTextSize: int 32
+const.Sdl2Native.SDL_DISABLE: int 0
+const.Sdl2Native.SDL_ENABLE: int 1
+const.Sdl2Native.SDL_QUERY: int -1
+const.Sdl2Native.SDL_WINDOWPOS_CENTERED: int 805240832
+const.WindowInfo.WindowInfoSizeInBytes: int 100
+enum.ButtonState.Left: 1
+enum.ButtonState.Middle: 2
+enum.ButtonState.Right: 4
+enum.ButtonState.X1: 8
+enum.ButtonState.X2: 16
+enum.ButtonState._flags: true
+enum.ButtonState._type: uint
+enum.Key.A: 83
+enum.Key.AltLeft: 5
+enum.Key.AltRight: 6
+enum.Key.B: 84
+enum.Key.Back: 53
+enum.Key.BackSlash: 129
+enum.Key.BackSpace: 53
+enum.Key.BracketLeft: 122
+enum.Key.BracketRight: 123
+enum.Key.C: 85
+enum.Key.CapsLock: 60
+enum.Key.Clear: 65
+enum.Key.Comma: 126
+enum.Key.ControlLeft: 3
+enum.Key.ControlRight: 4
+enum.Key.D: 86
+enum.Key.Delete: 55
+enum.Key.Down: 46
+enum.Key.E: 87
+enum.Key.End: 59
+enum.Key.Enter: 49
+enum.Key.Escape: 50
+enum.Key.F10: 19
+enum.Key.F11: 20
+enum.Key.F12: 21
+enum.Key.F13: 22
+enum.Key.F14: 23
+enum.Key.F15: 24
+enum.Key.F16: 25
+enum.Key.F17: 26
+enum.Key.F18: 27
+enum.Key.F19: 28
+enum.Key.F1: 10
+enum.Key.F20: 29
+enum.Key.F21: 30
+enum.Key.F22: 31
+enum.Key.F23: 32
+enum.Key.F24: 33
+enum.Key.F25: 34
+enum.Key.F26: 35
+enum.Key.F27: 36
+enum.Key.F28: 37
+enum.Key.F29: 38
+enum.Key.F2: 11
+enum.Key.F30: 39
+enum.Key.F31: 40
+enum.Key.F32: 41
+enum.Key.F33: 42
+enum.Key.F34: 43
+enum.Key.F35: 44
+enum.Key.F3: 12
+enum.Key.F4: 13
+enum.Key.F5: 14
+enum.Key.F6: 15
+enum.Key.F7: 16
+enum.Key.F8: 17
+enum.Key.F9: 18
+enum.Key.F: 88
+enum.Key.G: 89
+enum.Key.Grave: 119
+enum.Key.H: 90
+enum.Key.Home: 58
+enum.Key.I: 91
+enum.Key.Insert: 54
+enum.Key.J: 92
+enum.Key.K: 93
+enum.Key.Keypad0: 67
+enum.Key.Keypad1: 68
+enum.Key.Keypad2: 69
+enum.Key.Keypad3: 70
+enum.Key.Keypad4: 71
+enum.Key.Keypad5: 72
+enum.Key.Keypad6: 73
+enum.Key.Keypad7: 74
+enum.Key.Keypad8: 75
+enum.Key.Keypad9: 76
+enum.Key.KeypadAdd: 80
+enum.Key.KeypadDecimal: 81
+enum.Key.KeypadDivide: 77
+enum.Key.KeypadEnter: 82
+enum.Key.KeypadMinus: 79
+enum.Key.KeypadMultiply: 78
+enum.Key.KeypadPeriod: 81
+enum.Key.KeypadPlus: 80
+enum.Key.KeypadSubtract: 79
+enum.Key.L: 94
+enum.Key.LAlt: 5
+enum.Key.LBracket: 122
+enum.Key.LControl: 3
+enum.Key.LShift: 1
+enum.Key.LWin: 7
+enum.Key.LastKey: 131
+enum.Key.Left: 47
+enum.Key.M: 95
+enum.Key.Menu: 9
+enum.Key.Minus: 120
+enum.Key.N: 96
+enum.Key.NonUSBackSlash: 130
+enum.Key.NumLock: 64
+enum.Key.Number0: 109
+enum.Key.Number1: 110
+enum.Key.Number2: 111
+enum.Key.Number3: 112
+enum.Key.Number4: 113
+enum.Key.Number5: 114
+enum.Key.Number6: 115
+enum.Key.Number7: 116
+enum.Key.Number8: 117
+enum.Key.Number9: 118
+enum.Key.O: 97
+enum.Key.P: 98
+enum.Key.PageDown: 57
+enum.Key.PageUp: 56
+enum.Key.Pause: 63
+enum.Key.Period: 127
+enum.Key.Plus: 121
+enum.Key.PrintScreen: 62
+enum.Key.Q: 99
+enum.Key.Quote: 125
+enum.Key.R: 100
+enum.Key.RAlt: 6
+enum.Key.RBracket: 123
+enum.Key.RControl: 4
+enum.Key.RShift: 2
+enum.Key.RWin: 8
+enum.Key.Right: 48
+enum.Key.S: 101
+enum.Key.ScrollLock: 61
+enum.Key.Semicolon: 124
+enum.Key.ShiftLeft: 1
+enum.Key.ShiftRight: 2
+enum.Key.Slash: 128
+enum.Key.Sleep: 66
+enum.Key.Space: 51
+enum.Key.T: 102
+enum.Key.Tab: 52
+enum.Key.Tilde: 119
+enum.Key.U: 103
+enum.Key.Unknown: 0
+enum.Key.Up: 45
+enum.Key.V: 104
+enum.Key.W: 105
+enum.Key.WinLeft: 7
+enum.Key.WinRight: 8
+enum.Key.X: 106
+enum.Key.Y: 107
+enum.Key.Z: 108
+enum.Key._type: int
+enum.ModifierKeys.Alt: 1
+enum.ModifierKeys.Control: 2
+enum.ModifierKeys.Gui: 8
+enum.ModifierKeys.None: 0
+enum.ModifierKeys.Shift: 4
+enum.ModifierKeys._flags: true
+enum.ModifierKeys._type: int
+enum.MouseButton.Button1: 3
+enum.MouseButton.Button2: 4
+enum.MouseButton.Button3: 5
+enum.MouseButton.Button4: 6
+enum.MouseButton.Button5: 7
+enum.MouseButton.Button6: 8
+enum.MouseButton.Button7: 9
+enum.MouseButton.Button8: 10
+enum.MouseButton.Button9: 11
+enum.MouseButton.LastButton: 12
+enum.MouseButton.Left: 0
+enum.MouseButton.Middle: 1
+enum.MouseButton.Right: 2
+enum.MouseButton._type: int
+enum.SDLInitFlags.Audio: 16
+enum.SDLInitFlags.GameController: 8192
+enum.SDLInitFlags.Haptic: 4096
+enum.SDLInitFlags.Joystick: 512
+enum.SDLInitFlags.Timer: 1
+enum.SDLInitFlags.Video: 32
+enum.SDLInitFlags._type: uint
+enum.SDL_EventType.AudioDeviceAdded: 4352
+enum.SDL_EventType.AudioDeviceRemoved: 4353
+enum.SDL_EventType.ClipboardUpdate: 2304
+enum.SDL_EventType.ControllerAxisMotion: 1616
+enum.SDL_EventType.ControllerButtonDown: 1617
+enum.SDL_EventType.ControllerButtonUp: 1618
+enum.SDL_EventType.ControllerDeviceAdded: 1619
+enum.SDL_EventType.ControllerDeviceRemapped: 1621
+enum.SDL_EventType.ControllerDeviceRemoved: 1620
+enum.SDL_EventType.DidEnterBackground: 260
+enum.SDL_EventType.DidEnterForeground: 262
+enum.SDL_EventType.DollarGesture: 2048
+enum.SDL_EventType.DollarRecord: 2049
+enum.SDL_EventType.DropBegin: 4098
+enum.SDL_EventType.DropComplete: 4099
+enum.SDL_EventType.DropFile: 4096
+enum.SDL_EventType.DropTest: 4097
+enum.SDL_EventType.DropText: 4097
+enum.SDL_EventType.FingerDown: 1792
+enum.SDL_EventType.FingerMotion: 1794
+enum.SDL_EventType.FingerUp: 1793
+enum.SDL_EventType.FirstEvent: 0
+enum.SDL_EventType.JoyAxisMotion: 1536
+enum.SDL_EventType.JoyBallMotion: 1537
+enum.SDL_EventType.JoyButtonDown: 1539
+enum.SDL_EventType.JoyButtonUp: 1540
+enum.SDL_EventType.JoyDeviceAdded: 1541
+enum.SDL_EventType.JoyDeviceRemoved: 1542
+enum.SDL_EventType.JoyHatMotion: 1538
+enum.SDL_EventType.KeyDown: 768
+enum.SDL_EventType.KeyMapChanged: 772
+enum.SDL_EventType.KeyUp: 769
+enum.SDL_EventType.LastEvent: 65535
+enum.SDL_EventType.LowMemory: 258
+enum.SDL_EventType.MouseButtonDown: 1025
+enum.SDL_EventType.MouseButtonUp: 1026
+enum.SDL_EventType.MouseMotion: 1024
+enum.SDL_EventType.MouseWheel: 1027
+enum.SDL_EventType.MultiGesture: 2050
+enum.SDL_EventType.Quit: 256
+enum.SDL_EventType.RenderDeviceReset: 8193
+enum.SDL_EventType.RenderTargetsReset: 8192
+enum.SDL_EventType.SysWMEvent: 513
+enum.SDL_EventType.Terminating: 257
+enum.SDL_EventType.TextEditing: 770
+enum.SDL_EventType.TextInput: 771
+enum.SDL_EventType.UserEvent: 32768
+enum.SDL_EventType.WillEnterBackground: 259
+enum.SDL_EventType.WillEnterForeground: 261
+enum.SDL_EventType.WindowEvent: 512
+enum.SDL_EventType._type: int
+enum.SDL_FullscreenMode.FullScreenDesktop: 4097
+enum.SDL_FullscreenMode.Fullscreen: 1
+enum.SDL_FullscreenMode.Windowed: 0
+enum.SDL_FullscreenMode._type: uint
+enum.SDL_GLAttribute.AcceleratedVisual: 15
+enum.SDL_GLAttribute.AccumulationAlphaSize: 11
+enum.SDL_GLAttribute.AccumulationBlueSize: 10
+enum.SDL_GLAttribute.AccumulationGreenSize: 9
+enum.SDL_GLAttribute.AccumulationRedSize: 8
+enum.SDL_GLAttribute.AlphaSize: 3
+enum.SDL_GLAttribute.BlueSize: 2
+enum.SDL_GLAttribute.BufferSize: 4
+enum.SDL_GLAttribute.ContextEgl: 19
+enum.SDL_GLAttribute.ContextFlags: 20
+enum.SDL_GLAttribute.ContextMajorVersion: 17
+enum.SDL_GLAttribute.ContextMinorVersion: 18
+enum.SDL_GLAttribute.ContextProfileMask: 21
+enum.SDL_GLAttribute.ContextReleaseBehavior: 24
+enum.SDL_GLAttribute.DepthSize: 6
+enum.SDL_GLAttribute.DoubleBuffer: 5
+enum.SDL_GLAttribute.FramebufferSrgbCapable: 23
+enum.SDL_GLAttribute.GLStereo: 12
+enum.SDL_GLAttribute.GreenSize: 1
+enum.SDL_GLAttribute.MultisampleBuffers: 13
+enum.SDL_GLAttribute.MultisampleSamples: 14
+enum.SDL_GLAttribute.RedSize: 0
+enum.SDL_GLAttribute.RetainedBacking: 16
+enum.SDL_GLAttribute.ShareWithCurrentContext: 22
+enum.SDL_GLAttribute.StencilSize: 7
+enum.SDL_GLAttribute._type: int
+enum.SDL_GLContextFlag.Debug: 1
+enum.SDL_GLContextFlag.ForwardCompatible: 2
+enum.SDL_GLContextFlag.ResetIsolatio: 8
+enum.SDL_GLContextFlag.RobustAccess: 4
+enum.SDL_GLContextFlag._type: int
+enum.SDL_GLProfile.Compatibility: 2
+enum.SDL_GLProfile.Core: 1
+enum.SDL_GLProfile.ES: 4
+enum.SDL_GLProfile._type: int
+enum.SDL_GameControllerAxis.Invalid: 255
+enum.SDL_GameControllerAxis.LeftX: 0
+enum.SDL_GameControllerAxis.LeftY: 1
+enum.SDL_GameControllerAxis.Max: 6
+enum.SDL_GameControllerAxis.RightX: 2
+enum.SDL_GameControllerAxis.RightY: 3
+enum.SDL_GameControllerAxis.TriggerLeft: 4
+enum.SDL_GameControllerAxis.TriggerRight: 5
+enum.SDL_GameControllerAxis._type: byte
+enum.SDL_GameControllerButton.A: 0
+enum.SDL_GameControllerButton.B: 1
+enum.SDL_GameControllerButton.Back: 4
+enum.SDL_GameControllerButton.DPadDown: 12
+enum.SDL_GameControllerButton.DPadLeft: 13
+enum.SDL_GameControllerButton.DPadRight: 14
+enum.SDL_GameControllerButton.DPadUp: 11
+enum.SDL_GameControllerButton.Guide: 5
+enum.SDL_GameControllerButton.Invalid: 255
+enum.SDL_GameControllerButton.LeftShoulder: 9
+enum.SDL_GameControllerButton.LeftStick: 7
+enum.SDL_GameControllerButton.Max: 15
+enum.SDL_GameControllerButton.RightShoulder: 10
+enum.SDL_GameControllerButton.RightStick: 8
+enum.SDL_GameControllerButton.Start: 6
+enum.SDL_GameControllerButton.X: 2
+enum.SDL_GameControllerButton.Y: 3
+enum.SDL_GameControllerButton._type: byte
+enum.SDL_Keycode.SDLK_0: 48
+enum.SDL_Keycode.SDLK_1: 49
+enum.SDL_Keycode.SDLK_2: 50
+enum.SDL_Keycode.SDLK_3: 51
+enum.SDL_Keycode.SDLK_4: 52
+enum.SDL_Keycode.SDLK_5: 53
+enum.SDL_Keycode.SDLK_6: 54
+enum.SDL_Keycode.SDLK_7: 55
+enum.SDL_Keycode.SDLK_8: 56
+enum.SDL_Keycode.SDLK_9: 57
+enum.SDL_Keycode.SDLK_AC_BACK: 1073742094
+enum.SDL_Keycode.SDLK_AC_BOOKMARKS: 1073742098
+enum.SDL_Keycode.SDLK_AC_FORWARD: 1073742095
+enum.SDL_Keycode.SDLK_AC_HOME: 1073742093
+enum.SDL_Keycode.SDLK_AC_REFRESH: 1073742097
+enum.SDL_Keycode.SDLK_AC_SEARCH: 1073742092
+enum.SDL_Keycode.SDLK_AC_STOP: 1073742096
+enum.SDL_Keycode.SDLK_AGAIN: 1073741945
+enum.SDL_Keycode.SDLK_ALTERASE: 1073741977
+enum.SDL_Keycode.SDLK_AMPERSAND: 38
+enum.SDL_Keycode.SDLK_APPLICATION: 1073741925
+enum.SDL_Keycode.SDLK_ASTERISK: 42
+enum.SDL_Keycode.SDLK_AT: 64
+enum.SDL_Keycode.SDLK_AUDIOMUTE: 1073742086
+enum.SDL_Keycode.SDLK_AUDIONEXT: 1073742082
+enum.SDL_Keycode.SDLK_AUDIOPLAY: 1073742085
+enum.SDL_Keycode.SDLK_AUDIOPREV: 1073742083
+enum.SDL_Keycode.SDLK_AUDIOSTOP: 1073742084
+enum.SDL_Keycode.SDLK_BACKQUOTE: 96
+enum.SDL_Keycode.SDLK_BACKSLASH: 92
+enum.SDL_Keycode.SDLK_BACKSPACE: 8
+enum.SDL_Keycode.SDLK_BRIGHTNESSDOWN: 1073742099
+enum.SDL_Keycode.SDLK_BRIGHTNESSUP: 1073742100
+enum.SDL_Keycode.SDLK_CALCULATOR: 1073742090
+enum.SDL_Keycode.SDLK_CANCEL: 1073741979
+enum.SDL_Keycode.SDLK_CAPSLOCK: 1073741881
+enum.SDL_Keycode.SDLK_CARET: 94
+enum.SDL_Keycode.SDLK_CLEAR: 1073741980
+enum.SDL_Keycode.SDLK_CLEARAGAIN: 1073741986
+enum.SDL_Keycode.SDLK_COLON: 58
+enum.SDL_Keycode.SDLK_COMMA: 44
+enum.SDL_Keycode.SDLK_COMPUTER: 1073742091
+enum.SDL_Keycode.SDLK_COPY: 1073741948
+enum.SDL_Keycode.SDLK_CRSEL: 1073741987
+enum.SDL_Keycode.SDLK_CURRENCYSUBUNIT: 1073742005
+enum.SDL_Keycode.SDLK_CURRENCYUNIT: 1073742004
+enum.SDL_Keycode.SDLK_CUT: 1073741947
+enum.SDL_Keycode.SDLK_DECIMALSEPARATOR: 1073742003
+enum.SDL_Keycode.SDLK_DELETE: 127
+enum.SDL_Keycode.SDLK_DISPLAYSWITCH: 1073742101
+enum.SDL_Keycode.SDLK_DOLLAR: 36
+enum.SDL_Keycode.SDLK_DOWN: 1073741905
+enum.SDL_Keycode.SDLK_EJECT: 1073742105
+enum.SDL_Keycode.SDLK_END: 1073741901
+enum.SDL_Keycode.SDLK_EQUALS: 61
+enum.SDL_Keycode.SDLK_ESCAPE: 27
+enum.SDL_Keycode.SDLK_EXCLAIM: 33
+enum.SDL_Keycode.SDLK_EXECUTE: 1073741940
+enum.SDL_Keycode.SDLK_EXSEL: 1073741988
+enum.SDL_Keycode.SDLK_F10: 1073741891
+enum.SDL_Keycode.SDLK_F11: 1073741892
+enum.SDL_Keycode.SDLK_F12: 1073741893
+enum.SDL_Keycode.SDLK_F13: 1073741928
+enum.SDL_Keycode.SDLK_F14: 1073741929
+enum.SDL_Keycode.SDLK_F15: 1073741930
+enum.SDL_Keycode.SDLK_F16: 1073741931
+enum.SDL_Keycode.SDLK_F17: 1073741932
+enum.SDL_Keycode.SDLK_F18: 1073741933
+enum.SDL_Keycode.SDLK_F19: 1073741934
+enum.SDL_Keycode.SDLK_F1: 1073741882
+enum.SDL_Keycode.SDLK_F20: 1073741935
+enum.SDL_Keycode.SDLK_F21: 1073741936
+enum.SDL_Keycode.SDLK_F22: 1073741937
+enum.SDL_Keycode.SDLK_F23: 1073741938
+enum.SDL_Keycode.SDLK_F24: 1073741939
+enum.SDL_Keycode.SDLK_F2: 1073741883
+enum.SDL_Keycode.SDLK_F3: 1073741884
+enum.SDL_Keycode.SDLK_F4: 1073741885
+enum.SDL_Keycode.SDLK_F5: 1073741886
+enum.SDL_Keycode.SDLK_F6: 1073741887
+enum.SDL_Keycode.SDLK_F7: 1073741888
+enum.SDL_Keycode.SDLK_F8: 1073741889
+enum.SDL_Keycode.SDLK_F9: 1073741890
+enum.SDL_Keycode.SDLK_FIND: 1073741950
+enum.SDL_Keycode.SDLK_GREATER: 62
+enum.SDL_Keycode.SDLK_HASH: 35
+enum.SDL_Keycode.SDLK_HELP: 1073741941
+enum.SDL_Keycode.SDLK_HOME: 1073741898
+enum.SDL_Keycode.SDLK_INSERT: 1073741897
+enum.SDL_Keycode.SDLK_KBDILLUMDOWN: 1073742103
+enum.SDL_Keycode.SDLK_KBDILLUMTOGGLE: 1073742102
+enum.SDL_Keycode.SDLK_KBDILLUMUP: 1073742104
+enum.SDL_Keycode.SDLK_KP_000: 1073742001
+enum.SDL_Keycode.SDLK_KP_00: 1073742000
+enum.SDL_Keycode.SDLK_KP_0: 1073741922
+enum.SDL_Keycode.SDLK_KP_1: 1073741913
+enum.SDL_Keycode.SDLK_KP_2: 1073741914
+enum.SDL_Keycode.SDLK_KP_3: 1073741915
+enum.SDL_Keycode.SDLK_KP_4: 1073741916
+enum.SDL_Keycode.SDLK_KP_5: 1073741917
+enum.SDL_Keycode.SDLK_KP_6: 1073741918
+enum.SDL_Keycode.SDLK_KP_7: 1073741919
+enum.SDL_Keycode.SDLK_KP_8: 1073741920
+enum.SDL_Keycode.SDLK_KP_9: 1073741921
+enum.SDL_Keycode.SDLK_KP_A: 1073742012
+enum.SDL_Keycode.SDLK_KP_AMPERSAND: 1073742023
+enum.SDL_Keycode.SDLK_KP_AT: 1073742030
+enum.SDL_Keycode.SDLK_KP_B: 1073742013
+enum.SDL_Keycode.SDLK_KP_BACKSPACE: 1073742011
+enum.SDL_Keycode.SDLK_KP_BINARY: 1073742042
+enum.SDL_Keycode.SDLK_KP_C: 1073742014
+enum.SDL_Keycode.SDLK_KP_CLEAR: 1073742040
+enum.SDL_Keycode.SDLK_KP_CLEARENTRY: 1073742041
+enum.SDL_Keycode.SDLK_KP_COLON: 1073742027
+enum.SDL_Keycode.SDLK_KP_COMMA: 1073741957
+enum.SDL_Keycode.SDLK_KP_D: 1073742015
+enum.SDL_Keycode.SDLK_KP_DBLAMPERSAND: 1073742024
+enum.SDL_Keycode.SDLK_KP_DBLVERTICALBAR: 1073742026
+enum.SDL_Keycode.SDLK_KP_DECIMAL: 1073742044
+enum.SDL_Keycode.SDLK_KP_DIVIDE: 1073741908
+enum.SDL_Keycode.SDLK_KP_E: 1073742016
+enum.SDL_Keycode.SDLK_KP_ENTER: 1073741912
+enum.SDL_Keycode.SDLK_KP_EQUALS: 1073741927
+enum.SDL_Keycode.SDLK_KP_EQUALSAS400: 1073741958
+enum.SDL_Keycode.SDLK_KP_EXCLAM: 1073742031
+enum.SDL_Keycode.SDLK_KP_F: 1073742017
+enum.SDL_Keycode.SDLK_KP_GREATER: 1073742022
+enum.SDL_Keycode.SDLK_KP_HASH: 1073742028
+enum.SDL_Keycode.SDLK_KP_HEXADECIMAL: 1073742045
+enum.SDL_Keycode.SDLK_KP_LEFTBRACE: 1073742008
+enum.SDL_Keycode.SDLK_KP_LEFTPAREN: 1073742006
+enum.SDL_Keycode.SDLK_KP_LESS: 1073742021
+enum.SDL_Keycode.SDLK_KP_MEMADD: 1073742035
+enum.SDL_Keycode.SDLK_KP_MEMCLEAR: 1073742034
+enum.SDL_Keycode.SDLK_KP_MEMDIVIDE: 1073742038
+enum.SDL_Keycode.SDLK_KP_MEMMULTIPLY: 1073742037
+enum.SDL_Keycode.SDLK_KP_MEMRECALL: 1073742033
+enum.SDL_Keycode.SDLK_KP_MEMSTORE: 1073742032
+enum.SDL_Keycode.SDLK_KP_MEMSUBTRACT: 1073742036
+enum.SDL_Keycode.SDLK_KP_MINUS: 1073741910
+enum.SDL_Keycode.SDLK_KP_MULTIPLY: 1073741909
+enum.SDL_Keycode.SDLK_KP_OCTAL: 1073742043
+enum.SDL_Keycode.SDLK_KP_PERCENT: 1073742020
+enum.SDL_Keycode.SDLK_KP_PERIOD: 1073741923
+enum.SDL_Keycode.SDLK_KP_PLUS: 1073741911
+enum.SDL_Keycode.SDLK_KP_PLUSMINUS: 1073742039
+enum.SDL_Keycode.SDLK_KP_POWER: 1073742019
+enum.SDL_Keycode.SDLK_KP_RIGHTBRACE: 1073742009
+enum.SDL_Keycode.SDLK_KP_RIGHTPAREN: 1073742007
+enum.SDL_Keycode.SDLK_KP_SPACE: 1073742029
+enum.SDL_Keycode.SDLK_KP_TAB: 1073742010
+enum.SDL_Keycode.SDLK_KP_VERTICALBAR: 1073742025
+enum.SDL_Keycode.SDLK_KP_XOR: 1073742018
+enum.SDL_Keycode.SDLK_LALT: 1073742050
+enum.SDL_Keycode.SDLK_LCTRL: 1073742048
+enum.SDL_Keycode.SDLK_LEFT: 1073741904
+enum.SDL_Keycode.SDLK_LEFTBRACKET: 91
+enum.SDL_Keycode.SDLK_LEFTPAREN: 40
+enum.SDL_Keycode.SDLK_LESS: 60
+enum.SDL_Keycode.SDLK_LGUI: 1073742051
+enum.SDL_Keycode.SDLK_LSHIFT: 1073742049
+enum.SDL_Keycode.SDLK_MAIL: 1073742089
+enum.SDL_Keycode.SDLK_MEDIASELECT: 1073742087
+enum.SDL_Keycode.SDLK_MENU: 1073741942
+enum.SDL_Keycode.SDLK_MINUS: 45
+enum.SDL_Keycode.SDLK_MODE: 1073742081
+enum.SDL_Keycode.SDLK_MUTE: 1073741951
+enum.SDL_Keycode.SDLK_NUMLOCKCLEAR: 1073741907
+enum.SDL_Keycode.SDLK_OPER: 1073741985
+enum.SDL_Keycode.SDLK_OUT: 1073741984
+enum.SDL_Keycode.SDLK_PAGEDOWN: 1073741902
+enum.SDL_Keycode.SDLK_PAGEUP: 1073741899
+enum.SDL_Keycode.SDLK_PASTE: 1073741949
+enum.SDL_Keycode.SDLK_PAUSE: 1073741896
+enum.SDL_Keycode.SDLK_PERCENT: 37
+enum.SDL_Keycode.SDLK_PERIOD: 46
+enum.SDL_Keycode.SDLK_PLUS: 43
+enum.SDL_Keycode.SDLK_POWER: 1073741926
+enum.SDL_Keycode.SDLK_PRINTSCREEN: 1073741894
+enum.SDL_Keycode.SDLK_PRIOR: 1073741981
+enum.SDL_Keycode.SDLK_QUESTION: 63
+enum.SDL_Keycode.SDLK_QUOTE: 39
+enum.SDL_Keycode.SDLK_QUOTEDBL: 34
+enum.SDL_Keycode.SDLK_RALT: 1073742054
+enum.SDL_Keycode.SDLK_RCTRL: 1073742052
+enum.SDL_Keycode.SDLK_RETURN2: 1073741982
+enum.SDL_Keycode.SDLK_RETURN: 13
+enum.SDL_Keycode.SDLK_RGUI: 1073742055
+enum.SDL_Keycode.SDLK_RIGHT: 1073741903
+enum.SDL_Keycode.SDLK_RIGHTBRACKET: 93
+enum.SDL_Keycode.SDLK_RIGHTPAREN: 41
+enum.SDL_Keycode.SDLK_RSHIFT: 1073742053
+enum.SDL_Keycode.SDLK_SCROLLLOCK: 1073741895
+enum.SDL_Keycode.SDLK_SELECT: 1073741943
+enum.SDL_Keycode.SDLK_SEMICOLON: 59
+enum.SDL_Keycode.SDLK_SEPARATOR: 1073741983
+enum.SDL_Keycode.SDLK_SLASH: 47
+enum.SDL_Keycode.SDLK_SLEEP: 1073742106
+enum.SDL_Keycode.SDLK_SPACE: 32
+enum.SDL_Keycode.SDLK_STOP: 1073741944
+enum.SDL_Keycode.SDLK_SYSREQ: 1073741978
+enum.SDL_Keycode.SDLK_TAB: 9
+enum.SDL_Keycode.SDLK_THOUSANDSSEPARATOR: 1073742002
+enum.SDL_Keycode.SDLK_UNDERSCORE: 95
+enum.SDL_Keycode.SDLK_UNDO: 1073741946
+enum.SDL_Keycode.SDLK_UNKNOWN: 0
+enum.SDL_Keycode.SDLK_UP: 1073741906
+enum.SDL_Keycode.SDLK_VOLUMEDOWN: 1073741953
+enum.SDL_Keycode.SDLK_VOLUMEUP: 1073741952
+enum.SDL_Keycode.SDLK_WWW: 1073742088
+enum.SDL_Keycode.SDLK_a: 97
+enum.SDL_Keycode.SDLK_b: 98
+enum.SDL_Keycode.SDLK_c: 99
+enum.SDL_Keycode.SDLK_d: 100
+enum.SDL_Keycode.SDLK_e: 101
+enum.SDL_Keycode.SDLK_f: 102
+enum.SDL_Keycode.SDLK_g: 103
+enum.SDL_Keycode.SDLK_h: 104
+enum.SDL_Keycode.SDLK_i: 105
+enum.SDL_Keycode.SDLK_j: 106
+enum.SDL_Keycode.SDLK_k: 107
+enum.SDL_Keycode.SDLK_l: 108
+enum.SDL_Keycode.SDLK_m: 109
+enum.SDL_Keycode.SDLK_n: 110
+enum.SDL_Keycode.SDLK_o: 111
+enum.SDL_Keycode.SDLK_p: 112
+enum.SDL_Keycode.SDLK_q: 113
+enum.SDL_Keycode.SDLK_r: 114
+enum.SDL_Keycode.SDLK_s: 115
+enum.SDL_Keycode.SDLK_t: 116
+enum.SDL_Keycode.SDLK_u: 117
+enum.SDL_Keycode.SDLK_v: 118
+enum.SDL_Keycode.SDLK_w: 119
+enum.SDL_Keycode.SDLK_x: 120
+enum.SDL_Keycode.SDLK_y: 121
+enum.SDL_Keycode.SDLK_z: 122
+enum.SDL_Keycode._type: int
+enum.SDL_Keymod.Caps: 8192
+enum.SDL_Keymod.LeftAlt: 256
+enum.SDL_Keymod.LeftControl: 64
+enum.SDL_Keymod.LeftGui: 1024
+enum.SDL_Keymod.LeftShift: 1
+enum.SDL_Keymod.Mode: 16384
+enum.SDL_Keymod.None: 0
+enum.SDL_Keymod.Num: 4096
+enum.SDL_Keymod.Reserved: 32768
+enum.SDL_Keymod.RightAlt: 512
+enum.SDL_Keymod.RightControl: 128
+enum.SDL_Keymod.RightGui: 2048
+enum.SDL_Keymod.RightShift: 2
+enum.SDL_Keymod._flags: true
+enum.SDL_Keymod._type: int
+enum.SDL_MouseButton.Left: 1
+enum.SDL_MouseButton.Middle: 2
+enum.SDL_MouseButton.Right: 3
+enum.SDL_MouseButton.X1: 4
+enum.SDL_MouseButton.X2: 5
+enum.SDL_MouseButton._type: byte
+enum.SDL_Scancode.SDL_NUM_SCANCODES: 512
+enum.SDL_Scancode.SDL_SCANCODE_0: 39
+enum.SDL_Scancode.SDL_SCANCODE_1: 30
+enum.SDL_Scancode.SDL_SCANCODE_2: 31
+enum.SDL_Scancode.SDL_SCANCODE_3: 32
+enum.SDL_Scancode.SDL_SCANCODE_4: 33
+enum.SDL_Scancode.SDL_SCANCODE_5: 34
+enum.SDL_Scancode.SDL_SCANCODE_6: 35
+enum.SDL_Scancode.SDL_SCANCODE_7: 36
+enum.SDL_Scancode.SDL_SCANCODE_8: 37
+enum.SDL_Scancode.SDL_SCANCODE_9: 38
+enum.SDL_Scancode.SDL_SCANCODE_A: 4
+enum.SDL_Scancode.SDL_SCANCODE_AC_BACK: 270
+enum.SDL_Scancode.SDL_SCANCODE_AC_BOOKMARKS: 274
+enum.SDL_Scancode.SDL_SCANCODE_AC_FORWARD: 271
+enum.SDL_Scancode.SDL_SCANCODE_AC_HOME: 269
+enum.SDL_Scancode.SDL_SCANCODE_AC_REFRESH: 273
+enum.SDL_Scancode.SDL_SCANCODE_AC_SEARCH: 268
+enum.SDL_Scancode.SDL_SCANCODE_AC_STOP: 272
+enum.SDL_Scancode.SDL_SCANCODE_AGAIN: 121
+enum.SDL_Scancode.SDL_SCANCODE_ALTERASE: 153
+enum.SDL_Scancode.SDL_SCANCODE_APOSTROPHE: 52
+enum.SDL_Scancode.SDL_SCANCODE_APP1: 283
+enum.SDL_Scancode.SDL_SCANCODE_APP2: 284
+enum.SDL_Scancode.SDL_SCANCODE_APPLICATION: 101
+enum.SDL_Scancode.SDL_SCANCODE_AUDIOMUTE: 262
+enum.SDL_Scancode.SDL_SCANCODE_AUDIONEXT: 258
+enum.SDL_Scancode.SDL_SCANCODE_AUDIOPLAY: 261
+enum.SDL_Scancode.SDL_SCANCODE_AUDIOPREV: 259
+enum.SDL_Scancode.SDL_SCANCODE_AUDIOSTOP: 260
+enum.SDL_Scancode.SDL_SCANCODE_B: 5
+enum.SDL_Scancode.SDL_SCANCODE_BACKSLASH: 49
+enum.SDL_Scancode.SDL_SCANCODE_BACKSPACE: 42
+enum.SDL_Scancode.SDL_SCANCODE_BRIGHTNESSDOWN: 275
+enum.SDL_Scancode.SDL_SCANCODE_BRIGHTNESSUP: 276
+enum.SDL_Scancode.SDL_SCANCODE_C: 6
+enum.SDL_Scancode.SDL_SCANCODE_CALCULATOR: 266
+enum.SDL_Scancode.SDL_SCANCODE_CANCEL: 155
+enum.SDL_Scancode.SDL_SCANCODE_CAPSLOCK: 57
+enum.SDL_Scancode.SDL_SCANCODE_CLEAR: 156
+enum.SDL_Scancode.SDL_SCANCODE_CLEARAGAIN: 162
+enum.SDL_Scancode.SDL_SCANCODE_COMMA: 54
+enum.SDL_Scancode.SDL_SCANCODE_COMPUTER: 267
+enum.SDL_Scancode.SDL_SCANCODE_COPY: 124
+enum.SDL_Scancode.SDL_SCANCODE_CRSEL: 163
+enum.SDL_Scancode.SDL_SCANCODE_CURRENCYSUBUNIT: 181
+enum.SDL_Scancode.SDL_SCANCODE_CURRENCYUNIT: 180
+enum.SDL_Scancode.SDL_SCANCODE_CUT: 123
+enum.SDL_Scancode.SDL_SCANCODE_D: 7
+enum.SDL_Scancode.SDL_SCANCODE_DECIMALSEPARATOR: 179
+enum.SDL_Scancode.SDL_SCANCODE_DELETE: 76
+enum.SDL_Scancode.SDL_SCANCODE_DISPLAYSWITCH: 277
+enum.SDL_Scancode.SDL_SCANCODE_DOWN: 81
+enum.SDL_Scancode.SDL_SCANCODE_E: 8
+enum.SDL_Scancode.SDL_SCANCODE_EJECT: 281
+enum.SDL_Scancode.SDL_SCANCODE_END: 77
+enum.SDL_Scancode.SDL_SCANCODE_EQUALS: 46
+enum.SDL_Scancode.SDL_SCANCODE_ESCAPE: 41
+enum.SDL_Scancode.SDL_SCANCODE_EXECUTE: 116
+enum.SDL_Scancode.SDL_SCANCODE_EXSEL: 164
+enum.SDL_Scancode.SDL_SCANCODE_F10: 67
+enum.SDL_Scancode.SDL_SCANCODE_F11: 68
+enum.SDL_Scancode.SDL_SCANCODE_F12: 69
+enum.SDL_Scancode.SDL_SCANCODE_F13: 104
+enum.SDL_Scancode.SDL_SCANCODE_F14: 105
+enum.SDL_Scancode.SDL_SCANCODE_F15: 106
+enum.SDL_Scancode.SDL_SCANCODE_F16: 107
+enum.SDL_Scancode.SDL_SCANCODE_F17: 108
+enum.SDL_Scancode.SDL_SCANCODE_F18: 109
+enum.SDL_Scancode.SDL_SCANCODE_F19: 110
+enum.SDL_Scancode.SDL_SCANCODE_F1: 58
+enum.SDL_Scancode.SDL_SCANCODE_F20: 111
+enum.SDL_Scancode.SDL_SCANCODE_F21: 112
+enum.SDL_Scancode.SDL_SCANCODE_F22: 113
+enum.SDL_Scancode.SDL_SCANCODE_F23: 114
+enum.SDL_Scancode.SDL_SCANCODE_F24: 115
+enum.SDL_Scancode.SDL_SCANCODE_F2: 59
+enum.SDL_Scancode.SDL_SCANCODE_F3: 60
+enum.SDL_Scancode.SDL_SCANCODE_F4: 61
+enum.SDL_Scancode.SDL_SCANCODE_F5: 62
+enum.SDL_Scancode.SDL_SCANCODE_F6: 63
+enum.SDL_Scancode.SDL_SCANCODE_F7: 64
+enum.SDL_Scancode.SDL_SCANCODE_F8: 65
+enum.SDL_Scancode.SDL_SCANCODE_F9: 66
+enum.SDL_Scancode.SDL_SCANCODE_F: 9
+enum.SDL_Scancode.SDL_SCANCODE_FIND: 126
+enum.SDL_Scancode.SDL_SCANCODE_G: 10
+enum.SDL_Scancode.SDL_SCANCODE_GRAVE: 53
+enum.SDL_Scancode.SDL_SCANCODE_H: 11
+enum.SDL_Scancode.SDL_SCANCODE_HELP: 117
+enum.SDL_Scancode.SDL_SCANCODE_HOME: 74
+enum.SDL_Scancode.SDL_SCANCODE_I: 12
+enum.SDL_Scancode.SDL_SCANCODE_INSERT: 73
+enum.SDL_Scancode.SDL_SCANCODE_INTERNATIONAL1: 135
+enum.SDL_Scancode.SDL_SCANCODE_INTERNATIONAL2: 136
+enum.SDL_Scancode.SDL_SCANCODE_INTERNATIONAL3: 137
+enum.SDL_Scancode.SDL_SCANCODE_INTERNATIONAL4: 138
+enum.SDL_Scancode.SDL_SCANCODE_INTERNATIONAL5: 139
+enum.SDL_Scancode.SDL_SCANCODE_INTERNATIONAL6: 140
+enum.SDL_Scancode.SDL_SCANCODE_INTERNATIONAL7: 141
+enum.SDL_Scancode.SDL_SCANCODE_INTERNATIONAL8: 142
+enum.SDL_Scancode.SDL_SCANCODE_INTERNATIONAL9: 143
+enum.SDL_Scancode.SDL_SCANCODE_J: 13
+enum.SDL_Scancode.SDL_SCANCODE_K: 14
+enum.SDL_Scancode.SDL_SCANCODE_KBDILLUMDOWN: 279
+enum.SDL_Scancode.SDL_SCANCODE_KBDILLUMTOGGLE: 278
+enum.SDL_Scancode.SDL_SCANCODE_KBDILLUMUP: 280
+enum.SDL_Scancode.SDL_SCANCODE_KP_000: 177
+enum.SDL_Scancode.SDL_SCANCODE_KP_00: 176
+enum.SDL_Scancode.SDL_SCANCODE_KP_0: 98
+enum.SDL_Scancode.SDL_SCANCODE_KP_1: 89
+enum.SDL_Scancode.SDL_SCANCODE_KP_2: 90
+enum.SDL_Scancode.SDL_SCANCODE_KP_3: 91
+enum.SDL_Scancode.SDL_SCANCODE_KP_4: 92
+enum.SDL_Scancode.SDL_SCANCODE_KP_5: 93
+enum.SDL_Scancode.SDL_SCANCODE_KP_6: 94
+enum.SDL_Scancode.SDL_SCANCODE_KP_7: 95
+enum.SDL_Scancode.SDL_SCANCODE_KP_8: 96
+enum.SDL_Scancode.SDL_SCANCODE_KP_9: 97
+enum.SDL_Scancode.SDL_SCANCODE_KP_A: 188
+enum.SDL_Scancode.SDL_SCANCODE_KP_AMPERSAND: 199
+enum.SDL_Scancode.SDL_SCANCODE_KP_AT: 206
+enum.SDL_Scancode.SDL_SCANCODE_KP_B: 189
+enum.SDL_Scancode.SDL_SCANCODE_KP_BACKSPACE: 187
+enum.SDL_Scancode.SDL_SCANCODE_KP_BINARY: 218
+enum.SDL_Scancode.SDL_SCANCODE_KP_C: 190
+enum.SDL_Scancode.SDL_SCANCODE_KP_CLEAR: 216
+enum.SDL_Scancode.SDL_SCANCODE_KP_CLEARENTRY: 217
+enum.SDL_Scancode.SDL_SCANCODE_KP_COLON: 203
+enum.SDL_Scancode.SDL_SCANCODE_KP_COMMA: 133
+enum.SDL_Scancode.SDL_SCANCODE_KP_D: 191
+enum.SDL_Scancode.SDL_SCANCODE_KP_DBLAMPERSAND: 200
+enum.SDL_Scancode.SDL_SCANCODE_KP_DBLVERTICALBAR: 202
+enum.SDL_Scancode.SDL_SCANCODE_KP_DECIMAL: 220
+enum.SDL_Scancode.SDL_SCANCODE_KP_DIVIDE: 84
+enum.SDL_Scancode.SDL_SCANCODE_KP_E: 192
+enum.SDL_Scancode.SDL_SCANCODE_KP_ENTER: 88
+enum.SDL_Scancode.SDL_SCANCODE_KP_EQUALS: 103
+enum.SDL_Scancode.SDL_SCANCODE_KP_EQUALSAS400: 134
+enum.SDL_Scancode.SDL_SCANCODE_KP_EXCLAM: 207
+enum.SDL_Scancode.SDL_SCANCODE_KP_F: 193
+enum.SDL_Scancode.SDL_SCANCODE_KP_GREATER: 198
+enum.SDL_Scancode.SDL_SCANCODE_KP_HASH: 204
+enum.SDL_Scancode.SDL_SCANCODE_KP_HEXADECIMAL: 221
+enum.SDL_Scancode.SDL_SCANCODE_KP_LEFTBRACE: 184
+enum.SDL_Scancode.SDL_SCANCODE_KP_LEFTPAREN: 182
+enum.SDL_Scancode.SDL_SCANCODE_KP_LESS: 197
+enum.SDL_Scancode.SDL_SCANCODE_KP_MEMADD: 211
+enum.SDL_Scancode.SDL_SCANCODE_KP_MEMCLEAR: 210
+enum.SDL_Scancode.SDL_SCANCODE_KP_MEMDIVIDE: 214
+enum.SDL_Scancode.SDL_SCANCODE_KP_MEMMULTIPLY: 213
+enum.SDL_Scancode.SDL_SCANCODE_KP_MEMRECALL: 209
+enum.SDL_Scancode.SDL_SCANCODE_KP_MEMSTORE: 208
+enum.SDL_Scancode.SDL_SCANCODE_KP_MEMSUBTRACT: 212
+enum.SDL_Scancode.SDL_SCANCODE_KP_MINUS: 86
+enum.SDL_Scancode.SDL_SCANCODE_KP_MULTIPLY: 85
+enum.SDL_Scancode.SDL_SCANCODE_KP_OCTAL: 219
+enum.SDL_Scancode.SDL_SCANCODE_KP_PERCENT: 196
+enum.SDL_Scancode.SDL_SCANCODE_KP_PERIOD: 99
+enum.SDL_Scancode.SDL_SCANCODE_KP_PLUS: 87
+enum.SDL_Scancode.SDL_SCANCODE_KP_PLUSMINUS: 215
+enum.SDL_Scancode.SDL_SCANCODE_KP_POWER: 195
+enum.SDL_Scancode.SDL_SCANCODE_KP_RIGHTBRACE: 185
+enum.SDL_Scancode.SDL_SCANCODE_KP_RIGHTPAREN: 183
+enum.SDL_Scancode.SDL_SCANCODE_KP_SPACE: 205
+enum.SDL_Scancode.SDL_SCANCODE_KP_TAB: 186
+enum.SDL_Scancode.SDL_SCANCODE_KP_VERTICALBAR: 201
+enum.SDL_Scancode.SDL_SCANCODE_KP_XOR: 194
+enum.SDL_Scancode.SDL_SCANCODE_L: 15
+enum.SDL_Scancode.SDL_SCANCODE_LALT: 226
+enum.SDL_Scancode.SDL_SCANCODE_LANG1: 144
+enum.SDL_Scancode.SDL_SCANCODE_LANG2: 145
+enum.SDL_Scancode.SDL_SCANCODE_LANG3: 146
+enum.SDL_Scancode.SDL_SCANCODE_LANG4: 147
+enum.SDL_Scancode.SDL_SCANCODE_LANG5: 148
+enum.SDL_Scancode.SDL_SCANCODE_LANG6: 149
+enum.SDL_Scancode.SDL_SCANCODE_LANG7: 150
+enum.SDL_Scancode.SDL_SCANCODE_LANG8: 151
+enum.SDL_Scancode.SDL_SCANCODE_LANG9: 152
+enum.SDL_Scancode.SDL_SCANCODE_LCTRL: 224
+enum.SDL_Scancode.SDL_SCANCODE_LEFT: 80
+enum.SDL_Scancode.SDL_SCANCODE_LEFTBRACKET: 47
+enum.SDL_Scancode.SDL_SCANCODE_LGUI: 227
+enum.SDL_Scancode.SDL_SCANCODE_LSHIFT: 225
+enum.SDL_Scancode.SDL_SCANCODE_M: 16
+enum.SDL_Scancode.SDL_SCANCODE_MAIL: 265
+enum.SDL_Scancode.SDL_SCANCODE_MEDIASELECT: 263
+enum.SDL_Scancode.SDL_SCANCODE_MENU: 118
+enum.SDL_Scancode.SDL_SCANCODE_MINUS: 45
+enum.SDL_Scancode.SDL_SCANCODE_MODE: 257
+enum.SDL_Scancode.SDL_SCANCODE_MUTE: 127
+enum.SDL_Scancode.SDL_SCANCODE_N: 17
+enum.SDL_Scancode.SDL_SCANCODE_NONUSBACKSLASH: 100
+enum.SDL_Scancode.SDL_SCANCODE_NONUSHASH: 50
+enum.SDL_Scancode.SDL_SCANCODE_NUMLOCKCLEAR: 83
+enum.SDL_Scancode.SDL_SCANCODE_O: 18
+enum.SDL_Scancode.SDL_SCANCODE_OPER: 161
+enum.SDL_Scancode.SDL_SCANCODE_OUT: 160
+enum.SDL_Scancode.SDL_SCANCODE_P: 19
+enum.SDL_Scancode.SDL_SCANCODE_PAGEDOWN: 78
+enum.SDL_Scancode.SDL_SCANCODE_PAGEUP: 75
+enum.SDL_Scancode.SDL_SCANCODE_PASTE: 125
+enum.SDL_Scancode.SDL_SCANCODE_PAUSE: 72
+enum.SDL_Scancode.SDL_SCANCODE_PERIOD: 55
+enum.SDL_Scancode.SDL_SCANCODE_POWER: 102
+enum.SDL_Scancode.SDL_SCANCODE_PRINTSCREEN: 70
+enum.SDL_Scancode.SDL_SCANCODE_PRIOR: 157
+enum.SDL_Scancode.SDL_SCANCODE_Q: 20
+enum.SDL_Scancode.SDL_SCANCODE_R: 21
+enum.SDL_Scancode.SDL_SCANCODE_RALT: 230
+enum.SDL_Scancode.SDL_SCANCODE_RCTRL: 228
+enum.SDL_Scancode.SDL_SCANCODE_RETURN2: 158
+enum.SDL_Scancode.SDL_SCANCODE_RETURN: 40
+enum.SDL_Scancode.SDL_SCANCODE_RGUI: 231
+enum.SDL_Scancode.SDL_SCANCODE_RIGHT: 79
+enum.SDL_Scancode.SDL_SCANCODE_RIGHTBRACKET: 48
+enum.SDL_Scancode.SDL_SCANCODE_RSHIFT: 229
+enum.SDL_Scancode.SDL_SCANCODE_S: 22
+enum.SDL_Scancode.SDL_SCANCODE_SCROLLLOCK: 71
+enum.SDL_Scancode.SDL_SCANCODE_SELECT: 119
+enum.SDL_Scancode.SDL_SCANCODE_SEMICOLON: 51
+enum.SDL_Scancode.SDL_SCANCODE_SEPARATOR: 159
+enum.SDL_Scancode.SDL_SCANCODE_SLASH: 56
+enum.SDL_Scancode.SDL_SCANCODE_SLEEP: 282
+enum.SDL_Scancode.SDL_SCANCODE_SPACE: 44
+enum.SDL_Scancode.SDL_SCANCODE_STOP: 120
+enum.SDL_Scancode.SDL_SCANCODE_SYSREQ: 154
+enum.SDL_Scancode.SDL_SCANCODE_T: 23
+enum.SDL_Scancode.SDL_SCANCODE_TAB: 43
+enum.SDL_Scancode.SDL_SCANCODE_THOUSANDSSEPARATOR: 178
+enum.SDL_Scancode.SDL_SCANCODE_U: 24
+enum.SDL_Scancode.SDL_SCANCODE_UNDO: 122
+enum.SDL_Scancode.SDL_SCANCODE_UNKNOWN: 0
+enum.SDL_Scancode.SDL_SCANCODE_UP: 82
+enum.SDL_Scancode.SDL_SCANCODE_V: 25
+enum.SDL_Scancode.SDL_SCANCODE_VOLUMEDOWN: 129
+enum.SDL_Scancode.SDL_SCANCODE_VOLUMEUP: 128
+enum.SDL_Scancode.SDL_SCANCODE_W: 26
+enum.SDL_Scancode.SDL_SCANCODE_WWW: 264
+enum.SDL_Scancode.SDL_SCANCODE_X: 27
+enum.SDL_Scancode.SDL_SCANCODE_Y: 28
+enum.SDL_Scancode.SDL_SCANCODE_Z: 29
+enum.SDL_Scancode._type: int
+enum.SDL_SystemCursor.Arrow: 0
+enum.SDL_SystemCursor.Crosshair: 3
+enum.SDL_SystemCursor.Hand: 11
+enum.SDL_SystemCursor.IBeam: 1
+enum.SDL_SystemCursor.No: 10
+enum.SDL_SystemCursor.SizeAll: 9
+enum.SDL_SystemCursor.SizeNESW: 6
+enum.SDL_SystemCursor.SizeNS: 8
+enum.SDL_SystemCursor.SizeNWSE: 5
+enum.SDL_SystemCursor.SizeWE: 7
+enum.SDL_SystemCursor.Wait: 2
+enum.SDL_SystemCursor.WaitArrow: 4
+enum.SDL_SystemCursor._type: int
+enum.SDL_WindowEventID.Close: 14
+enum.SDL_WindowEventID.Enter: 10
+enum.SDL_WindowEventID.Exposed: 3
+enum.SDL_WindowEventID.FocusGained: 12
+enum.SDL_WindowEventID.FocusLost: 13
+enum.SDL_WindowEventID.Hidden: 2
+enum.SDL_WindowEventID.HitTest: 16
+enum.SDL_WindowEventID.Leave: 11
+enum.SDL_WindowEventID.Maximized: 8
+enum.SDL_WindowEventID.Minimized: 7
+enum.SDL_WindowEventID.Moved: 4
+enum.SDL_WindowEventID.None: 0
+enum.SDL_WindowEventID.Resized: 5
+enum.SDL_WindowEventID.Restored: 9
+enum.SDL_WindowEventID.Shown: 1
+enum.SDL_WindowEventID.SizeChanged: 6
+enum.SDL_WindowEventID.TakeFocus: 15
+enum.SDL_WindowEventID._type: byte
+enum.SDL_WindowFlags.AllowHighDpi: 8192
+enum.SDL_WindowFlags.AlwaysOnTop: 32768
+enum.SDL_WindowFlags.Borderless: 16
+enum.SDL_WindowFlags.Foreign: 2048
+enum.SDL_WindowFlags.FullScreenDesktop: 4097
+enum.SDL_WindowFlags.Fullscreen: 1
+enum.SDL_WindowFlags.Hidden: 8
+enum.SDL_WindowFlags.InputFocus: 512
+enum.SDL_WindowFlags.InputGrabbed: 256
+enum.SDL_WindowFlags.Maximized: 128
+enum.SDL_WindowFlags.Minimized: 64
+enum.SDL_WindowFlags.MouseCapture: 16384
+enum.SDL_WindowFlags.MouseFocus: 1024
+enum.SDL_WindowFlags.OpenGL: 2
+enum.SDL_WindowFlags.PopupMenu: 524288
+enum.SDL_WindowFlags.Resizable: 32
+enum.SDL_WindowFlags.Shown: 4
+enum.SDL_WindowFlags.SkipTaskbar: 65536
+enum.SDL_WindowFlags.Tooltip: 262144
+enum.SDL_WindowFlags.Utility: 131072
+enum.SDL_WindowFlags._flags: true
+enum.SDL_WindowFlags._type: uint
+enum.SysWMType.Android: 9
+enum.SysWMType.Cocoa: 4
+enum.SysWMType.DirectFB: 3
+enum.SysWMType.Mir: 7
+enum.SysWMType.UIKit: 5
+enum.SysWMType.Unknown: 0
+enum.SysWMType.Vivante: 10
+enum.SysWMType.Wayland: 6
+enum.SysWMType.WinRT: 8
+enum.SysWMType.Windows: 1
+enum.SysWMType.X11: 2
+enum.SysWMType._type: int
+enum.WindowState.BorderlessFullScreen: 4
+enum.WindowState.FullScreen: 1
+enum.WindowState.Hidden: 5
+enum.WindowState.Maximized: 2
+enum.WindowState.Minimized: 3
+enum.WindowState.Normal: 0
+enum.WindowState._type: int
+event.Sdl2Window.Closed: Action
+event.Sdl2Window.Closing: Action
+event.Sdl2Window.DragDrop: Action`1<DragDropEvent>
+event.Sdl2Window.Exposed: Action
+event.Sdl2Window.FocusGained: Action
+event.Sdl2Window.FocusLost: Action
+event.Sdl2Window.Hidden: Action
+event.Sdl2Window.KeyDown: Action`1<KeyEvent>
+event.Sdl2Window.KeyUp: Action`1<KeyEvent>
+event.Sdl2Window.MouseDown: Action`1<MouseEvent>
+event.Sdl2Window.MouseEntered: Action
+event.Sdl2Window.MouseLeft: Action
+event.Sdl2Window.MouseMove: Action`1<MouseMoveEventArgs>
+event.Sdl2Window.MouseUp: Action`1<MouseEvent>
+event.Sdl2Window.MouseWheel: Action`1<MouseWheelEventArgs>
+event.Sdl2Window.Moved: Action`1<Point>
+event.Sdl2Window.Resized: Action
+event.Sdl2Window.Shown: Action
+field.AndroidWindowInfo.surface: IntPtr
+field.AndroidWindowInfo.window: IntPtr
+field.CocoaWindowInfo.Window: IntPtr
+field.MouseState.X: readonly int
+field.MouseState.Y: readonly int
+field.Point.X: int
+field.Point.Y: int
+field.Rectangle.Height: int
+field.Rectangle.Width: int
+field.Rectangle.X: int
+field.Rectangle.Y: int
+field.SDL_ControllerAxisEvent.axis: SDL_GameControllerAxis
+field.SDL_ControllerAxisEvent.timestamp: uint
+field.SDL_ControllerAxisEvent.type: uint
+field.SDL_ControllerAxisEvent.value: short
+field.SDL_ControllerAxisEvent.which: int
+field.SDL_ControllerButtonEvent.button: SDL_GameControllerButton
+field.SDL_ControllerButtonEvent.state: byte
+field.SDL_ControllerButtonEvent.timestamp: uint
+field.SDL_ControllerButtonEvent.type: uint
+field.SDL_ControllerButtonEvent.which: int
+field.SDL_ControllerDeviceEvent.timestamp: uint
+field.SDL_ControllerDeviceEvent.type: uint
+field.SDL_ControllerDeviceEvent.which: int
+field.SDL_Cursor.NativePointer: readonly IntPtr
+field.SDL_DisplayMode.driverdata: void*
+field.SDL_DisplayMode.format: uint
+field.SDL_DisplayMode.h: int
+field.SDL_DisplayMode.refresh_rate: int
+field.SDL_DisplayMode.w: int
+field.SDL_DropEvent.file: byte*
+field.SDL_DropEvent.timestamp: uint
+field.SDL_DropEvent.type: SDL_EventType
+field.SDL_DropEvent.windowID: uint
+field.SDL_Event.timestamp: uint
+field.SDL_Event.type: SDL_EventType
+field.SDL_Event.windowID: uint
+field.SDL_GameController.NativePointer: readonly IntPtr
+field.SDL_Joystick.NativePointer: readonly IntPtr
+field.SDL_KeyboardEvent.keysym: SDL_Keysym
+field.SDL_KeyboardEvent.padding2: byte
+field.SDL_KeyboardEvent.padding3: byte
+field.SDL_KeyboardEvent.repeat: byte
+field.SDL_KeyboardEvent.state: byte
+field.SDL_KeyboardEvent.timestamp: uint
+field.SDL_KeyboardEvent.type: SDL_EventType
+field.SDL_KeyboardEvent.windowID: uint
+field.SDL_Keysym.mod: SDL_Keymod
+field.SDL_Keysym.scancode: SDL_Scancode
+field.SDL_Keysym.sym: SDL_Keycode
+field.SDL_MouseButtonEvent.button: SDL_MouseButton
+field.SDL_MouseButtonEvent.clicks: byte
+field.SDL_MouseButtonEvent.padding1: byte
+field.SDL_MouseButtonEvent.state: byte
+field.SDL_MouseButtonEvent.timestamp: uint
+field.SDL_MouseButtonEvent.type: SDL_EventType
+field.SDL_MouseButtonEvent.which: uint
+field.SDL_MouseButtonEvent.windowID: uint
+field.SDL_MouseButtonEvent.x: int
+field.SDL_MouseButtonEvent.y: int
+field.SDL_MouseMotionEvent.state: ButtonState
+field.SDL_MouseMotionEvent.timestamp: uint
+field.SDL_MouseMotionEvent.type: SDL_EventType
+field.SDL_MouseMotionEvent.which: uint
+field.SDL_MouseMotionEvent.windowID: uint
+field.SDL_MouseMotionEvent.x: int
+field.SDL_MouseMotionEvent.xrel: int
+field.SDL_MouseMotionEvent.y: int
+field.SDL_MouseMotionEvent.yrel: int
+field.SDL_MouseWheelEvent.direction: uint
+field.SDL_MouseWheelEvent.timestamp: uint
+field.SDL_MouseWheelEvent.type: SDL_EventType
+field.SDL_MouseWheelEvent.which: uint
+field.SDL_MouseWheelEvent.windowID: uint
+field.SDL_MouseWheelEvent.x: int
+field.SDL_MouseWheelEvent.y: int
+field.SDL_Renderer.NativePointer: readonly IntPtr
+field.SDL_SysWMinfo.info: WindowInfo
+field.SDL_SysWMinfo.subsystem: SysWMType
+field.SDL_SysWMinfo.version: SDL_version
+field.SDL_TextInputEvent.<text>e__FixedBuffer.FixedElementField: byte
+field.SDL_TextInputEvent.text: <text>e__FixedBuffer
+field.SDL_TextInputEvent.timestamp: uint
+field.SDL_TextInputEvent.type: SDL_EventType
+field.SDL_TextInputEvent.windowID: uint
+field.SDL_Window.NativePointer: readonly IntPtr
+field.SDL_WindowEvent.data1: int
+field.SDL_WindowEvent.data2: int
+field.SDL_WindowEvent.event: SDL_WindowEventID
+field.SDL_WindowEvent.timestamp: uint
+field.SDL_WindowEvent.type: SDL_EventType
+field.SDL_WindowEvent.windowID: uint
+field.SDL_version.major: byte
+field.SDL_version.minor: byte
+field.SDL_version.patch: byte
+field.WaylandWindowInfo.display: IntPtr
+field.WaylandWindowInfo.shellSurface: IntPtr
+field.WaylandWindowInfo.surface: IntPtr
+field.Win32WindowInfo.Sdl2Window: IntPtr
+field.Win32WindowInfo.hdc: IntPtr
+field.Win32WindowInfo.hinstance: IntPtr
+field.WindowInfo.<bytes>e__FixedBuffer.FixedElementField: byte
+field.X11WindowInfo.Sdl2Window: IntPtr
+field.X11WindowInfo.display: IntPtr
+method.BufferedValue`1..ctor: void()
+method.BufferedValue`1.op_Implicit: !0(BufferedValue`1<!0> bv)
+method.DragDropEvent..ctor: void(string file)
+method.InputSnapshot.IsMouseDown: bool(MouseButton button)
+method.KeyEvent..ctor: void(Key key, bool down, ModifierKeys modifiers)
+method.KeyEvent..ctor: void(Key key, bool down, ModifierKeys modifiers, bool repeat)
+method.KeyEvent.ToString: string()
+method.MouseEvent..ctor: void(MouseButton button, bool down)
+method.MouseMoveEventArgs..ctor: void(MouseState mouseState, Vector2 mousePosition)
+method.MouseState..ctor: void(int x, int y, bool mouse0, bool mouse1, bool mouse2, bool mouse3, bool mouse4, bool mouse5, bool mouse6, bool mouse7, bool mouse8, bool mouse9, bool mouse10, bool mouse11, bool mouse12)
+method.MouseState.IsButtonDown: bool(MouseButton button)
+method.MouseWheelEventArgs..ctor: void(MouseState mouseState, float wheelDelta)
+method.Point..ctor: void(int x, int y)
+method.Point.Equals: bool(Point other)
+method.Point.Equals: bool(object obj)
+method.Point.GetHashCode: int()
+method.Point.ToString: string()
+method.Point.op_Equality: bool(Point left, Point right)
+method.Point.op_Inequality: bool(Point left, Point right)
+method.Rectangle..ctor: void(Point topLeft, Point size)
+method.Rectangle..ctor: void(int x, int y, int width, int height)
+method.Rectangle.Contains: bool(Point p)
+method.Rectangle.Contains: bool(int x, int y)
+method.Rectangle.Equals: bool(Rectangle other)
+method.Rectangle.Equals: bool(object obj)
+method.Rectangle.GetHashCode: int()
+method.Rectangle.op_Equality: bool(Rectangle left, Rectangle right)
+method.Rectangle.op_Inequality: bool(Rectangle left, Rectangle right)
+method.SDLEventHandler..ctor: void(object object, IntPtr method)
+method.SDLEventHandler.BeginInvoke: IAsyncResult(ref SDL_Event ev, AsyncCallback callback, object object)
+method.SDLEventHandler.EndInvoke: void(ref SDL_Event ev, IAsyncResult result)
+method.SDLEventHandler.Invoke: void(ref SDL_Event ev)
+method.SDL_Cursor..ctor: void(IntPtr pointer)
+method.SDL_Cursor.op_Implicit: IntPtr(SDL_Cursor Sdl2Cursor)
+method.SDL_Cursor.op_Implicit: SDL_Cursor(IntPtr pointer)
+method.SDL_EventFilter..ctor: void(object object, IntPtr method)
+method.SDL_EventFilter.BeginInvoke: IAsyncResult(void* userdata, SDL_Event* event, AsyncCallback callback, object object)
+method.SDL_EventFilter.EndInvoke: int(IAsyncResult result)
+method.SDL_EventFilter.Invoke: int(void* userdata, SDL_Event* event)
+method.SDL_GameController..ctor: void(IntPtr pointer)
+method.SDL_GameController.op_Implicit: IntPtr(SDL_GameController controller)
+method.SDL_GameController.op_Implicit: SDL_GameController(IntPtr pointer)
+method.SDL_Joystick..ctor: void(IntPtr pointer)
+method.SDL_Joystick.op_Implicit: IntPtr(SDL_Joystick controller)
+method.SDL_Joystick.op_Implicit: SDL_Joystick(IntPtr pointer)
+method.SDL_Renderer..ctor: void(IntPtr pointer)
+method.SDL_Renderer.op_Implicit: IntPtr(SDL_Renderer Sdl2Window)
+method.SDL_Renderer.op_Implicit: SDL_Renderer(IntPtr pointer)
+method.SDL_Window..ctor: void(IntPtr pointer)
+method.SDL_Window.op_Implicit: IntPtr(SDL_Window Sdl2Window)
+method.SDL_Window.op_Implicit: SDL_Window(IntPtr pointer)
+method.Sdl2Events.ProcessEvents: void()
+method.Sdl2Events.Subscribe: void(SDLEventHandler processor)
+method.Sdl2Events.Unsubscribe: void(SDLEventHandler processor)
+method.Sdl2Native.LoadFunction: !!0(string name)
+method.Sdl2Native.SDL_AddEventWatch: void(SDL_EventFilter filter, void* userdata)
+method.Sdl2Native.SDL_CaptureMouse: int(bool enabled)
+method.Sdl2Native.SDL_ClearError: byte*()
+method.Sdl2Native.SDL_CreateRenderer: SDL_Renderer(SDL_Window Sdl2Window, int index, uint flags)
+method.Sdl2Native.SDL_CreateSystemCursor: SDL_Cursor(SDL_SystemCursor id)
+method.Sdl2Native.SDL_CreateWindow: SDL_Window(string title, int x, int y, int w, int h, SDL_WindowFlags flags)
+method.Sdl2Native.SDL_CreateWindowFrom: SDL_Window(IntPtr data)
+method.Sdl2Native.SDL_DestroyRenderer: void(SDL_Renderer renderer)
+method.Sdl2Native.SDL_DestroyWindow: void(SDL_Window Sdl2Window)
+method.Sdl2Native.SDL_FilterEvents: void(SDL_EventFilter filter, void* userdata)
+method.Sdl2Native.SDL_FreeCursor: void(SDL_Cursor cursor)
+method.Sdl2Native.SDL_GL_CreateContext: IntPtr(SDL_Window Sdl2Window)
+method.Sdl2Native.SDL_GL_DeleteContext: void(IntPtr context)
+method.Sdl2Native.SDL_GL_GetAttribute: int(SDL_GLAttribute attr, int* value)
+method.Sdl2Native.SDL_GL_GetCurrentContext: IntPtr()
+method.Sdl2Native.SDL_GL_GetProcAddress: IntPtr(string proc)
+method.Sdl2Native.SDL_GL_MakeCurrent: int(SDL_Window Sdl2Window, IntPtr context)
+method.Sdl2Native.SDL_GL_SetAttribute: int(SDL_GLAttribute attr, int value)
+method.Sdl2Native.SDL_GL_SetSwapInterval: int(int interval)
+method.Sdl2Native.SDL_GL_SwapWindow: void(SDL_Window Sdl2Window)
+method.Sdl2Native.SDL_GameControllerClose: void(SDL_GameController gamecontroller)
+method.Sdl2Native.SDL_GameControllerEventState: int(int state)
+method.Sdl2Native.SDL_GameControllerFromInstanceID: SDL_GameController(int joyid)
+method.Sdl2Native.SDL_GameControllerGetAttached: int(SDL_GameController gamecontroller)
+method.Sdl2Native.SDL_GameControllerGetAxis: short(SDL_GameController gamecontroller, SDL_GameControllerAxis axis)
+method.Sdl2Native.SDL_GameControllerGetButton: byte(SDL_GameController gamecontroller, SDL_GameControllerButton button)
+method.Sdl2Native.SDL_GameControllerGetJoystick: SDL_Joystick(SDL_GameController gamecontroller)
+method.Sdl2Native.SDL_GameControllerGetProduct: ushort(SDL_GameController gamecontroller)
+method.Sdl2Native.SDL_GameControllerGetProductVersion: ushort(SDL_GameController gamecontroller)
+method.Sdl2Native.SDL_GameControllerGetVendor: ushort(SDL_GameController gamecontroller)
+method.Sdl2Native.SDL_GameControllerName: byte*(SDL_GameController gamecontroller)
+method.Sdl2Native.SDL_GameControllerNameForIndex: byte*(int joystick_index)
+method.Sdl2Native.SDL_GameControllerOpen: SDL_GameController(int joystick_index)
+method.Sdl2Native.SDL_GameControllerUpdate: void()
+method.Sdl2Native.SDL_GetClipboardText: string()
+method.Sdl2Native.SDL_GetCurrentDisplayMode: int(int displayIndex, SDL_DisplayMode* mode)
+method.Sdl2Native.SDL_GetDefaultCursor: SDL_Cursor()
+method.Sdl2Native.SDL_GetDesktopDisplayMode: int(int displayIndex, SDL_DisplayMode* mode)
+method.Sdl2Native.SDL_GetDisplayBounds: int(int displayIndex, Rectangle* rect)
+method.Sdl2Native.SDL_GetError: byte*()
+method.Sdl2Native.SDL_GetModState: SDL_Keymod()
+method.Sdl2Native.SDL_GetNumVideoDisplays: int()
+method.Sdl2Native.SDL_GetVersion: void(SDL_version* version)
+method.Sdl2Native.SDL_GetWMWindowInfo: int(SDL_Window Sdl2Window, SDL_SysWMinfo* info)
+method.Sdl2Native.SDL_GetWindowDisplayIndex: int(SDL_Window window)
+method.Sdl2Native.SDL_GetWindowFlags: SDL_WindowFlags(SDL_Window Sdl2Window)
+method.Sdl2Native.SDL_GetWindowID: uint(SDL_Window Sdl2Window)
+method.Sdl2Native.SDL_GetWindowOpacity: int(SDL_Window Sdl2Window, float* opacity)
+method.Sdl2Native.SDL_GetWindowPosition: void(SDL_Window Sdl2Window, int* x, int* y)
+method.Sdl2Native.SDL_GetWindowSize: void(SDL_Window Sdl2Window, int* w, int* h)
+method.Sdl2Native.SDL_GetWindowTitle: string(SDL_Window Sdl2Window)
+method.Sdl2Native.SDL_HideWindow: void(SDL_Window Sdl2Window)
+method.Sdl2Native.SDL_Init: int(SDLInitFlags flags)
+method.Sdl2Native.SDL_IsGameController: bool(int joystick_index)
+method.Sdl2Native.SDL_JoystickInstanceID: int(SDL_Joystick joystick)
+method.Sdl2Native.SDL_MaximizeWindow: void(SDL_Window Sdl2Window)
+method.Sdl2Native.SDL_MinimizeWindow: void(SDL_Window Sdl2Window)
+method.Sdl2Native.SDL_NumJoysticks: int()
+method.Sdl2Native.SDL_PollEvent: int(SDL_Event* event)
+method.Sdl2Native.SDL_PumpEvents: void()
+method.Sdl2Native.SDL_RaiseWindow: void(SDL_Window Sdl2Window)
+method.Sdl2Native.SDL_RenderClear: int(SDL_Renderer renderer)
+method.Sdl2Native.SDL_RenderFillRect: int(SDL_Renderer renderer, void* rect)
+method.Sdl2Native.SDL_RenderPresent: int(SDL_Renderer renderer)
+method.Sdl2Native.SDL_SetClipboardText: int(string text)
+method.Sdl2Native.SDL_SetCursor: void(SDL_Cursor cursor)
+method.Sdl2Native.SDL_SetEventFilter: void(SDL_EventFilter filter, void* userdata)
+method.Sdl2Native.SDL_SetHint: bool(string name, string value)
+method.Sdl2Native.SDL_SetRelativeMouseMode: int(bool enabled)
+method.Sdl2Native.SDL_SetRenderDrawColor: int(SDL_Renderer renderer, byte r, byte g, byte b, byte a)
+method.Sdl2Native.SDL_SetWindowBordered: void(SDL_Window Sdl2Window, uint bordered)
+method.Sdl2Native.SDL_SetWindowFullscreen: int(SDL_Window Sdl2Window, SDL_FullscreenMode mode)
+method.Sdl2Native.SDL_SetWindowGrab: void(SDL_Window window, bool grabbed)
+method.Sdl2Native.SDL_SetWindowOpacity: int(SDL_Window Sdl2Window, float opacity)
+method.Sdl2Native.SDL_SetWindowPosition: void(SDL_Window Sdl2Window, int x, int y)
+method.Sdl2Native.SDL_SetWindowResizable: void(SDL_Window window, uint resizable)
+method.Sdl2Native.SDL_SetWindowSize: void(SDL_Window Sdl2Window, int w, int h)
+method.Sdl2Native.SDL_SetWindowTitle: void(SDL_Window Sdl2Window, string title)
+method.Sdl2Native.SDL_ShowCursor: int(int toggle)
+method.Sdl2Native.SDL_ShowWindow: void(SDL_Window Sdl2Window)
+method.Sdl2Native.SDL_WarpMouseInWindow: void(SDL_Window window, int x, int y)
+method.Sdl2Native.SDL_free: void(void* ptr)
+method.Sdl2Window..ctor: void(IntPtr windowHandle, bool threadedProcessing)
+method.Sdl2Window..ctor: void(string title, int x, int y, int width, int height, SDL_WindowFlags flags, bool threadedProcessing)
+method.Sdl2Window.ClientToScreen: Point(Point p)
+method.Sdl2Window.Close: void()
+method.Sdl2Window.PumpEvents: InputSnapshot()
+method.Sdl2Window.PumpEvents: void(SDLEventHandler eventHandler)
+method.Sdl2Window.ScreenToClient: Point(Point p)
+method.Sdl2Window.SetCloseRequestedHandler: void(Func`1<bool> handler)
+method.Sdl2Window.SetMousePosition: void(Vector2 position)
+method.Sdl2Window.SetMousePosition: void(int x, int y)
+property.BufferedValue`1.Value: !0 { get; set; }
+property.DragDropEvent.File: string { get; }
+property.InputSnapshot.KeyCharPresses: IReadOnlyList`1<char> { get; }
+property.InputSnapshot.KeyEvents: IReadOnlyList`1<KeyEvent> { get; }
+property.InputSnapshot.MouseEvents: IReadOnlyList`1<MouseEvent> { get; }
+property.InputSnapshot.MousePosition: Vector2 { get; }
+property.InputSnapshot.WheelDelta: float { get; }
+property.KeyEvent.Down: bool { get; }
+property.KeyEvent.Key: Key { get; }
+property.KeyEvent.Modifiers: ModifierKeys { get; }
+property.KeyEvent.Repeat: bool { get; }
+property.MouseEvent.Down: bool { get; }
+property.MouseEvent.MouseButton: MouseButton { get; }
+property.MouseMoveEventArgs.MousePosition: Vector2 { get; }
+property.MouseMoveEventArgs.State: MouseState { get; }
+property.MouseWheelEventArgs.State: MouseState { get; }
+property.MouseWheelEventArgs.WheelDelta: float { get; }
+property.Rectangle.Bottom: int { get; }
+property.Rectangle.Left: int { get; }
+property.Rectangle.Position: Vector2 { get; }
+property.Rectangle.Right: int { get; }
+property.Rectangle.Size: Vector2 { get; }
+property.Rectangle.Top: int { get; }
+property.Sdl2Window.BorderVisible: bool { get; set; }
+property.Sdl2Window.Bounds: Rectangle { get; }
+property.Sdl2Window.CursorVisible: bool { get; set; }
+property.Sdl2Window.Exists: bool { get; }
+property.Sdl2Window.Focused: bool { get; }
+property.Sdl2Window.Handle: IntPtr { get; }
+property.Sdl2Window.Height: int { get; set; }
+property.Sdl2Window.LimitPollRate: bool { get; set; }
+property.Sdl2Window.MouseDelta: Vector2 { get; }
+property.Sdl2Window.Opacity: float { get; set; }
+property.Sdl2Window.PollIntervalInMs: float { get; set; }
+property.Sdl2Window.Resizable: bool { get; set; }
+property.Sdl2Window.ScaleFactor: Vector2 { get; }
+property.Sdl2Window.SdlWindowHandle: IntPtr { get; }
+property.Sdl2Window.Title: string { get; set; }
+property.Sdl2Window.Visible: bool { get; set; }
+property.Sdl2Window.Width: int { get; set; }
+property.Sdl2Window.WindowState: WindowState { get; set; }
+property.Sdl2Window.X: int { get; set; }
+property.Sdl2Window.Y: int { get; set; }
+struct.AndroidWindowInfo._layout: Sequential
+struct.AndroidWindowInfo._pack: 0
+struct.AndroidWindowInfo._size: 0
+struct.AndroidWindowInfo.field0.window: IntPtr
+struct.AndroidWindowInfo.field1.surface: IntPtr
+struct.CocoaWindowInfo._layout: Sequential
+struct.CocoaWindowInfo._pack: 0
+struct.CocoaWindowInfo._size: 0
+struct.CocoaWindowInfo.field0.Window: IntPtr
+struct.DragDropEvent._layout: Sequential
+struct.DragDropEvent._pack: 0
+struct.DragDropEvent._size: 0
+struct.DragDropEvent.field0.<File>k__BackingField: string
+struct.KeyEvent._layout: Sequential
+struct.KeyEvent._pack: 0
+struct.KeyEvent._size: 0
+struct.KeyEvent.field0.<Key>k__BackingField: Key
+struct.KeyEvent.field1.<Down>k__BackingField: bool
+struct.KeyEvent.field2.<Modifiers>k__BackingField: ModifierKeys
+struct.KeyEvent.field3.<Repeat>k__BackingField: bool
+struct.MouseEvent._layout: Sequential
+struct.MouseEvent._pack: 0
+struct.MouseEvent._size: 0
+struct.MouseEvent.field0.<MouseButton>k__BackingField: MouseButton
+struct.MouseEvent.field1.<Down>k__BackingField: bool
+struct.MouseMoveEventArgs._layout: Sequential
+struct.MouseMoveEventArgs._pack: 0
+struct.MouseMoveEventArgs._size: 0
+struct.MouseMoveEventArgs.field0.<State>k__BackingField: MouseState
+struct.MouseMoveEventArgs.field1.<MousePosition>k__BackingField: Vector2
+struct.MouseState._layout: Sequential
+struct.MouseState._pack: 0
+struct.MouseState._size: 0
+struct.MouseState.field0.X: int
+struct.MouseState.field1.Y: int
+struct.MouseState.field10._mouseDown8: bool
+struct.MouseState.field11._mouseDown9: bool
+struct.MouseState.field12._mouseDown10: bool
+struct.MouseState.field13._mouseDown11: bool
+struct.MouseState.field14._mouseDown12: bool
+struct.MouseState.field2._mouseDown0: bool
+struct.MouseState.field3._mouseDown1: bool
+struct.MouseState.field4._mouseDown2: bool
+struct.MouseState.field5._mouseDown3: bool
+struct.MouseState.field6._mouseDown4: bool
+struct.MouseState.field7._mouseDown5: bool
+struct.MouseState.field8._mouseDown6: bool
+struct.MouseState.field9._mouseDown7: bool
+struct.MouseWheelEventArgs._layout: Sequential
+struct.MouseWheelEventArgs._pack: 0
+struct.MouseWheelEventArgs._size: 0
+struct.MouseWheelEventArgs.field0.<State>k__BackingField: MouseState
+struct.MouseWheelEventArgs.field1.<WheelDelta>k__BackingField: float
+struct.Point._layout: Sequential
+struct.Point._pack: 0
+struct.Point._size: 0
+struct.Point.field0.X: int
+struct.Point.field1.Y: int
+struct.Rectangle._layout: Sequential
+struct.Rectangle._pack: 0
+struct.Rectangle._size: 0
+struct.Rectangle.field0.X: int
+struct.Rectangle.field1.Y: int
+struct.Rectangle.field2.Width: int
+struct.Rectangle.field3.Height: int
+struct.SDL_ControllerAxisEvent._layout: Sequential
+struct.SDL_ControllerAxisEvent._pack: 0
+struct.SDL_ControllerAxisEvent._size: 0
+struct.SDL_ControllerAxisEvent.field0.type: uint
+struct.SDL_ControllerAxisEvent.field1.timestamp: uint
+struct.SDL_ControllerAxisEvent.field2.which: int
+struct.SDL_ControllerAxisEvent.field3.axis: SDL_GameControllerAxis
+struct.SDL_ControllerAxisEvent.field4.padding1: byte
+struct.SDL_ControllerAxisEvent.field5.padding2: byte
+struct.SDL_ControllerAxisEvent.field6.padding3: byte
+struct.SDL_ControllerAxisEvent.field7.value: short
+struct.SDL_ControllerAxisEvent.field8.padding4: ushort
+struct.SDL_ControllerButtonEvent._layout: Sequential
+struct.SDL_ControllerButtonEvent._pack: 0
+struct.SDL_ControllerButtonEvent._size: 0
+struct.SDL_ControllerButtonEvent.field0.type: uint
+struct.SDL_ControllerButtonEvent.field1.timestamp: uint
+struct.SDL_ControllerButtonEvent.field2.which: int
+struct.SDL_ControllerButtonEvent.field3.button: SDL_GameControllerButton
+struct.SDL_ControllerButtonEvent.field4.state: byte
+struct.SDL_ControllerButtonEvent.field5.padding1: byte
+struct.SDL_ControllerButtonEvent.field6.padding2: byte
+struct.SDL_ControllerDeviceEvent._layout: Sequential
+struct.SDL_ControllerDeviceEvent._pack: 0
+struct.SDL_ControllerDeviceEvent._size: 0
+struct.SDL_ControllerDeviceEvent.field0.type: uint
+struct.SDL_ControllerDeviceEvent.field1.timestamp: uint
+struct.SDL_ControllerDeviceEvent.field2.which: int
+struct.SDL_Cursor._layout: Sequential
+struct.SDL_Cursor._pack: 0
+struct.SDL_Cursor._size: 0
+struct.SDL_Cursor.field0.NativePointer: IntPtr
+struct.SDL_DisplayMode._layout: Sequential
+struct.SDL_DisplayMode._pack: 0
+struct.SDL_DisplayMode._size: 0
+struct.SDL_DisplayMode.field0.format: uint
+struct.SDL_DisplayMode.field1.w: int
+struct.SDL_DisplayMode.field2.h: int
+struct.SDL_DisplayMode.field3.refresh_rate: int
+struct.SDL_DisplayMode.field4.driverdata: void*
+struct.SDL_DropEvent._layout: Sequential
+struct.SDL_DropEvent._pack: 0
+struct.SDL_DropEvent._size: 0
+struct.SDL_DropEvent.field0.type: SDL_EventType
+struct.SDL_DropEvent.field1.timestamp: uint
+struct.SDL_DropEvent.field2.file: byte*
+struct.SDL_DropEvent.field3.windowID: uint
+struct.SDL_Event._layout: Explicit
+struct.SDL_Event._pack: 0
+struct.SDL_Event._size: 0
+struct.SDL_Event.field0.type: SDL_EventType @0
+struct.SDL_Event.field1.timestamp: uint @4
+struct.SDL_Event.field2.windowID: uint @8
+struct.SDL_Event.field3.__padding: Bytex56 @0
+struct.SDL_GameController._layout: Sequential
+struct.SDL_GameController._pack: 0
+struct.SDL_GameController._size: 0
+struct.SDL_GameController.field0.NativePointer: IntPtr
+struct.SDL_Joystick._layout: Sequential
+struct.SDL_Joystick._pack: 0
+struct.SDL_Joystick._size: 0
+struct.SDL_Joystick.field0.NativePointer: IntPtr
+struct.SDL_KeyboardEvent._layout: Sequential
+struct.SDL_KeyboardEvent._pack: 0
+struct.SDL_KeyboardEvent._size: 0
+struct.SDL_KeyboardEvent.field0.type: SDL_EventType
+struct.SDL_KeyboardEvent.field1.timestamp: uint
+struct.SDL_KeyboardEvent.field2.windowID: uint
+struct.SDL_KeyboardEvent.field3.state: byte
+struct.SDL_KeyboardEvent.field4.repeat: byte
+struct.SDL_KeyboardEvent.field5.padding2: byte
+struct.SDL_KeyboardEvent.field6.padding3: byte
+struct.SDL_KeyboardEvent.field7.keysym: SDL_Keysym
+struct.SDL_Keysym._layout: Sequential
+struct.SDL_Keysym._pack: 0
+struct.SDL_Keysym._size: 0
+struct.SDL_Keysym.field0.scancode: SDL_Scancode
+struct.SDL_Keysym.field1.sym: SDL_Keycode
+struct.SDL_Keysym.field2.mod: SDL_Keymod
+struct.SDL_Keysym.field3.__unused: uint
+struct.SDL_MouseButtonEvent._layout: Sequential
+struct.SDL_MouseButtonEvent._pack: 0
+struct.SDL_MouseButtonEvent._size: 0
+struct.SDL_MouseButtonEvent.field0.type: SDL_EventType
+struct.SDL_MouseButtonEvent.field1.timestamp: uint
+struct.SDL_MouseButtonEvent.field2.windowID: uint
+struct.SDL_MouseButtonEvent.field3.which: uint
+struct.SDL_MouseButtonEvent.field4.button: SDL_MouseButton
+struct.SDL_MouseButtonEvent.field5.state: byte
+struct.SDL_MouseButtonEvent.field6.clicks: byte
+struct.SDL_MouseButtonEvent.field7.padding1: byte
+struct.SDL_MouseButtonEvent.field8.x: int
+struct.SDL_MouseButtonEvent.field9.y: int
+struct.SDL_MouseMotionEvent._layout: Sequential
+struct.SDL_MouseMotionEvent._pack: 0
+struct.SDL_MouseMotionEvent._size: 0
+struct.SDL_MouseMotionEvent.field0.type: SDL_EventType
+struct.SDL_MouseMotionEvent.field1.timestamp: uint
+struct.SDL_MouseMotionEvent.field2.windowID: uint
+struct.SDL_MouseMotionEvent.field3.which: uint
+struct.SDL_MouseMotionEvent.field4.state: ButtonState
+struct.SDL_MouseMotionEvent.field5.x: int
+struct.SDL_MouseMotionEvent.field6.y: int
+struct.SDL_MouseMotionEvent.field7.xrel: int
+struct.SDL_MouseMotionEvent.field8.yrel: int
+struct.SDL_MouseWheelEvent._layout: Sequential
+struct.SDL_MouseWheelEvent._pack: 0
+struct.SDL_MouseWheelEvent._size: 0
+struct.SDL_MouseWheelEvent.field0.type: SDL_EventType
+struct.SDL_MouseWheelEvent.field1.timestamp: uint
+struct.SDL_MouseWheelEvent.field2.windowID: uint
+struct.SDL_MouseWheelEvent.field3.which: uint
+struct.SDL_MouseWheelEvent.field4.x: int
+struct.SDL_MouseWheelEvent.field5.y: int
+struct.SDL_MouseWheelEvent.field6.direction: uint
+struct.SDL_Renderer._layout: Sequential
+struct.SDL_Renderer._pack: 0
+struct.SDL_Renderer._size: 0
+struct.SDL_Renderer.field0.NativePointer: IntPtr
+struct.SDL_SysWMinfo._layout: Sequential
+struct.SDL_SysWMinfo._pack: 0
+struct.SDL_SysWMinfo._size: 0
+struct.SDL_SysWMinfo.field0.version: SDL_version
+struct.SDL_SysWMinfo.field1.subsystem: SysWMType
+struct.SDL_SysWMinfo.field2.info: WindowInfo
+struct.SDL_TextInputEvent.<text>e__FixedBuffer._layout: Sequential
+struct.SDL_TextInputEvent.<text>e__FixedBuffer._pack: 0
+struct.SDL_TextInputEvent.<text>e__FixedBuffer._size: 32
+struct.SDL_TextInputEvent.<text>e__FixedBuffer.field0.FixedElementField: byte
+struct.SDL_TextInputEvent._layout: Sequential
+struct.SDL_TextInputEvent._pack: 0
+struct.SDL_TextInputEvent._size: 0
+struct.SDL_TextInputEvent.field0.type: SDL_EventType
+struct.SDL_TextInputEvent.field1.timestamp: uint
+struct.SDL_TextInputEvent.field2.windowID: uint
+struct.SDL_TextInputEvent.field3.text: <text>e__FixedBuffer
+struct.SDL_Window._layout: Sequential
+struct.SDL_Window._pack: 0
+struct.SDL_Window._size: 0
+struct.SDL_Window.field0.NativePointer: IntPtr
+struct.SDL_WindowEvent._layout: Sequential
+struct.SDL_WindowEvent._pack: 0
+struct.SDL_WindowEvent._size: 0
+struct.SDL_WindowEvent.field0.type: SDL_EventType
+struct.SDL_WindowEvent.field1.timestamp: uint
+struct.SDL_WindowEvent.field2.windowID: uint
+struct.SDL_WindowEvent.field3.event: SDL_WindowEventID
+struct.SDL_WindowEvent.field4.padding1: byte
+struct.SDL_WindowEvent.field5.padding2: byte
+struct.SDL_WindowEvent.field6.padding3: byte
+struct.SDL_WindowEvent.field7.data1: int
+struct.SDL_WindowEvent.field8.data2: int
+struct.SDL_version._layout: Sequential
+struct.SDL_version._pack: 0
+struct.SDL_version._size: 0
+struct.SDL_version.field0.major: byte
+struct.SDL_version.field1.minor: byte
+struct.SDL_version.field2.patch: byte
+struct.WaylandWindowInfo._layout: Sequential
+struct.WaylandWindowInfo._pack: 0
+struct.WaylandWindowInfo._size: 0
+struct.WaylandWindowInfo.field0.display: IntPtr
+struct.WaylandWindowInfo.field1.surface: IntPtr
+struct.WaylandWindowInfo.field2.shellSurface: IntPtr
+struct.Win32WindowInfo._layout: Sequential
+struct.Win32WindowInfo._pack: 0
+struct.Win32WindowInfo._size: 0
+struct.Win32WindowInfo.field0.Sdl2Window: IntPtr
+struct.Win32WindowInfo.field1.hdc: IntPtr
+struct.Win32WindowInfo.field2.hinstance: IntPtr
+struct.WindowInfo.<bytes>e__FixedBuffer._layout: Sequential
+struct.WindowInfo.<bytes>e__FixedBuffer._pack: 0
+struct.WindowInfo.<bytes>e__FixedBuffer._size: 100
+struct.WindowInfo.<bytes>e__FixedBuffer.field0.FixedElementField: byte
+struct.WindowInfo._layout: Sequential
+struct.WindowInfo._pack: 0
+struct.WindowInfo._size: 0
+struct.WindowInfo.field0.bytes: <bytes>e__FixedBuffer
+struct.X11WindowInfo._layout: Sequential
+struct.X11WindowInfo._pack: 0
+struct.X11WindowInfo._size: 0
+struct.X11WindowInfo.field0.display: IntPtr
+struct.X11WindowInfo.field1.Sdl2Window: IntPtr
+type.AndroidWindowInfo: struct
+type.BufferedValue`1: class
+type.ButtonState: enum
+type.CocoaWindowInfo: struct
+type.DragDropEvent: struct
+type.InputSnapshot: interface
+type.Key: enum
+type.KeyEvent: struct
+type.ModifierKeys: enum
+type.MouseButton: enum
+type.MouseEvent: struct
+type.MouseMoveEventArgs: struct
+type.MouseState: struct
+type.MouseWheelEventArgs: struct
+type.Point: struct
+type.Rectangle: struct
+type.SDLEventHandler: delegate
+type.SDLInitFlags: enum
+type.SDL_ControllerAxisEvent: struct
+type.SDL_ControllerButtonEvent: struct
+type.SDL_ControllerDeviceEvent: struct
+type.SDL_Cursor: struct
+type.SDL_DisplayMode: struct
+type.SDL_DropEvent: struct
+type.SDL_Event: struct
+type.SDL_EventFilter: delegate
+type.SDL_EventType: enum
+type.SDL_FullscreenMode: enum
+type.SDL_GLAttribute: enum
+type.SDL_GLContextFlag: enum
+type.SDL_GLProfile: enum
+type.SDL_GameController: struct
+type.SDL_GameControllerAxis: enum
+type.SDL_GameControllerButton: enum
+type.SDL_Joystick: struct
+type.SDL_KeyboardEvent: struct
+type.SDL_Keycode: enum
+type.SDL_Keymod: enum
+type.SDL_Keysym: struct
+type.SDL_MouseButton: enum
+type.SDL_MouseButtonEvent: struct
+type.SDL_MouseMotionEvent: struct
+type.SDL_MouseWheelEvent: struct
+type.SDL_Renderer: struct
+type.SDL_Scancode: enum
+type.SDL_SysWMinfo: struct
+type.SDL_SystemCursor: enum
+type.SDL_TextInputEvent.<text>e__FixedBuffer: struct
+type.SDL_TextInputEvent: struct
+type.SDL_Window: struct
+type.SDL_WindowEvent: struct
+type.SDL_WindowEventID: enum
+type.SDL_WindowFlags: enum
+type.SDL_version: struct
+type.Sdl2Events: static class
+type.Sdl2Native: static class
+type.Sdl2Window: class
+type.SysWMType: enum
+type.WaylandWindowInfo: struct
+type.Win32WindowInfo: struct
+type.WindowInfo.<bytes>e__FixedBuffer: struct
+type.WindowInfo: struct
+type.WindowState: enum
+type.X11WindowInfo: struct

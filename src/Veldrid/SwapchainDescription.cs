@@ -41,6 +41,22 @@ namespace Veldrid
         public bool ColorSrgb;
 
         /// <summary>
+        ///     Controls how the compositor scales the backbuffer when it doesn't match the window size
+        ///     (e.g., during a resize before the app re-renders).
+        ///     Default is <see cref="SwapchainScalingMode.Stretch"/> (legacy behavior).
+        ///     Set to <see cref="SwapchainScalingMode.None"/> for desktop UI applications.
+        ///     Supported on D3D11 and Metal. No-op on Vulkan and OpenGL.
+        /// </summary>
+        public SwapchainScalingMode ScalingMode;
+
+        /// <summary>
+        ///     The color the compositor shows in areas not covered by the backbuffer
+        ///     when <see cref="ScalingMode"/> is <see cref="SwapchainScalingMode.None"/>.
+        ///     Only meaningful on D3D11 and Metal. Default is null (black).
+        /// </summary>
+        public RgbaFloat? CompositorBackgroundColor;
+
+        /// <summary>
         ///     Constructs a new SwapchainDescription.
         /// </summary>
         /// <param name="source">
@@ -120,7 +136,9 @@ namespace Veldrid
                    && Height.Equals(other.Height)
                    && DepthFormat == other.DepthFormat
                    && SyncToVerticalBlank.Equals(other.SyncToVerticalBlank)
-                   && ColorSrgb.Equals(other.ColorSrgb);
+                   && ColorSrgb.Equals(other.ColorSrgb)
+                   && ScalingMode.Equals(other.ScalingMode)
+                   && CompositorBackgroundColor.Equals(other.CompositorBackgroundColor);
         }
 
         /// <summary>
@@ -135,7 +153,9 @@ namespace Veldrid
                 Height.GetHashCode(),
                 DepthFormat.GetHashCode(),
                 SyncToVerticalBlank.GetHashCode(),
-                ColorSrgb.GetHashCode());
+                ColorSrgb.GetHashCode(),
+                ScalingMode.GetHashCode(),
+                CompositorBackgroundColor.GetHashCode());
         }
     }
 }

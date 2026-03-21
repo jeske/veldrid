@@ -218,6 +218,9 @@ enum.StencilOperation.Keep: 0
 enum.StencilOperation.Replace: 2
 enum.StencilOperation.Zero: 1
 enum.StencilOperation._type: byte
+enum.SwapchainScalingMode.None: 1
+enum.SwapchainScalingMode.Stretch: 0
+enum.SwapchainScalingMode._type: int
 enum.TextureSampleCount.Count16: 4
 enum.TextureSampleCount.Count1: 0
 enum.TextureSampleCount.Count2: 1
@@ -480,8 +483,10 @@ field.StencilBehaviorDescription.DepthFail: StencilOperation
 field.StencilBehaviorDescription.Fail: StencilOperation
 field.StencilBehaviorDescription.Pass: StencilOperation
 field.SwapchainDescription.ColorSrgb: bool
+field.SwapchainDescription.CompositorBackgroundColor: Nullable`1<RgbaFloat>
 field.SwapchainDescription.DepthFormat: Nullable`1<PixelFormat>
 field.SwapchainDescription.Height: uint
+field.SwapchainDescription.ScalingMode: SwapchainScalingMode
 field.SwapchainDescription.Source: SwapchainSource
 field.SwapchainDescription.SyncToVerticalBlank: bool
 field.SwapchainDescription.Width: uint
@@ -964,6 +969,7 @@ property.Shader.EntryPoint: string { get; }
 property.Shader.IsDisposed: bool { get; }
 property.Shader.Name: string { get; set; }
 property.Shader.Stage: ShaderStages { get; }
+property.Swapchain.CompositorBackgroundColor: Nullable`1<RgbaFloat> { get; set; }
 property.Swapchain.Framebuffer: Framebuffer { get; }
 property.Swapchain.IsDisposed: bool { get; }
 property.Swapchain.Name: string { get; set; }
@@ -1240,6 +1246,8 @@ struct.SwapchainDescription.field2.Height: uint
 struct.SwapchainDescription.field3.DepthFormat: Nullable`1<PixelFormat>
 struct.SwapchainDescription.field4.SyncToVerticalBlank: bool
 struct.SwapchainDescription.field5.ColorSrgb: bool
+struct.SwapchainDescription.field6.ScalingMode: SwapchainScalingMode
+struct.SwapchainDescription.field7.CompositorBackgroundColor: Nullable`1<RgbaFloat>
 struct.TextureDescription._layout: Sequential
 struct.TextureDescription._pack: 0
 struct.TextureDescription._size: 0
@@ -1368,6 +1376,7 @@ type.StencilBehaviorDescription: struct
 type.StencilOperation: enum
 type.Swapchain: abstract class
 type.SwapchainDescription: struct
+type.SwapchainScalingMode: enum
 type.SwapchainSource: abstract class
 type.Texture: abstract class
 type.TextureDescription: struct

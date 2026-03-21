@@ -74,6 +74,12 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
+# ── List deployed packages ───────────────────────────────────────────────
+$deployedPackages = Get-ChildItem "$localNuGetFeedPath\*Veldrid*$newVersion*" -Filter "*.nupkg" | Select-Object -ExpandProperty Name
+
 Write-Host "`n=== Done! ===" -ForegroundColor Green
 Write-Host "Published release version: $newVersion" -ForegroundColor Green
 Write-Host "Packages deployed to: $localNuGetFeedPath" -ForegroundColor Green
+foreach ($packageFileName in $deployedPackages) {
+    Write-Host "  $packageFileName" -ForegroundColor DarkGray
+}

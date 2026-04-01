@@ -64,6 +64,12 @@ if ($DryRun) {
     exit 0
 }
 
+# ── Regenerate AN.Veldrid.Version.generated.props ───────────────────
+$genVersionScript = Join-Path $projectRoot "cmd\gen-version-file.ps1"
+Write-Host "`nGenerating version props..." -ForegroundColor Green
+& $genVersionScript
+if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: gen-version-file.ps1 failed" -ForegroundColor Red; exit 1 }
+
 # ── Build release packages ──────────────────────────────────────────────
 $env:LOCAL_NUGET_REPO = $localNuGetFeedPath
 

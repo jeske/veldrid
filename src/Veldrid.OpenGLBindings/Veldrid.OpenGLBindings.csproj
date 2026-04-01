@@ -4,7 +4,6 @@
 
   <PropertyGroup Label="Nuget">
     <PackageId>ArtificialNecessity.Veldrid.OpenGLBindings</PackageId>
-    <VersionPrefix>0.0.0</VersionPrefix>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 

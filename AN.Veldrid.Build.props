@@ -88,19 +88,24 @@
 
        All timestamps are LOCAL TIME. Each segment stays ≤ 65535.
        Just 'dotnet build' — zero ceremony.
-       ══════════════════════════════════════════════════════════════════════ -->
+       Scripts pass /p:_BuildYYMM, /p:_BuildDDHH, etc. to lock the timestamp
+       across all projects in a multi-project build. If not provided, each
+       project computes its own (fine for single-project builds).
+       ══════════════════════════════════════════════════════════════════════════ -->
   <PropertyGroup>
     <VeldridMajorVersion>5</VeldridMajorVersion>
-    <!-- AssemblyVersion segments (ushort-constrained, split timestamp) -->
-    <_BuildYYMM>$([System.DateTime]::Now.ToString("yyMM"))</_BuildYYMM>
-    <_BuildDDHH>$([System.DateTime]::Now.ToString("ddHH"))</_BuildDDHH>
-    <_Buildmmss>$([System.DateTime]::Now.ToString("mmss"))</_Buildmmss>
+    <!-- AssemblyVersion segments (ushort-constrained, split timestamp).
+         Only computed if not already provided via /p: from build scripts. -->
+    <_BuildYYMM Condition="'$(_BuildYYMM)' == ''">$([System.DateTime]::Now.ToString("yyMM"))</_BuildYYMM>
+    <_BuildDDHH Condition="'$(_BuildDDHH)' == ''">$([System.DateTime]::Now.ToString("ddHH"))</_BuildDDHH>
+    <_Buildmmss Condition="'$(_Buildmmss)' == ''">$([System.DateTime]::Now.ToString("mmss"))</_Buildmmss>
     <VersionPrefix>$(VeldridMajorVersion).$(_BuildYYMM).$(_BuildDDHH).$(_Buildmmss)</VersionPrefix>
     <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
     <FileVersion>$(VersionPrefix)</FileVersion>
-    <!-- PackageVersion segments (NuGet, no ushort constraint — full date+time) -->
-    <_BuildYYMMDD>$([System.DateTime]::Now.ToString("yyMMdd"))</_BuildYYMMDD>
-    <_BuildHHmmss>$([System.DateTime]::Now.ToString("HHmmss"))</_BuildHHmmss>
+    <!-- PackageVersion segments (NuGet, no ushort constraint — full date+time).
+         Only computed if not already provided via /p: from build scripts. -->
+    <_BuildYYMMDD Condition="'$(_BuildYYMMDD)' == ''">$([System.DateTime]::Now.ToString("yyMMdd"))</_BuildYYMMDD>
+    <_BuildHHmmss Condition="'$(_BuildHHmmss)' == ''">$([System.DateTime]::Now.ToString("HHmmss"))</_BuildHHmmss>
     <Version>$(VeldridMajorVersion).$(_BuildYYMMDD).$(_BuildHHmmss)</Version>
   </PropertyGroup>
 

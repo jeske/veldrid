@@ -24,7 +24,6 @@
   <PropertyGroup>
     <!-- Dependency versions — edit here, all projects pick them up -->
     <ANCodeAnalyzersVersion>0.1.13</ANCodeAnalyzersVersion>
-    <VeldridSpirvVersion>1.0.14</VeldridSpirvVersion>
     <VorticeWindowsVersion>2.4.2</VorticeWindowsVersion>
   </PropertyGroup>
 

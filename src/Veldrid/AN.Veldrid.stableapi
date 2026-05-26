@@ -1,4 +1,11 @@
 __stableApiVersion: 2
+default.PrecompiledShaderResult..ctor.flatBindingMap: object null
+default.ResourceFactory.CreateFromBundle.basePath: object null
+default.ResourceFactory.CreateFromBundle.basePath: object null
+default.ResourceFactory.CreateFromBundle.fileResolver: object null
+default.ResourceFactory.CreateFromBundle.fileResolver: object null
+default.VeldridShaderBundle.GetVertexFragmentShaderData.basePath: object null
+default.VeldridShaderBundle.GetVertexFragmentShaderData.fileResolver: object null
 enum.BlendFactor.BlendFactor: 10
 enum.BlendFactor.DestinationAlpha: 4
 enum.BlendFactor.DestinationColor: 8
@@ -151,6 +158,7 @@ enum.PrimitiveTopology.TriangleStrip: 1
 enum.PrimitiveTopology._type: byte
 enum.ResourceBindingModel.Default: 0
 enum.ResourceBindingModel.Improved: 1
+enum.ResourceBindingModel.ShaderBundleControlled: 2
 enum.ResourceBindingModel._type: int
 enum.ResourceKind.Sampler: 5
 enum.ResourceKind.StructuredBufferReadOnly: 1
@@ -713,6 +721,8 @@ method.OutputDescription.Equals: bool(OutputDescription other)
 method.OutputDescription.GetHashCode: int()
 method.Pipeline.Dispose: void()
 method.PixelFormatProperties.IsSampleCountSupported: bool(TextureSampleCount count)
+method.PrecompiledShaderResult..ctor: void(Shader[] shaders, ResourceLayoutDescription[] resourceLayouts, VdShaderBindingEntry[] flatBindingMap)
+method.PrecompiledShaderResult.CreateResourceLayouts: ResourceLayout[](ResourceFactory factory)
 method.RasterizerStateDescription..ctor: void(FaceCullMode cullMode, PolygonFillMode fillMode, FrontFace frontFace, bool depthClipEnabled, bool scissorTestEnabled)
 method.RasterizerStateDescription.Equals: bool(RasterizerStateDescription other)
 method.RasterizerStateDescription.GetHashCode: int()
@@ -726,10 +736,13 @@ method.ResourceFactory.CreateComputePipeline: Pipeline(ref ComputePipelineDescri
 method.ResourceFactory.CreateFence: Fence(bool signaled)
 method.ResourceFactory.CreateFramebuffer: Framebuffer(FramebufferDescription description)
 method.ResourceFactory.CreateFramebuffer: Framebuffer(ref FramebufferDescription description)
+method.ResourceFactory.CreateFromBundle: PrecompiledShaderResult(VeldridShaderBundle bundle, Func`2<string, byte[]> fileResolver, string basePath)
+method.ResourceFactory.CreateFromBundle: PrecompiledShaderResult(string vdshaderJson, Func`2<string, byte[]> fileResolver, string basePath)
 method.ResourceFactory.CreateGraphicsPipeline: Pipeline(GraphicsPipelineDescription description)
 method.ResourceFactory.CreateGraphicsPipeline: Pipeline(ref GraphicsPipelineDescription description)
 method.ResourceFactory.CreateResourceLayout: ResourceLayout(ResourceLayoutDescription description)
 method.ResourceFactory.CreateResourceLayout: ResourceLayout(ref ResourceLayoutDescription description)
+method.ResourceFactory.CreateResourceLayout: ResourceLayout(ref ResourceLayoutDescription description, uint setIndex, VdShaderBindingEntry[] bindingEntries)
 method.ResourceFactory.CreateResourceSet: ResourceSet(ResourceSetDescription description)
 method.ResourceFactory.CreateResourceSet: ResourceSet(ref ResourceSetDescription description)
 method.ResourceFactory.CreateSampler: Sampler(SamplerDescription description)
@@ -832,9 +845,22 @@ method.TextureViewDescription..ctor: void(Texture target, PixelFormat format, ui
 method.TextureViewDescription..ctor: void(Texture target, uint baseMipLevel, uint mipLevels, uint baseArrayLayer, uint arrayLayers)
 method.TextureViewDescription.Equals: bool(TextureViewDescription other)
 method.TextureViewDescription.GetHashCode: int()
+method.VdShaderBackendData..ctor: void()
+method.VdShaderBindingEntry..ctor: void()
+method.VdShaderResourceElement..ctor: void()
+method.VdShaderResourceLayout..ctor: void()
 method.VeldridException..ctor: void()
 method.VeldridException..ctor: void(string message)
 method.VeldridException..ctor: void(string message, Exception innerException)
+method.VeldridShaderBundle..ctor: void()
+method.VeldridShaderBundle.ComputeSha256: string(byte[] data)
+method.VeldridShaderBundle.Deserialize: VeldridShaderBundle(string json)
+method.VeldridShaderBundle.DeserializeFromFile: VeldridShaderBundle(string path)
+method.VeldridShaderBundle.GetBackendKey: string(GraphicsBackend backend)
+method.VeldridShaderBundle.GetResourceLayouts: ResourceLayoutDescription[]()
+method.VeldridShaderBundle.GetVertexFragmentShaderData: ValueTuple`4<byte[], byte[], string, string>(GraphicsBackend backend, Func`2<string, byte[]> fileResolver, string basePath)
+method.VeldridShaderBundle.Serialize: string()
+method.VeldridShaderBundle.SerializeToFile: void(string path)
 method.VertexElementDescription..ctor: void(string name, VertexElementFormat format, VertexElementSemantic semantic)
 method.VertexElementDescription..ctor: void(string name, VertexElementSemantic semantic, VertexElementFormat format)
 method.VertexElementDescription..ctor: void(string name, VertexElementSemantic semantic, VertexElementFormat format, uint offset)
@@ -953,6 +979,9 @@ property.OpenGLPlatformInfo.SwapBuffers: Action { get; }
 property.Pipeline.IsComputePipeline: bool { get; }
 property.Pipeline.IsDisposed: bool { get; }
 property.Pipeline.Name: string { get; set; }
+property.PrecompiledShaderResult.FlatBindingMap: VdShaderBindingEntry[] { get; }
+property.PrecompiledShaderResult.ResourceLayouts: ResourceLayoutDescription[] { get; }
+property.PrecompiledShaderResult.Shaders: Shader[] { get; }
 property.ResourceFactory.BackendType: GraphicsBackend { get; }
 property.ResourceFactory.Features: GraphicsDeviceFeatures { get; }
 property.ResourceLayout.IsDisposed: bool { get; }
@@ -993,6 +1022,39 @@ property.TextureView.IsDisposed: bool { get; }
 property.TextureView.MipLevels: uint { get; }
 property.TextureView.Name: string { get; set; }
 property.TextureView.Target: Texture { get; }
+property.VdShaderBackendData.ComputeEntryPoint: string { get; set; }
+property.VdShaderBackendData.ComputeShaderData: string { get; set; }
+property.VdShaderBackendData.ComputeShaderFile: string { get; set; }
+property.VdShaderBackendData.FragmentEntryPoint: string { get; set; }
+property.VdShaderBackendData.FragmentShaderData: string { get; set; }
+property.VdShaderBackendData.FragmentShaderFile: string { get; set; }
+property.VdShaderBackendData.OutputHash: string { get; set; }
+property.VdShaderBackendData.ShaderFormat: string { get; set; }
+property.VdShaderBackendData.VertexEntryPoint: string { get; set; }
+property.VdShaderBackendData.VertexShaderData: string { get; set; }
+property.VdShaderBackendData.VertexShaderFile: string { get; set; }
+property.VdShaderBindingEntry.Binding: uint { get; set; }
+property.VdShaderBindingEntry.FlatIndex: uint { get; set; }
+property.VdShaderBindingEntry.Kind: ResourceKind { get; set; }
+property.VdShaderBindingEntry.Name: string { get; set; }
+property.VdShaderBindingEntry.Set: uint { get; set; }
+property.VdShaderBindingEntry.Stages: ShaderStages { get; set; }
+property.VdShaderResourceElement.Kind: ResourceKind { get; set; }
+property.VdShaderResourceElement.Name: string { get; set; }
+property.VdShaderResourceElement.Stages: ShaderStages { get; set; }
+property.VdShaderResourceLayout.Elements: VdShaderResourceElement[] { get; set; }
+property.VeldridShaderBundle.Backends: Dictionary`2<string, VdShaderBackendData> { get; set; }
+property.VeldridShaderBundle.CompiledAt: string { get; set; }
+property.VeldridShaderBundle.CompiledAtEpoch: long { get; set; }
+property.VeldridShaderBundle.ComputeSource: string { get; set; }
+property.VeldridShaderBundle.FlatBindingMap: VdShaderBindingEntry[] { get; set; }
+property.VeldridShaderBundle.FragmentSource: string { get; set; }
+property.VeldridShaderBundle.InputHash: string { get; set; }
+property.VeldridShaderBundle.Purpose: string { get; set; }
+property.VeldridShaderBundle.ResourceLayoutDescriptions: VdShaderResourceLayout[] { get; set; }
+property.VeldridShaderBundle.ShaderName: string { get; set; }
+property.VeldridShaderBundle.Version: int { get; set; }
+property.VeldridShaderBundle.VertexSource: string { get; set; }
 struct.BackendInfoVulkan.ExtensionProperties._layout: Sequential
 struct.BackendInfoVulkan.ExtensionProperties._pack: 0
 struct.BackendInfoVulkan.ExtensionProperties._size: 0
@@ -1348,6 +1410,7 @@ type.Pipeline: abstract class
 type.PixelFormat: enum
 type.PixelFormatProperties: struct
 type.PolygonFillMode: enum
+type.PrecompiledShaderResult: sealed class
 type.PrimitiveTopology: enum
 type.RasterizerStateDescription: struct
 type.ResourceBindingModel: enum
@@ -1385,7 +1448,12 @@ type.TextureType: enum
 type.TextureUsage: enum
 type.TextureView: abstract class
 type.TextureViewDescription: struct
+type.VdShaderBackendData: sealed class
+type.VdShaderBindingEntry: sealed class
+type.VdShaderResourceElement: sealed class
+type.VdShaderResourceLayout: sealed class
 type.VeldridException: class
+type.VeldridShaderBundle: sealed class
 type.VertexElementDescription: struct
 type.VertexElementFormat: enum
 type.VertexElementSemantic: enum

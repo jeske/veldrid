@@ -818,6 +818,7 @@ method.UIScreen..ctor: void(IntPtr ptr)
 method.UIView..ctor: void(IntPtr ptr)
 property.CAMetalDrawable.IsNull: bool { get; }
 property.CAMetalDrawable.texture: MTLTexture { get; }
+property.CAMetalLayer.contentsScale: double { get; set; }
 property.CAMetalLayer.device: MTLDevice { get; set; }
 property.CAMetalLayer.displaySyncEnabled: Bool8 { get; set; }
 property.CAMetalLayer.drawableSize: CGSize { get; set; }
@@ -935,6 +936,8 @@ property.NSError.localizedDescription: string { get; }
 property.NSView.frame: CGRect { get; }
 property.NSView.layer: IntPtr { get; set; }
 property.NSView.wantsLayer: Bool8 { get; set; }
+property.NSView.window: NSWindow { get; }
+property.NSWindow.backingScaleFactor: double { get; }
 property.NSWindow.contentView: NSView { get; }
 property.ObjCClass.Name: string { get; }
 property.Selector.Name: string { get; }

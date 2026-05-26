@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# build.ps1 — Build prerelease packages and deploy to local NuGet feed
+# build.ps1 — Build Veldrid and deploy packages to local NuGet feed
 #
 # Usage:
 #   .\cmd\build.ps1              # build + deploy to local feed (Debug)
@@ -21,7 +21,7 @@ $env:LOCAL_NUGET_REPO = 'C:\PROJECTS\LocalNuGet'
 
 $buildConfig = if ($Release) { 'Release' } else { 'Debug' }
 
-Write-Host "`n=== Building prerelease packages ($buildConfig) ===" -ForegroundColor Cyan
+Write-Host "`n=== Building Veldrid ($buildConfig) ===" -ForegroundColor Cyan
 Write-Host "Local NuGet feed: $env:LOCAL_NUGET_REPO" -ForegroundColor DarkGray
 dotnet build $solutionPath -c $buildConfig /p:UseLocalVeldrid=true
 if ($LASTEXITCODE -ne 0) {

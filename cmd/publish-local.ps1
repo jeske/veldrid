@@ -1,91 +1,57 @@
 #!/usr/bin/env pwsh
-# publish-local.ps1 — Build release packages and deploy to local NuGet feed
+# publish-local.ps1 — Build and pack Veldrid packages to local NuGet feed
 #
-# Increments buildNumberOffset in version.json using the JsonPeek CLI tool
-# from the ArtificialNecessity.CodeAnalyzers package, then builds all
-# packable projects with clean (non-prerelease) version numbers.
+# Versioning is timestamp-based (v2) — every build gets a unique version
+# automatically via AN.Veldrid.Build.props. No version files to manage.
 #
 # Usage:
-#   .\cmd\publish-local.ps1              # increment + build + deploy
-#   .\cmd\publish-local.ps1 -DryRun      # show what would happen, don't build
+#   ./cmd/publish-local.ps1                    # Debug build + pack + deploy
+#   ./cmd/publish-local.ps1 -Release           # Release configuration
 #
+# Requires: LOCAL_NUGET_REPO environment variable set to local feed path
+
 param(
-    [switch]$DryRun
+    [switch]$Release
 )
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = "Stop"
+$repoRoot = Split-Path -Parent (Split-Path -Parent $PSCommandPath)
+$solutionPath = Join-Path $repoRoot 'src\Veldrid.sln'
+$configuration = if ($Release) { "Release" } else { "Debug" }
 
-# Resolve project root (one level up from cmd/)
-$projectRoot = Split-Path -Parent $PSScriptRoot
-$solutionPath = Join-Path $projectRoot 'src\Veldrid.sln'
-$versionJsonPath = Join-Path $projectRoot 'version.json'
-$buildPropsPath = Join-Path $projectRoot 'AN.Veldrid.Build.props'
-$localNuGetFeedPath = 'C:\PROJECTS\LocalNuGet'
+Write-Host "=== Veldrid publish-local ($configuration) ===" -ForegroundColor Cyan
 
-# ── Resolve JsonPeek CLI tool from NuGet cache ──────────────────────────
-# Read the AN.CodeAnalyzers version from AN.Veldrid.Build.props
-$buildPropsContent = Get-Content $buildPropsPath -Raw
-$codeAnalyzersVersionMatch = [regex]::Match($buildPropsContent, 'ArtificialNecessity\.CodeAnalyzers.*?Version="([^"]+)"')
-if (-not $codeAnalyzersVersionMatch.Success) {
-    Write-Host "ERROR: Could not find ArtificialNecessity.CodeAnalyzers version in $buildPropsPath" -ForegroundColor Red
-    exit 1
-}
-$codeAnalyzersVersion = $codeAnalyzersVersionMatch.Groups[1].Value
-$jsonPeekExePath = Join-Path $env:USERPROFILE ".nuget\packages\artificialnecessity.codeanalyzers\$codeAnalyzersVersion\tools\net8.0\any\JsonPeek.exe"
-
-if (-not (Test-Path $jsonPeekExePath)) {
-    Write-Host "ERROR: JsonPeek CLI tool not found at: $jsonPeekExePath" -ForegroundColor Red
-    Write-Host "Run 'dotnet restore src\Veldrid.sln' to download the package." -ForegroundColor Yellow
+if (-not $env:LOCAL_NUGET_REPO) {
+    Write-Host "ERROR: LOCAL_NUGET_REPO environment variable not set." -ForegroundColor Red
+    Write-Host '$env:LOCAL_NUGET_REPO = "C:\PROJECTS\LocalNuGet"' -ForegroundColor Yellow
     exit 1
 }
 
-# ── Read current version info ────────────────────────────────────────────
-$baseVersion = & $jsonPeekExePath $versionJsonPath version
-$currentBuildNumberOffset = & $jsonPeekExePath $versionJsonPath buildNumberOffset
-$currentVersion = "$baseVersion.$currentBuildNumberOffset"
+Write-Host "Local NuGet feed: $env:LOCAL_NUGET_REPO" -ForegroundColor Gray
 
-Write-Host "`n=== Publishing release to local NuGet feed ===" -ForegroundColor Cyan
-Write-Host "Current version: $currentVersion" -ForegroundColor DarkGray
-Write-Host "JsonPeek tool:   $jsonPeekExePath" -ForegroundColor DarkGray
+# Capture timestamp before build/pack so we can identify newly deployed packages
+$deployStartTime = Get-Date
 
-# ── Increment buildNumberOffset in version.json ─────────────────────────
-$newBuildNumberOffset = & $jsonPeekExePath --inc-integer $versionJsonPath buildNumberOffset
-$newVersion = "$baseVersion.$newBuildNumberOffset"
+# Build the solution with local project references + pack
+Write-Host "`n[1/2] Building solution..." -ForegroundColor Green
+dotnet build $solutionPath -c $configuration /p:UseLocalVeldrid=true
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host "New version:     $newVersion" -ForegroundColor Green
-Write-Host "Local feed:      $localNuGetFeedPath" -ForegroundColor DarkGray
+# Pack all packable projects
+Write-Host "`n[2/2] Packing..." -ForegroundColor Green
+dotnet pack $solutionPath -c $configuration /p:UseLocalVeldrid=true --no-build
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-if ($DryRun) {
-    Write-Host "`n[DRY RUN] Would build release version $newVersion and deploy to $localNuGetFeedPath" -ForegroundColor Yellow
-    # Revert the increment since this is a dry run
-    & $jsonPeekExePath --inc-integer $versionJsonPath buildNumberOffset -1 | Out-Null
-    Write-Host "[DRY RUN] Reverted buildNumberOffset back to $currentBuildNumberOffset" -ForegroundColor Yellow
-    exit 0
-}
-
-# ── Regenerate AN.Veldrid.Version.generated.props ───────────────────
-$genVersionScript = Join-Path $projectRoot "cmd\gen-version-file.ps1"
-Write-Host "`nGenerating version props..." -ForegroundColor Green
-& $genVersionScript
-if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: gen-version-file.ps1 failed" -ForegroundColor Red; exit 1 }
-
-# ── Build release packages ──────────────────────────────────────────────
-$env:LOCAL_NUGET_REPO = $localNuGetFeedPath
-
-Write-Host "`n=== Building release packages ===" -ForegroundColor Cyan
-dotnet build $solutionPath -c Release /p:NewRelease=true /p:UseLocalVeldrid=true
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: dotnet build failed with exit code $LASTEXITCODE" -ForegroundColor Red
-    exit $LASTEXITCODE
-}
-
-# ── List deployed packages ───────────────────────────────────────────────
-$deployedPackages = Get-ChildItem "$localNuGetFeedPath\*Veldrid*$newVersion*" -Filter "*.nupkg" | Select-Object -ExpandProperty Name
-
-Write-Host "`n=== Done! ===" -ForegroundColor Green
-Write-Host "Published release version: $newVersion" -ForegroundColor Green
-Write-Host "Packages deployed to: $localNuGetFeedPath" -ForegroundColor Green
-foreach ($packageFileName in $deployedPackages) {
-    Write-Host "  $packageFileName" -ForegroundColor DarkGray
+# Show only packages deployed during this run (modified after $deployStartTime)
+$deployedPackages = Get-ChildItem "$env:LOCAL_NUGET_REPO\*.nupkg" -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -ge $deployStartTime } |
+    Sort-Object Name
+if ($deployedPackages) {
+    Write-Host "`nDeployed packages:" -ForegroundColor Cyan
+    foreach ($deployedPackage in $deployedPackages) {
+        $sizeKB = [math]::Round($deployedPackage.Length / 1024, 1)
+        Write-Host "  $($deployedPackage.Name)  (${sizeKB} KB)" -ForegroundColor Green
+    }
+} else {
+    Write-Host "`nWARNING: No packages were deployed to $env:LOCAL_NUGET_REPO" -ForegroundColor Yellow
 }

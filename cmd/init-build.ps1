@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 # init-build.ps1 - Initialize the build environment for Veldrid project
 # This script ensures all required prerequisites are installed and configured
 
@@ -10,63 +11,28 @@ $ErrorActionPreference = 'Stop'
 Write-Host "Initializing Veldrid build environment..." -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Check for .NET 8 SDK (required for build tools)
-Write-Host "Checking for .NET 8 SDK..." -ForegroundColor Yellow
-$dotnet8 = $null
+# 1. Check for .NET SDK
+Write-Host "Checking for .NET SDK..." -ForegroundColor Yellow
+$dotnetOk = $null
 try {
-    $sdks = dotnet --list-sdks 2>$null | Select-String "8\.\d+\.\d+"
+    $sdks = dotnet --list-sdks 2>$null
     if ($sdks) {
-        Write-Host "  ✓ .NET 8 SDK is installed" -ForegroundColor Green
-        $dotnet8 = $true
+        Write-Host "  ✓ .NET SDK is installed" -ForegroundColor Green
+        $dotnetOk = $true
     }
 } catch {
     # dotnet not found or error
 }
 
-if (-not $dotnet8) {
-    Write-Host "  × .NET 8 SDK not found" -ForegroundColor Red
-    
-    if ($IsWindows -or $PSVersionTable.PSVersion.Major -ge 6) {
-        Write-Host "  Installing .NET 8 SDK via winget..." -ForegroundColor Yellow
-        try {
-            winget install --exact --id Microsoft.DotNet.SDK.8 --accept-package-agreements --accept-source-agreements
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "  ✓ .NET 8 SDK installed successfully" -ForegroundColor Green
-            } else {
-                throw "Failed to install .NET 8 SDK"
-            }
-        } catch {
-            Write-Host "  Failed to install .NET 8 SDK automatically" -ForegroundColor Red
-            Write-Host "  Please install .NET 8 SDK manually from: https://dotnet.microsoft.com/download/dotnet/8.0" -ForegroundColor Yellow
-            exit 1
-        }
-    } else {
-        Write-Host "  Please install .NET 8 SDK from: https://dotnet.microsoft.com/download/dotnet/8.0" -ForegroundColor Yellow
-        exit 1
-    }
+if (-not $dotnetOk) {
+    Write-Host "  × .NET SDK not found" -ForegroundColor Red
+    Write-Host "  Please install .NET SDK from: https://dotnet.microsoft.com/download" -ForegroundColor Yellow
+    exit 1
 }
 
 Write-Host ""
 
-# 2. Generate version file
-Write-Host "Generating version file..." -ForegroundColor Yellow
-$versionFile = Join-Path $PSScriptRoot ".." "AN.Veldrid.Version.generated.props"
-
-if (Test-Path $versionFile -PathType Leaf -and -not $Force) {
-    Write-Host "  ✓ Version file already exists" -ForegroundColor Green
-} else {
-    try {
-        & "$PSScriptRoot/gen-version-file.ps1"
-        Write-Host "  ✓ Version file generated successfully" -ForegroundColor Green
-    } catch {
-        Write-Host "  × Failed to generate version file: $_" -ForegroundColor Red
-        exit 1
-    }
-}
-
-Write-Host ""
-
-# 3. Create Directory.Build.props for local development
+# 2. Create Directory.Build.props for local development
 Write-Host "Setting up local development configuration..." -ForegroundColor Yellow
 $buildPropsFile = Join-Path $PSScriptRoot ".." "Directory.Build.props"
 
@@ -93,7 +59,7 @@ if (Test-Path $buildPropsFile -PathType Leaf -and -not $Force) {
 
 Write-Host ""
 
-# 4. Restore NuGet packages
+# 3. Restore NuGet packages
 Write-Host "Restoring NuGet packages..." -ForegroundColor Yellow
 try {
     dotnet restore "$PSScriptRoot/../src/Veldrid.sln"

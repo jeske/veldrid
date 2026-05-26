@@ -69,6 +69,12 @@ namespace Veldrid.MetalBindings
             set => objc_msgSend(NativePtr, sel_setDisplaySyncEnabled, value);
         }
 
+        public double contentsScale
+        {
+            get => CGFloat_objc_msgSend(NativePtr, sel_contentsScale);
+            set => objc_msgSend(NativePtr, sel_setContentsScale, value);
+        }
+
         private static readonly ObjCClass s_class = new ObjCClass(nameof(CAMetalLayer));
         private static readonly Selector sel_device = "device";
         private static readonly Selector sel_setDevice = "setDevice:";
@@ -84,6 +90,8 @@ namespace Veldrid.MetalBindings
         private static readonly Selector sel_setOpaque = "setOpaque:";
         private static readonly Selector sel_displaySyncEnabled = "displaySyncEnabled";
         private static readonly Selector sel_setDisplaySyncEnabled = "setDisplaySyncEnabled:";
+        private static readonly Selector sel_contentsScale = "contentsScale";
+        private static readonly Selector sel_setContentsScale = "setContentsScale:";
         private static readonly Selector sel_nextDrawable = "nextDrawable";
     }
 }

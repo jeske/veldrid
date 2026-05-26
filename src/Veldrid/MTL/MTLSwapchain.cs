@@ -54,6 +54,8 @@ namespace Veldrid.MTL
                     contentView.wantsLayer = true;
                     contentView.layer = metalLayer.NativePtr;
                 }
+
+                metalLayer.contentsScale = nswindow.backingScaleFactor;
             }
             else if (source is NSViewSwapchainSource nsViewSource)
             {
@@ -68,6 +70,12 @@ namespace Veldrid.MTL
                     contentView.wantsLayer = true;
                     contentView.layer = metalLayer.NativePtr;
                 }
+
+                // Set contentsScale from the view's window backingScaleFactor for Retina support.
+                // NSView.window.backingScaleFactor gives the correct scale on macOS.
+                var viewWindow = contentView.window;
+                if (viewWindow.NativePtr != IntPtr.Zero)
+                    metalLayer.contentsScale = viewWindow.backingScaleFactor;
             }
             else if (source is UIViewSwapchainSource uiViewSource)
             {

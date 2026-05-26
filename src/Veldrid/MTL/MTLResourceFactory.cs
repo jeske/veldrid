@@ -31,6 +31,19 @@ namespace Veldrid.MTL
             return new MtlResourceLayout(ref description, gd);
         }
 
+        public override ResourceLayout CreateResourceLayout(
+            ref ResourceLayoutDescription description,
+            uint setIndex,
+            VdShaderBindingEntry[] bindingEntries)
+        {
+            if (bindingEntries != null && bindingEntries.Length > 0)
+            {
+                return new MtlResourceLayout(ref description, gd, setIndex, bindingEntries);
+            }
+
+            return new MtlResourceLayout(ref description, gd);
+        }
+
         public override ResourceSet CreateResourceSet(ref ResourceSetDescription description)
         {
             ValidationHelpers.ValidateResourceSet(gd, ref description);

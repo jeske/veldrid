@@ -13,6 +13,9 @@ namespace Veldrid.MetalBindings
 
         public NSView contentView => objc_msgSend<NSView>(NativePtr, sel_contentView);
 
+        public double backingScaleFactor => CGFloat_objc_msgSend(NativePtr, sel_backingScaleFactor);
+
         private static readonly Selector sel_contentView = "contentView";
+        private static readonly Selector sel_backingScaleFactor = "backingScaleFactor";
     }
 }

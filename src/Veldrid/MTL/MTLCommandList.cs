@@ -599,9 +599,7 @@ namespace Veldrid.MTL
                 {
                     if (!vertexBuffersActive[i])
                     {
-                        UIntPtr index = graphicsPipeline.ResourceBindingModel == ResourceBindingModel.Improved
-                            ? nonVertexBufferCount + i
-                            : i;
+                        UIntPtr index = graphicsPipeline.VertexBufferBaseSlot + i;
                         rce.setVertexBuffer(
                             vertexBuffers[i].DeviceBuffer,
                             vbOffsets[i],
@@ -613,9 +611,7 @@ namespace Veldrid.MTL
 
                     if (!vbOffsetsActive[i])
                     {
-                        UIntPtr index = graphicsPipeline.ResourceBindingModel == ResourceBindingModel.Improved
-                            ? nonVertexBufferCount + i
-                            : i;
+                        UIntPtr index = graphicsPipeline.VertexBufferBaseSlot + i;
 
                         rce.setVertexBufferOffset(
                             vbOffsets[i],
@@ -714,6 +710,7 @@ namespace Veldrid.MTL
             var mtlRs = Util.AssertSubtype<ResourceSet, MtlResourceSet>(brsi.Set);
             var layout = mtlRs.Layout;
             uint dynamicOffsetIndex = 0;
+            bool bundleControlled = graphicsPipeline.ResourceBindingModel == ResourceBindingModel.ShaderBundleControlled;
 
             for (int i = 0; i < mtlRs.Resources.Length; i++)
             {
@@ -730,42 +727,72 @@ namespace Veldrid.MTL
                 switch (bindingInfo.Kind)
                 {
                     case ResourceKind.UniformBuffer:
+                    case ResourceKind.StructuredBufferReadOnly:
+                    case ResourceKind.StructuredBufferReadWrite:
                     {
                         var range = Util.GetBufferRange(resource, bufferOffset);
-                        bindBuffer(range, slot, bindingInfo.Slot, bindingInfo.Stages);
+                        if (bundleControlled)
+                        {
+                            // ShaderBundleControlled: bind per-stage with the exact slot from the compiler.
+                            // Vertex and fragment may have different buffer indices.
+                            if ((bindingInfo.Stages & ShaderStages.Vertex) != 0)
+                                bindBuffer(range, slot, bindingInfo.Slot, ShaderStages.Vertex);
+                            if ((bindingInfo.Stages & ShaderStages.Fragment) != 0)
+                                bindBuffer(range, slot, bindingInfo.FragmentSlot, ShaderStages.Fragment);
+                        }
+                        else
+                        {
+                            bindBuffer(range, slot, bindingInfo.Slot, bindingInfo.Stages);
+                        }
                         break;
                     }
 
                     case ResourceKind.TextureReadOnly:
                         var texView = Util.GetTextureView(gd, resource);
                         var mtlTexView = Util.AssertSubtype<TextureView, MtlTextureView>(texView);
-                        bindTexture(mtlTexView, slot, bindingInfo.Slot, bindingInfo.Stages);
+                        if (bundleControlled)
+                        {
+                            if ((bindingInfo.Stages & ShaderStages.Vertex) != 0)
+                                bindTexture(mtlTexView, slot, bindingInfo.Slot, ShaderStages.Vertex);
+                            if ((bindingInfo.Stages & ShaderStages.Fragment) != 0)
+                                bindTexture(mtlTexView, slot, bindingInfo.FragmentSlot, ShaderStages.Fragment);
+                        }
+                        else
+                        {
+                            bindTexture(mtlTexView, slot, bindingInfo.Slot, bindingInfo.Stages);
+                        }
                         break;
 
                     case ResourceKind.TextureReadWrite:
                         var texViewRw = Util.GetTextureView(gd, resource);
                         var mtlTexViewRw = Util.AssertSubtype<TextureView, MtlTextureView>(texViewRw);
-                        bindTexture(mtlTexViewRw, slot, bindingInfo.Slot, bindingInfo.Stages);
+                        if (bundleControlled)
+                        {
+                            if ((bindingInfo.Stages & ShaderStages.Vertex) != 0)
+                                bindTexture(mtlTexViewRw, slot, bindingInfo.Slot, ShaderStages.Vertex);
+                            if ((bindingInfo.Stages & ShaderStages.Fragment) != 0)
+                                bindTexture(mtlTexViewRw, slot, bindingInfo.FragmentSlot, ShaderStages.Fragment);
+                        }
+                        else
+                        {
+                            bindTexture(mtlTexViewRw, slot, bindingInfo.Slot, bindingInfo.Stages);
+                        }
                         break;
 
                     case ResourceKind.Sampler:
                         var mtlSampler = Util.AssertSubtype<IBindableResource, MtlSampler>(resource);
-                        bindSampler(mtlSampler, slot, bindingInfo.Slot, bindingInfo.Stages);
+                        if (bundleControlled)
+                        {
+                            if ((bindingInfo.Stages & ShaderStages.Vertex) != 0)
+                                bindSampler(mtlSampler, slot, bindingInfo.Slot, ShaderStages.Vertex);
+                            if ((bindingInfo.Stages & ShaderStages.Fragment) != 0)
+                                bindSampler(mtlSampler, slot, bindingInfo.FragmentSlot, ShaderStages.Fragment);
+                        }
+                        else
+                        {
+                            bindSampler(mtlSampler, slot, bindingInfo.Slot, bindingInfo.Stages);
+                        }
                         break;
-
-                    case ResourceKind.StructuredBufferReadOnly:
-                    {
-                        var range = Util.GetBufferRange(resource, bufferOffset);
-                        bindBuffer(range, slot, bindingInfo.Slot, bindingInfo.Stages);
-                        break;
-                    }
-
-                    case ResourceKind.StructuredBufferReadWrite:
-                    {
-                        var range = Util.GetBufferRange(resource, bufferOffset);
-                        bindBuffer(range, slot, bindingInfo.Slot, bindingInfo.Stages);
-                        break;
-                    }
 
                     default:
                         throw Illegal.Value<ResourceKind>();
@@ -857,9 +884,22 @@ namespace Veldrid.MTL
             {
                 if ((stages & ShaderStages.Vertex) == ShaderStages.Vertex)
                 {
-                    UIntPtr index = graphicsPipeline.ResourceBindingModel == ResourceBindingModel.Improved
-                        ? slot + baseBuffer
-                        : slot + vertexBufferCount + baseBuffer;
+                    UIntPtr index;
+                    if (graphicsPipeline.ResourceBindingModel == ResourceBindingModel.ShaderBundleControlled)
+                    {
+                        // ShaderBundleControlled: slot IS the absolute Metal buffer index from the compiler.
+                        // No base offset, no vertexBufferCount offset. The binding map is the source of truth.
+                        index = slot;
+                    }
+                    else if (graphicsPipeline.ResourceBindingModel == ResourceBindingModel.Improved)
+                    {
+                        index = slot + baseBuffer;
+                    }
+                    else
+                    {
+                        // Legacy Default mode: uniform buffers come after vertex buffers.
+                        index = slot + vertexBufferCount + baseBuffer;
+                    }
 
                     if (!boundVertexBuffers.TryGetValue(index, out var boundBuffer) || boundBuffer.Buffer != range.Buffer)
                     {
@@ -875,16 +915,27 @@ namespace Veldrid.MTL
 
                 if ((stages & ShaderStages.Fragment) == ShaderStages.Fragment)
                 {
-                    UIntPtr index = slot + baseBuffer;
+                    UIntPtr index;
+                    if (graphicsPipeline.ResourceBindingModel == ResourceBindingModel.ShaderBundleControlled)
+                    {
+                        // ShaderBundleControlled: fragmentSlot IS the absolute Metal buffer index.
+                        // The fragmentSlot is passed as the slot parameter when called from
+                        // activateGraphicsResourceSet with the correct per-stage slot.
+                        index = slot;
+                    }
+                    else
+                    {
+                        index = slot + baseBuffer;
+                    }
 
                     if (!boundFragmentBuffers.TryGetValue(index, out var boundBuffer) || boundBuffer.Buffer != range.Buffer)
                     {
-                        rce.setFragmentBuffer(mtlBuffer.DeviceBuffer, range.Offset, slot + baseBuffer);
+                        rce.setFragmentBuffer(mtlBuffer.DeviceBuffer, range.Offset, index);
                         boundFragmentBuffers[index] = range;
                     }
                     else if (!range.Equals(boundBuffer))
                     {
-                        rce.setFragmentBufferOffset(range.Offset, slot + baseBuffer);
+                        rce.setFragmentBufferOffset(range.Offset, index);
                         boundFragmentBuffers[index] = range;
                     }
                 }
@@ -945,6 +996,13 @@ namespace Veldrid.MTL
 
         private uint getBufferBase(uint set, bool graphics)
         {
+            var pipeline = graphics ? graphicsPipeline : null;
+
+            // When explicit binding slots are in use, the slot values in ResourceBindingInfo
+            // are absolute (assigned by the shader compiler). No base offset needed.
+            if (pipeline != null && pipeline.HasExplicitBindingSlots)
+                return 0;
+
             var layouts = graphics ? graphicsPipeline.ResourceLayouts : computePipeline.ResourceLayouts;
             uint ret = 0;
 
@@ -959,6 +1017,10 @@ namespace Veldrid.MTL
 
         private uint getTextureBase(uint set, bool graphics)
         {
+            // When explicit binding slots are in use, the slot values are absolute.
+            if (graphics && graphicsPipeline != null && graphicsPipeline.HasExplicitBindingSlots)
+                return 0;
+
             var layouts = graphics ? graphicsPipeline.ResourceLayouts : computePipeline.ResourceLayouts;
             uint ret = 0;
 
@@ -973,6 +1035,10 @@ namespace Veldrid.MTL
 
         private uint getSamplerBase(uint set, bool graphics)
         {
+            // When explicit binding slots are in use, the slot values are absolute.
+            if (graphics && graphicsPipeline != null && graphicsPipeline.HasExplicitBindingSlots)
+                return 0;
+
             var layouts = graphics ? graphicsPipeline.ResourceLayouts : computePipeline.ResourceLayouts;
             uint ret = 0;
 

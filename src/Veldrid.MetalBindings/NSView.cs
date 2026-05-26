@@ -28,10 +28,13 @@ namespace Veldrid.MetalBindings
                 ? CGRect_objc_msgSend(NativePtr, sel_frame)
                 : objc_msgSend_stret<CGRect>(NativePtr, sel_frame);
 
+        public NSWindow window => new NSWindow(IntPtr_objc_msgSend(NativePtr, sel_window));
+
         private static readonly Selector sel_wantsLayer = "wantsLayer";
         private static readonly Selector sel_setWantsLayer = "setWantsLayer:";
         private static readonly Selector sel_layer = "layer";
         private static readonly Selector sel_setLayer = "setLayer:";
         private static readonly Selector sel_frame = "frame";
+        private static readonly Selector sel_window = "window";
     }
 }

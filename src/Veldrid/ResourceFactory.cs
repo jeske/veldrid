@@ -377,6 +377,12 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="Shader" />.</returns>
+        [System.Obsolete(
+            "Direct CreateShader() with precompiled HLSL/MSL bytes does not guarantee correct resource bindings. " +
+            "On D3D11 and Metal, the flat register/argument indices baked into cross-compiled shaders must match " +
+            "the ResourceLayout order exactly — a contract that is only enforced by the .vdshader bundle format. " +
+            "Use CreateFromBundle() with a .vdshader file produced by Veldrid.SPIRV to get shaders AND the " +
+            "matching ResourceLayoutDescription[] together, guaranteeing correct bindings on all backends.")]
         public Shader CreateShader(ShaderDescription description)
         {
             return CreateShader(ref description);
@@ -387,6 +393,12 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="Shader" />.</returns>
+        [System.Obsolete(
+            "Direct CreateShader() with precompiled HLSL/MSL bytes does not guarantee correct resource bindings. " +
+            "On D3D11 and Metal, the flat register/argument indices baked into cross-compiled shaders must match " +
+            "the ResourceLayout order exactly — a contract that is only enforced by the .vdshader bundle format. " +
+            "Use CreateFromBundle() with a .vdshader file produced by Veldrid.SPIRV to get shaders AND the " +
+            "matching ResourceLayoutDescription[] together, guaranteeing correct bindings on all backends.")]
         public Shader CreateShader(ref ShaderDescription description)
         {
 #if VALIDATE_USAGE
@@ -400,6 +412,67 @@ namespace Veldrid
                 throw new VeldridException("GraphicsDevice does not support Tessellation Shaders.");
 #endif
             return CreateShaderCore(ref description);
+        }
+
+        /// <summary>
+        /// Creates shaders from a .vdshader bundle. This is the required way to load precompiled shaders.
+        /// Returns both the <see cref="Shader"/> objects and the <see cref="ResourceLayoutDescription"/>[]
+        /// that MUST be used to create <see cref="ResourceLayout"/> objects for correct binding on all backends.
+        /// </summary>
+        /// <param name="bundle">The deserialized shader bundle.</param>
+        /// <param name="fileResolver">
+        /// Optional function to resolve external shader filenames to byte arrays.
+        /// Use this for loading from WAD files, embedded resources, or any non-filesystem source.
+        /// If null and shader data is external, falls back to filesystem using <paramref name="basePath"/>.
+        /// </param>
+        /// <param name="basePath">
+        /// Optional base directory path for resolving external shader files from the filesystem.
+        /// Only used when <paramref name="fileResolver"/> is null and shader data is external.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PrecompiledShaderResult"/> containing the compiled shaders and the resource layout
+        /// descriptions that must be used to create <see cref="ResourceLayout"/> objects.
+        /// </returns>
+        public PrecompiledShaderResult CreateFromBundle(
+            VeldridShaderBundle bundle,
+            System.Func<string, byte[]> fileResolver = null,
+            string basePath = null)
+        {
+            var (vertexBytes, fragmentBytes, vertexEntry, fragmentEntry) =
+                bundle.GetVertexFragmentShaderData(BackendType, fileResolver, basePath);
+
+            var vsDesc = new ShaderDescription(ShaderStages.Vertex, vertexBytes, vertexEntry);
+            var fsDesc = new ShaderDescription(ShaderStages.Fragment, fragmentBytes, fragmentEntry);
+
+#pragma warning disable CS0618 // CreateShader is [Obsolete] for external callers; internal use here is correct
+            return new PrecompiledShaderResult(
+                new[] { CreateShader(ref vsDesc), CreateShader(ref fsDesc) },
+                bundle.GetResourceLayouts(),
+                bundle.FlatBindingMap);
+#pragma warning restore CS0618
+        }
+
+        /// <summary>
+        /// Creates shaders from a .vdshader JSON string. Convenience overload that deserializes the bundle first.
+        /// </summary>
+        /// <param name="vdshaderJson">The .vdshader file contents as a JSON string.</param>
+        /// <param name="fileResolver">
+        /// Optional function to resolve external shader filenames to byte arrays.
+        /// </param>
+        /// <param name="basePath">
+        /// Optional base directory path for resolving external shader files from the filesystem.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PrecompiledShaderResult"/> containing the compiled shaders and the resource layout
+        /// descriptions that must be used to create <see cref="ResourceLayout"/> objects.
+        /// </returns>
+        public PrecompiledShaderResult CreateFromBundle(
+            string vdshaderJson,
+            System.Func<string, byte[]> fileResolver = null,
+            string basePath = null)
+        {
+            var bundle = VeldridShaderBundle.Deserialize(vdshaderJson);
+            return CreateFromBundle(bundle, fileResolver, basePath);
         }
 
         /// <summary>
@@ -444,6 +517,29 @@ namespace Veldrid
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="ResourceLayout" />.</returns>
         public abstract ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description);
+
+        /// <summary>
+        /// Creates a new <see cref="ResourceLayout"/> using explicit binding slot assignments from a precompiled
+        /// shader bundle's flat binding map. On backends that use flat register/argument indices (Metal, D3D11),
+        /// this ensures the ResourceLayout uses the exact slots declared by the cross-compiler rather than
+        /// computing sequential indices. On other backends (Vulkan, OpenGL), this falls through to the
+        /// standard <see cref="CreateResourceLayout(ref ResourceLayoutDescription)"/>.
+        /// </summary>
+        /// <param name="description">The desired properties of the created object.</param>
+        /// <param name="setIndex">The descriptor set index this layout corresponds to.</param>
+        /// <param name="bindingEntries">
+        /// The flat binding map entries for this set, providing the exact slot assignments
+        /// from the cross-compiler. The binding map is the source of truth.
+        /// </param>
+        /// <returns>A new <see cref="ResourceLayout"/> with slots matching the compiled shader.</returns>
+        public virtual ResourceLayout CreateResourceLayout(
+            ref ResourceLayoutDescription description,
+            uint setIndex,
+            VdShaderBindingEntry[] bindingEntries)
+        {
+            // Default implementation ignores binding entries — backends that need them override this.
+            return CreateResourceLayout(ref description);
+        }
 
         /// <summary>
         ///     Creates a new <see cref="ResourceSet" />.

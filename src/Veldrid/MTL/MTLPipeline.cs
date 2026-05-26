@@ -213,8 +213,15 @@ namespace Veldrid.MTL
             {
                 var depthDescriptor = MTLUtil.AllocInit<MTLDepthStencilDescriptor>(
                     nameof(MTLDepthStencilDescriptor));
-                depthDescriptor.depthCompareFunction = MtlFormats.VdToMtlCompareFunction(
-                    description.DepthStencilState.DepthComparison);
+
+                // Metal has no separate "depth test enable" flag like D3D11/Vulkan/OpenGL.
+                // When depth testing is disabled, we must set depthCompareFunction to Always
+                // so that all fragments pass the depth test. Otherwise, if DepthComparison
+                // defaults to Never (0), all fragments would be rejected by the depth test,
+                // preventing color writes even when only stencil testing is intended.
+                depthDescriptor.depthCompareFunction = description.DepthStencilState.DepthTestEnabled
+                    ? MtlFormats.VdToMtlCompareFunction(description.DepthStencilState.DepthComparison)
+                    : MTLCompareFunction.Always;
                 depthDescriptor.depthWriteEnabled = description.DepthStencilState.DepthWriteEnabled;
 
                 bool stencilEnabled = description.DepthStencilState.StencilTestEnabled;

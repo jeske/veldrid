@@ -897,6 +897,7 @@ property.BackendInfoVulkan.GraphicsQueue: IntPtr { get; }
 property.BackendInfoVulkan.GraphicsQueueFamilyIndex: uint { get; }
 property.BackendInfoVulkan.Instance: IntPtr { get; }
 property.BackendInfoVulkan.PhysicalDevice: IntPtr { get; }
+property.CommandList.CurrentFramebuffer: Framebuffer { get; }
 property.CommandList.IsDisposed: bool { get; }
 property.CommandList.Name: string { get; set; }
 property.DeviceBuffer.IsDisposed: bool { get; }

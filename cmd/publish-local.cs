@@ -27,7 +27,7 @@ string repoRoot = FindRepoRoot(Directory.GetCurrentDirectory())
     ?? throw new InvalidOperationException(
         "Cannot find project root (looked for AN.Veldrid.Build.props walking up from cwd)");
 
-string solutionPath = Path.Combine(repoRoot, "src", "Veldrid.sln");
+string solutionPath = Path.Combine(repoRoot, "Veldrid.sln");
 
 // ─── Validate LOCAL_NUGET_REPO ──────────────────────────────────────────────
 

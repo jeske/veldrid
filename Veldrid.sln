@@ -1,19 +1,19 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid", "Veldrid\Veldrid.csproj", "{60D56E4A-FA7A-4664-BEF0-0A29F41518BF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid", "src\Veldrid\Veldrid.csproj", "{60D56E4A-FA7A-4664-BEF0-0A29F41518BF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid.OpenGLBindings", "Veldrid.OpenGLBindings\Veldrid.OpenGLBindings.csproj", "{6E93B2E1-BF0B-4268-94BA-E951ECC4DD7F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid.OpenGLBindings", "src\Veldrid.OpenGLBindings\Veldrid.OpenGLBindings.csproj", "{6E93B2E1-BF0B-4268-94BA-E951ECC4DD7F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid.MetalBindings", "Veldrid.MetalBindings\Veldrid.MetalBindings.csproj", "{6647F17C-02E9-4EF2-B882-40E22A187744}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid.MetalBindings", "src\Veldrid.MetalBindings\Veldrid.MetalBindings.csproj", "{6647F17C-02E9-4EF2-B882-40E22A187744}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Veldrid.SDL2", "Veldrid.SDL2\Veldrid.SDL2.csproj", "{23AC453E-58AE-4E2C-9ECE-06EEAD9BD5FA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Veldrid.SDL2", "src\Veldrid.SDL2\Veldrid.SDL2.csproj", "{23AC453E-58AE-4E2C-9ECE-06EEAD9BD5FA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Veldrid.StartupUtilities", "Veldrid.StartupUtilities\Veldrid.StartupUtilities.csproj", "{AAAAAC61-B726-4F84-84FC-CF0FDDD7280A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Veldrid.StartupUtilities", "src\Veldrid.StartupUtilities\Veldrid.StartupUtilities.csproj", "{AAAAAC61-B726-4F84-84FC-CF0FDDD7280A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Veldrid.ImGui", "Veldrid.ImGui\Veldrid.ImGui.csproj", "{85CFDFC2-D5C0-4A8E-A8DF-2C08BC9AF385}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Veldrid.ImGui", "src\Veldrid.ImGui\Veldrid.ImGui.csproj", "{85CFDFC2-D5C0-4A8E-A8DF-2C08BC9AF385}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

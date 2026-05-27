@@ -18,7 +18,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSCommandPath)
-$solutionPath = Join-Path $repoRoot 'src\Veldrid.sln'
+$solutionPath = Join-Path $repoRoot 'Veldrid.sln'
 $configuration = if ($Release) { "Release" } else { "Debug" }
 
 Write-Host "=== Veldrid publish-local ($configuration) ===" -ForegroundColor Cyan

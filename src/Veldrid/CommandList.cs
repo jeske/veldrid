@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -1216,6 +1216,11 @@ namespace Veldrid
         }
 
         private protected Framebuffer Framebuffer;
+
+        /// <summary>
+        /// Gets the currently active <see cref="Veldrid.Framebuffer"/>, or null if none is set.
+        /// </summary>
+        public Framebuffer? CurrentFramebuffer => Framebuffer;
         private protected Pipeline GraphicsPipeline;
         private protected Pipeline ComputePipeline;
 

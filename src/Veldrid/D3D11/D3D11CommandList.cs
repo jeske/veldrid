@@ -32,6 +32,14 @@ namespace Veldrid.D3D11
 
         // Cached resources
         private const int max_cached_uniform_buffers = 15;
+
+        /// <summary>
+        /// When true, bypasses all bind-state caching and SRV/UAV tracking.
+        /// Always issues D3D11 bind calls unconditionally. Fixes deferred rendering
+        /// pipelines where the SRV-conflict tracking causes incorrect unbinds.
+        /// </summary>
+        internal static bool AlwaysRebindResources = false;
+
         private readonly D3D11BufferRange[] vertexBoundUniformBuffers = new D3D11BufferRange[max_cached_uniform_buffers];
         private readonly D3D11BufferRange[] fragmentBoundUniformBuffers = new D3D11BufferRange[max_cached_uniform_buffers];
         private const int max_cached_texture_views = 16;
@@ -514,6 +522,8 @@ namespace Veldrid.D3D11
 
         private void unbindSrvTexture(Texture target)
         {
+            if (AlwaysRebindResources) return;
+
             if (boundSRVs.TryGetValue(target, out var btis))
             {
                 foreach (var bti in btis)
@@ -541,6 +551,8 @@ namespace Veldrid.D3D11
 
         private void unbindUavTexture(Texture target)
         {
+            if (AlwaysRebindResources) return;
+
             if (boundUaVs.TryGetValue(target, out var btis))
             {
                 foreach (var bti in btis)
@@ -690,7 +702,7 @@ namespace Veldrid.D3D11
         {
             var srv = texView?.ShaderResourceView;
 
-            if (srv != null)
+            if (!AlwaysRebindResources && srv != null)
             {
                 if (!boundSRVs.TryGetValue(texView.Target, out var list))
                 {
@@ -703,20 +715,13 @@ namespace Veldrid.D3D11
 
             if ((stages & ShaderStages.Vertex) == ShaderStages.Vertex)
             {
-                bool bind = false;
-
-                if (slot < max_cached_uniform_buffers)
+                if (AlwaysRebindResources)
+                    DeviceContext.VSSetShaderResource(slot, srv);
+                else if (slot >= max_cached_texture_views || vertexBoundTextureViews[slot] != texView)
                 {
-                    if (vertexBoundTextureViews[slot] != texView)
-                    {
-                        vertexBoundTextureViews[slot] = texView;
-                        bind = true;
-                    }
+                    if (slot < max_cached_texture_views) vertexBoundTextureViews[slot] = texView;
+                    DeviceContext.VSSetShaderResource(slot, srv);
                 }
-                else
-                    bind = true;
-
-                if (bind) DeviceContext.VSSetShaderResource(slot, srv);
             }
 
             if ((stages & ShaderStages.Geometry) == ShaderStages.Geometry) DeviceContext.GSSetShaderResource(slot, srv);
@@ -727,20 +732,13 @@ namespace Veldrid.D3D11
 
             if ((stages & ShaderStages.Fragment) == ShaderStages.Fragment)
             {
-                bool bind = false;
-
-                if (slot < max_cached_uniform_buffers)
+                if (AlwaysRebindResources)
+                    DeviceContext.PSSetShaderResource(slot, srv!);
+                else if (slot >= max_cached_texture_views || fragmentBoundTextureViews[slot] != texView)
                 {
-                    if (fragmentBoundTextureViews[slot] != texView)
-                    {
-                        fragmentBoundTextureViews[slot] = texView;
-                        bind = true;
-                    }
+                    if (slot < max_cached_texture_views) fragmentBoundTextureViews[slot] = texView;
+                    DeviceContext.PSSetShaderResource(slot, srv!);
                 }
-                else
-                    bind = true;
-
-                if (bind) DeviceContext.PSSetShaderResource(slot, srv!);
             }
 
             if ((stages & ShaderStages.Compute) == ShaderStages.Compute) DeviceContext.CSSetShaderResource(slot, srv);
@@ -783,9 +781,9 @@ namespace Veldrid.D3D11
         {
             if ((stages & ShaderStages.Vertex) == ShaderStages.Vertex)
             {
-                bool bind = false;
+                bool bind = AlwaysRebindResources;
 
-                if (slot < max_cached_uniform_buffers)
+                if (!bind && slot < max_cached_uniform_buffers)
                 {
                     if (!vertexBoundUniformBuffers[slot].Equals(range))
                     {
@@ -793,7 +791,7 @@ namespace Veldrid.D3D11
                         bind = true;
                     }
                 }
-                else
+                else if (!bind)
                     bind = true;
 
                 if (bind)
@@ -847,9 +845,9 @@ namespace Veldrid.D3D11
 
             if ((stages & ShaderStages.Fragment) == ShaderStages.Fragment)
             {
-                bool bind = false;
+                bool bind = AlwaysRebindResources;
 
-                if (slot < max_cached_uniform_buffers)
+                if (!bind && slot < max_cached_uniform_buffers)
                 {
                     if (!fragmentBoundUniformBuffers[slot].Equals(range))
                     {
@@ -857,7 +855,7 @@ namespace Veldrid.D3D11
                         bind = true;
                     }
                 }
-                else
+                else if (!bind)
                     bind = true;
 
                 if (bind)
@@ -965,20 +963,13 @@ namespace Veldrid.D3D11
         {
             if ((stages & ShaderStages.Vertex) == ShaderStages.Vertex)
             {
-                bool bind = false;
-
-                if (slot < max_cached_samplers)
+                if (AlwaysRebindResources)
+                    DeviceContext.VSSetSampler(slot, sampler.DeviceSampler);
+                else if (slot >= max_cached_samplers || vertexBoundSamplers[slot] != sampler)
                 {
-                    if (vertexBoundSamplers[slot] != sampler)
-                    {
-                        vertexBoundSamplers[slot] = sampler;
-                        bind = true;
-                    }
+                    if (slot < max_cached_samplers) vertexBoundSamplers[slot] = sampler;
+                    DeviceContext.VSSetSampler(slot, sampler.DeviceSampler);
                 }
-                else
-                    bind = true;
-
-                if (bind) DeviceContext.VSSetSampler(slot, sampler.DeviceSampler);
             }
 
             if ((stages & ShaderStages.Geometry) == ShaderStages.Geometry) DeviceContext.GSSetSampler(slot, sampler.DeviceSampler);
@@ -989,20 +980,13 @@ namespace Veldrid.D3D11
 
             if ((stages & ShaderStages.Fragment) == ShaderStages.Fragment)
             {
-                bool bind = false;
-
-                if (slot < max_cached_samplers)
+                if (AlwaysRebindResources)
+                    DeviceContext.PSSetSampler(slot, sampler.DeviceSampler);
+                else if (slot >= max_cached_samplers || fragmentBoundSamplers[slot] != sampler)
                 {
-                    if (fragmentBoundSamplers[slot] != sampler)
-                    {
-                        fragmentBoundSamplers[slot] = sampler;
-                        bind = true;
-                    }
+                    if (slot < max_cached_samplers) fragmentBoundSamplers[slot] = sampler;
+                    DeviceContext.PSSetSampler(slot, sampler.DeviceSampler);
                 }
-                else
-                    bind = true;
-
-                if (bind) DeviceContext.PSSetSampler(slot, sampler.DeviceSampler);
             }
 
             if ((stages & ShaderStages.Compute) == ShaderStages.Compute) DeviceContext.CSSetSampler(slot, sampler.DeviceSampler);

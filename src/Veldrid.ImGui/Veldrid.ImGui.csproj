@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\AN.Veldrid.Build.props" />
 
@@ -63,15 +63,8 @@
     <PackageReference Include="ImGui.NET" Version="1.90.1.1" />
   </ItemGroup>
 
-  <!-- Use local Veldrid project for development -->
-  <ItemGroup Condition="'$(UseLocalVeldrid)' == 'true'">
+  <ItemGroup>
     <ProjectReference Include="..\Veldrid\Veldrid.csproj" />
-  </ItemGroup>
-
-  <!-- Use PackageReference when not building from source -->
-  <!-- Version is inherited from consuming project -->
-  <ItemGroup Condition="'$(UseLocalVeldrid)' != 'true'">
-    <PackageReference Include="ArtificialNecessity.Veldrid" Version="4.10.0-1354.0.g86a863b4" />
   </ItemGroup>
 
   <ItemGroup>

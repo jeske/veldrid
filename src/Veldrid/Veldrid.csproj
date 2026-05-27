@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\AN.Veldrid.Build.props" />
 
@@ -19,6 +19,10 @@
     <GenerateStableABISnapshot>true</GenerateStableABISnapshot>
     <StableABISnapshotScope>public</StableABISnapshotScope>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Veldrid.BindingTests" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ppy.Vk" Version="1.0.26" Condition="'$(ExcludeVulkan)' != 'true'"/>

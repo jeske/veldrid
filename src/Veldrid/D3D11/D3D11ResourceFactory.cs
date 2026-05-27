@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Vortice.Direct3D11;
 
 namespace Veldrid.D3D11
@@ -44,6 +44,19 @@ namespace Veldrid.D3D11
 
         public override ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description)
         {
+            return new D3D11ResourceLayout(ref description);
+        }
+
+        public override ResourceLayout CreateResourceLayout(
+            ref ResourceLayoutDescription description,
+            uint setIndex,
+            VdShaderBindingEntry[] bindingEntries)
+        {
+            if (bindingEntries != null && bindingEntries.Length > 0)
+            {
+                return new D3D11ResourceLayout(ref description, setIndex, bindingEntries);
+            }
+
             return new D3D11ResourceLayout(ref description);
         }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -423,13 +423,39 @@ namespace Veldrid.D3D11
         private void activateResourceSet(uint slot, BoundResourceSetInfo brsi, bool graphics)
         {
             var d3d11Rs = Util.AssertSubtype<ResourceSet, D3D11ResourceSet>(brsi.Set);
-
-            int cbBase = getConstantBufferBase(slot, graphics);
-            int uaBase = getUnorderedAccessBase(slot, graphics);
-            int textureBase = getTextureBase(slot, graphics);
-            int samplerBase = getSamplerBase(slot, graphics);
-
             var layout = d3d11Rs.Layout;
+
+            // === TEMPORARY DIAGNOSTIC: dump resource set binding decisions ===
+            if (layout.HasExplicitBindingSlots)
+            {
+                System.Console.WriteLine($"[D3D11 ACTIVATE SET] set={slot} explicit=true elements={d3d11Rs.Resources.Length}");
+                for (int di = 0; di < d3d11Rs.Resources.Length; di++)
+                {
+                    var drbi = layout.GetDeviceSlotIndex(di);
+                    var resName = "(unknown)";
+                    if (d3d11Rs.Resources[di] is DeviceBuffer db) resName = db.Name ?? $"Buffer@{db.SizeInBytes}B";
+                    else if (d3d11Rs.Resources[di] is TextureView tv) resName = tv.Target?.Name ?? "TextureView";
+                    else if (d3d11Rs.Resources[di] is Texture tex) resName = tex.Name ?? "Texture";
+                    else if (d3d11Rs.Resources[di] is Sampler s) resName = s.Name ?? "Sampler";
+                    string regPrefix = drbi.Kind switch {
+                        ResourceKind.UniformBuffer => "b",
+                        ResourceKind.StructuredBufferReadOnly or ResourceKind.TextureReadOnly => "t",
+                        ResourceKind.StructuredBufferReadWrite or ResourceKind.TextureReadWrite => "u",
+                        ResourceKind.Sampler => "s",
+                        _ => "?"
+                    };
+                    System.Console.WriteLine($"  [{di}] {drbi.Kind} -> {regPrefix}{drbi.Slot} stages={drbi.Stages} resource={resName}");
+                }
+            }
+            // === END DIAGNOSTIC ===
+
+            // When HasExplicitBindingSlots is true, the slot values are absolute global registers
+            // from the shader compiler — no base offset needed. Otherwise, compute cross-set offsets.
+            int cbBase = layout.HasExplicitBindingSlots ? 0 : getConstantBufferBase(slot, graphics);
+            int uaBase = layout.HasExplicitBindingSlots ? 0 : getUnorderedAccessBase(slot, graphics);
+            int textureBase = layout.HasExplicitBindingSlots ? 0 : getTextureBase(slot, graphics);
+            int samplerBase = layout.HasExplicitBindingSlots ? 0 : getSamplerBase(slot, graphics);
+
             var resources = d3d11Rs.Resources;
             uint dynamicOffsetIndex = 0;
 
@@ -687,6 +713,8 @@ namespace Veldrid.D3D11
         private void bindTextureView(D3D11TextureView texView, int slot, ShaderStages stages, uint resourceSet)
         {
             var srv = texView?.ShaderResourceView;
+            var texName = texView?.Target?.Name ?? "(null)";
+            System.Console.WriteLine($"[D3D11 BIND TEX] slot={slot} stages={stages} resourceSet={resourceSet} texture={texName} srv={srv?.NativePointer:X}");
 
             if (srv != null)
             {
@@ -779,6 +807,8 @@ namespace Veldrid.D3D11
 
         private void bindUniformBuffer(D3D11BufferRange range, int slot, ShaderStages stages)
         {
+            var bufName = range.Buffer?.Name ?? "(null)";
+            System.Console.WriteLine($"[D3D11 BIND CB] slot=b{slot} stages={stages} buffer={bufName} offset={range.Offset} size={range.Size}");
             if ((stages & ShaderStages.Vertex) == ShaderStages.Vertex)
             {
                 bool bind = false;

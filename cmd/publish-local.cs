@@ -1,4 +1,4 @@
-#!/usr/bin/env dotnet run
+#!/usr/bin/env -S dotnet run
 // publish-local.cs — Build and pack Veldrid packages to local NuGet feed
 //
 // Versioning is timestamp-based (v2) — every build gets a unique version
@@ -41,6 +41,14 @@ if (string.IsNullOrEmpty(localNuGetFeedPath))
     Environment.Exit(1);
 }
 
+// Expand ~ to home directory — neither C# nor MSBuild do this automatically
+if (localNuGetFeedPath.StartsWith("~/") || localNuGetFeedPath == "~")
+{
+    string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    localNuGetFeedPath = Path.Combine(home, localNuGetFeedPath.Substring(Math.Min(2, localNuGetFeedPath.Length)));
+}
+localNuGetFeedPath = Path.GetFullPath(localNuGetFeedPath);
+
 WriteColored($"\n=== Veldrid publish-local ({configuration}) ===", ConsoleColor.Cyan);
 WriteColored($"Local NuGet feed: {localNuGetFeedPath}", ConsoleColor.DarkGray);
 
@@ -72,7 +80,7 @@ RunOrExit("dotnet", $"build \"{solutionPath}\" -c {configuration} /p:UseLocalVel
 // ─── Pack all packable projects ─────────────────────────────────────────────
 
 WriteColored("\n[2/2] Packing...", ConsoleColor.Green);
-RunOrExit("dotnet", $"pack \"{solutionPath}\" -c {configuration} /p:UseLocalVeldrid=true --no-build {versionProps}");
+RunOrExit("dotnet", $"pack \"{solutionPath}\" -c {configuration} /p:UseLocalVeldrid=true /p:LocalNuGetFeedPath=\"{localNuGetFeedPath}\" --no-build {versionProps}");
 
 // ─── Show only packages deployed during this run ────────────────────────────
 

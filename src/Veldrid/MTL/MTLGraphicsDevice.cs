@@ -17,6 +17,7 @@ namespace Veldrid.MTL
         public MtlFeatureSupport MetalFeatures { get; }
         public ResourceBindingModel ResourceBindingModel { get; }
         public bool PreferMemorylessDepthTargets { get; }
+        public bool IsDepth24Stencil8Supported { get; }
 
         public override string DeviceName { get; }
 
@@ -91,6 +92,7 @@ namespace Veldrid.MTL
             device = MTLDevice.MTLCreateSystemDefaultDevice();
             DeviceName = device.name;
             MetalFeatures = new MtlFeatureSupport(device);
+            IsDepth24Stencil8Supported = device.isDepth24Stencil8PixelFormatSupported;
 
             int major = (int)MetalFeatures.MaxFeatureSet / 10000;
             int minor = (int)MetalFeatures.MaxFeatureSet % 10000;

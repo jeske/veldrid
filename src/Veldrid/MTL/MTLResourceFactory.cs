@@ -82,6 +82,9 @@ namespace Veldrid.MTL
 
         protected override Texture CreateTextureCore(ref TextureDescription description)
         {
+            if ((description.Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil)
+                description.Format = MtlFormats.GetSupportedDepthStencilFormat(description.Format, gd);
+
             return new MtlTexture(ref description, gd);
         }
 

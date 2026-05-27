@@ -177,7 +177,8 @@ namespace Veldrid.MTL
 
             if (outputs.DepthAttachment != null)
             {
-                var depthFormat = outputs.DepthAttachment.Value.Format;
+                var depthFormat = MtlFormats.GetSupportedDepthStencilFormat(
+                    outputs.DepthAttachment.Value.Format, gd);
                 var mtlDepthFormat = MtlFormats.VdToMtlPixelFormat(depthFormat, true);
                 mtlDesc.depthAttachmentPixelFormat = mtlDepthFormat;
 

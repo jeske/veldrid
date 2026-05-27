@@ -1,9 +1,45 @@
+using System;
 using Veldrid.MetalBindings;
 
 namespace Veldrid.MTL
 {
     internal static class MtlFormats
     {
+        /// <summary>
+        ///     Returns a supported depth/stencil <see cref="PixelFormat"/> for the current Metal device,
+        ///     falling back to an alternative if the requested format is not supported.
+        ///     Emits a console message when a fallback occurs.
+        /// </summary>
+        internal static PixelFormat GetSupportedDepthStencilFormat(
+            PixelFormat requested,
+            MtlGraphicsDevice gd)
+        {
+            switch (requested)
+            {
+                case PixelFormat.D24UNormS8UInt:
+                    if (!gd.IsDepth24Stencil8Supported)
+                    {
+                        Console.WriteLine(
+                            "[Veldrid Metal] D24UNormS8UInt (Depth24Unorm_Stencil8) is not supported on this device. " +
+                            "Falling back to D32FloatS8UInt (Depth32Float_Stencil8).");
+                        return PixelFormat.D32FloatS8UInt;
+                    }
+                    break;
+
+                case PixelFormat.R16UNorm:
+                    if (!IsFormatSupported(PixelFormat.R16UNorm, TextureUsage.DepthStencil, gd.MetalFeatures))
+                    {
+                        Console.WriteLine(
+                            "[Veldrid Metal] R16UNorm (Depth16Unorm) is not supported for DepthStencil on this device. " +
+                            "Falling back to R32Float (Depth32Float).");
+                        return PixelFormat.R32Float;
+                    }
+                    break;
+            }
+
+            return requested;
+        }
+
         internal static MTLPixelFormat VdToMtlPixelFormat(PixelFormat format, bool depthFormat)
         {
             switch (format)

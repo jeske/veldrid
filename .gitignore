@@ -275,6 +275,3 @@ launchSettings.json
 
 # Generated shaders
 Shaders.Generated
-
-# Generated version props (regenerate with: ./cmd/gen-version-file.ps1)
-AN.Veldrid.Version.generated.props

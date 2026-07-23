@@ -25,6 +25,8 @@ namespace Veldrid.MTL
 
         public override TextureSampleCount SampleCount => TextureSampleCount.Count1;
 
+        public override PixelFormat Format => format;
+
         public override MTLPixelFormat MtlPixelFormat => mtlPixelFormat;
 
         public override MTLTextureType MtlTextureType => MTLTextureType.Type2D;
@@ -32,6 +34,7 @@ namespace Veldrid.MTL
         private MTLTexture deviceTexture;
         private uint width;
         private uint height;
+        private PixelFormat format;
         private MTLPixelFormat mtlPixelFormat;
 
         public void SetDrawable(CAMetalDrawable drawable, CGSize size, PixelFormat format)
@@ -39,7 +42,11 @@ namespace Veldrid.MTL
             deviceTexture = drawable.texture;
             width = (uint)size.width;
             height = (uint)size.height;
-            mtlPixelFormat = MtlFormats.VdToMtlPixelFormat(Format, false);
+            // BUGFIX: previously used the (never-assigned) Format property here, which
+            // defaulted to R8G8B8A8UNorm — misreporting the swapchain texture's format
+            // (the CAMetalLayer drawable is BGRA8) and breaking CPU readback swizzles.
+            this.format = format;
+            mtlPixelFormat = MtlFormats.VdToMtlPixelFormat(format, false);
         }
     }
 }

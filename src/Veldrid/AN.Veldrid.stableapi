@@ -490,6 +490,7 @@ field.StencilBehaviorDescription.Comparison: ComparisonKind
 field.StencilBehaviorDescription.DepthFail: StencilOperation
 field.StencilBehaviorDescription.Fail: StencilOperation
 field.StencilBehaviorDescription.Pass: StencilOperation
+field.SwapchainDescription.AllowSwapchainReadback: bool
 field.SwapchainDescription.ColorSrgb: bool
 field.SwapchainDescription.CompositorBackgroundColor: Nullable`1<RgbaFloat>
 field.SwapchainDescription.DepthFormat: Nullable`1<PixelFormat>
@@ -1311,6 +1312,7 @@ struct.SwapchainDescription.field4.SyncToVerticalBlank: bool
 struct.SwapchainDescription.field5.ColorSrgb: bool
 struct.SwapchainDescription.field6.ScalingMode: SwapchainScalingMode
 struct.SwapchainDescription.field7.CompositorBackgroundColor: Nullable`1<RgbaFloat>
+struct.SwapchainDescription.field8.AllowSwapchainReadback: bool
 struct.TextureDescription._layout: Sequential
 struct.TextureDescription._pack: 0
 struct.TextureDescription._size: 0

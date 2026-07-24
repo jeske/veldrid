@@ -57,6 +57,17 @@ namespace Veldrid
         public RgbaFloat? CompositorBackgroundColor;
 
         /// <summary>
+        ///     When true, the swapchain's color target is created so it can be used as a
+        ///     source for copy/readback operations (e.g. CommandList.CopyTexture to a
+        ///     staging texture for screenshot capture).
+        ///     On Metal this sets CAMetalLayer.framebufferOnly = false, which disables a
+        ///     minor drawable optimization \u2014 leave false unless readback is required.
+        ///     No effect on D3D11/Vulkan/OpenGL (their swapchain targets are already
+        ///     copyable). Default: false.
+        /// </summary>
+        public bool AllowSwapchainReadback;
+
+        /// <summary>
         ///     Constructs a new SwapchainDescription.
         /// </summary>
         /// <param name="source">

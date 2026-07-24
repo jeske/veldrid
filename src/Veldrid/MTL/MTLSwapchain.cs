@@ -101,7 +101,11 @@ namespace Veldrid.MTL
 
             metalLayer.device = this.gd.Device;
             metalLayer.pixelFormat = MtlFormats.VdToMtlPixelFormat(format, false);
-            metalLayer.framebufferOnly = true;
+            // framebufferOnly=true enables a drawable optimization but makes the
+            // drawable texture ILLEGAL as a blit/copy source (CopyTexture from the
+            // swapchain silently produces nothing). Consumers that need screenshot
+            // readback opt in via SwapchainDescription.AllowSwapchainReadback.
+            metalLayer.framebufferOnly = !description.AllowSwapchainReadback;
             metalLayer.drawableSize = new CGSize(width, height);
 
             setSyncToVerticalBlank(syncToVerticalBlank);

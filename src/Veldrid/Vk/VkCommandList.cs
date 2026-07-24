@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -659,11 +659,18 @@ namespace Veldrid.Vk
             VkMemoryBarrier barrier;
             barrier.sType = VkStructureType.MemoryBarrier;
             barrier.srcAccessMask = VkAccessFlags.TransferWrite;
-            barrier.dstAccessMask = VkAccessFlags.VertexAttributeRead;
+            // The destination may be ANY buffer type: vertex, index, uniform, or storage.
+            // Restricting visibility to VertexAttributeRead leaves uniform reads in later
+            // draws seeing stale caches on spec-strict drivers (observed on Linux RADV:
+            // per-draw UpdateBuffer of a uniform buffer left every draw in the command
+            // list reading the FIRST value; Windows drivers masked it).
+            barrier.dstAccessMask = VkAccessFlags.VertexAttributeRead | VkAccessFlags.IndexRead
+                | VkAccessFlags.UniformRead | VkAccessFlags.ShaderRead;
             barrier.pNext = null;
             vkCmdPipelineBarrier(
                 CommandBuffer,
-                VkPipelineStageFlags.Transfer, VkPipelineStageFlags.VertexInput,
+                VkPipelineStageFlags.Transfer,
+                VkPipelineStageFlags.VertexInput | VkPipelineStageFlags.VertexShader | VkPipelineStageFlags.FragmentShader | VkPipelineStageFlags.ComputeShader,
                 VkDependencyFlags.None,
                 1, ref barrier,
                 0, null,

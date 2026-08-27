@@ -93,7 +93,12 @@ namespace Veldrid.Vk
         public void CommandBufferSubmitted(VkCommandBuffer cb)
         {
             RefCount.Increment();
-            foreach (var rrc in currentStagingInfo.Resources) rrc.Increment();
+            // NOTE: no per-resource Increment here. The invariant is "membership in
+            // StagingResourceInfo.Resources holds exactly one ref": addStagingResourceRef
+            // increments at RECORD time (protecting the record\u2192submit window, e.g. a
+            // consumer disposing a texture right after recording), and recycleStagingInfo
+            // decrements exactly once \u2014 whether the recording completed on the GPU or was
+            // abandoned (End without submit, then Begin/Dispose).
 
             submittedStagingInfos.Add(cb, currentStagingInfo);
             currentStagingInfo = null;
@@ -243,9 +248,9 @@ namespace Veldrid.Vk
             ensureNoRenderPass();
 
             VkBuffer srcVkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(source);
-            currentStagingInfo.Resources.Add(srcVkBuffer.RefCount);
+            addStagingResourceRef(srcVkBuffer.RefCount);
             VkBuffer dstVkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(destination);
-            currentStagingInfo.Resources.Add(dstVkBuffer.RefCount);
+            addStagingResourceRef(dstVkBuffer.RefCount);
 
             VkBufferCopy region = new VkBufferCopy
             {
@@ -301,9 +306,9 @@ namespace Veldrid.Vk
                 width, height, depth, layerCount);
 
             VkTexture srcVkTexture = Util.AssertSubtype<Texture, VkTexture>(source);
-            currentStagingInfo.Resources.Add(srcVkTexture.RefCount);
+            addStagingResourceRef(srcVkTexture.RefCount);
             VkTexture dstVkTexture = Util.AssertSubtype<Texture, VkTexture>(destination);
-            currentStagingInfo.Resources.Add(dstVkTexture.RefCount);
+            addStagingResourceRef(dstVkTexture.RefCount);
         }
 
         internal static void CopyTextureCore_VkCommandBuffer(
@@ -610,7 +615,7 @@ namespace Veldrid.Vk
         {
             preDrawCommand();
             var vkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(indirectBuffer);
-            currentStagingInfo.Resources.Add(vkBuffer.RefCount);
+            addStagingResourceRef(vkBuffer.RefCount);
             vkCmdDrawIndirect(CommandBuffer, vkBuffer.DeviceBuffer, offset, drawCount, stride);
         }
 
@@ -618,7 +623,7 @@ namespace Veldrid.Vk
         {
             preDrawCommand();
             var vkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(indirectBuffer);
-            currentStagingInfo.Resources.Add(vkBuffer.RefCount);
+            addStagingResourceRef(vkBuffer.RefCount);
             vkCmdDrawIndexedIndirect(CommandBuffer, vkBuffer.DeviceBuffer, offset, drawCount, stride);
         }
 
@@ -627,7 +632,7 @@ namespace Veldrid.Vk
             preDispatchCommand();
 
             var vkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(indirectBuffer);
-            currentStagingInfo.Resources.Add(vkBuffer.RefCount);
+            addStagingResourceRef(vkBuffer.RefCount);
             vkCmdDispatchIndirect(CommandBuffer, vkBuffer.DeviceBuffer, offset);
         }
 
@@ -636,9 +641,9 @@ namespace Veldrid.Vk
             if (activeRenderPass != VkRenderPass.Null) endCurrentRenderPass();
 
             var vkSource = Util.AssertSubtype<Texture, VkTexture>(source);
-            currentStagingInfo.Resources.Add(vkSource.RefCount);
+            addStagingResourceRef(vkSource.RefCount);
             var vkDestination = Util.AssertSubtype<Texture, VkTexture>(destination);
-            currentStagingInfo.Resources.Add(vkDestination.RefCount);
+            addStagingResourceRef(vkDestination.RefCount);
             var aspectFlags = (source.Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil
                 ? VkImageAspectFlags.Depth | VkImageAspectFlags.Stencil
                 : VkImageAspectFlags.Color;
@@ -686,9 +691,9 @@ namespace Veldrid.Vk
             Util.EnsureArrayMinimumSize(ref clearValues, clearValueCount + 1); // Leave an extra space for the depth value (tracked separately).
             Util.ClearArray(validColorClearValues);
             Util.EnsureArrayMinimumSize(ref validColorClearValues, clearValueCount);
-            currentStagingInfo.Resources.Add(vkFb.RefCount);
+            addStagingResourceRef(vkFb.RefCount);
 
-            if (fb is VkSwapchainFramebuffer scFb) currentStagingInfo.Resources.Add(scFb.Swapchain.RefCount);
+            if (fb is VkSwapchainFramebuffer scFb) addStagingResourceRef(scFb.Swapchain.RefCount);
         }
 
         protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
@@ -785,8 +790,8 @@ namespace Veldrid.Vk
                     }
 
                     // Increment ref count on first use of a set.
-                    currentStagingInfo.Resources.Add(vkSet.RefCount);
-                    for (int i = 0; i < vkSet.RefCounts.Count; i++) currentStagingInfo.Resources.Add(vkSet.RefCounts[i]);
+                    addStagingResourceRef(vkSet.RefCount);
+                    for (int i = 0; i < vkSet.RefCounts.Count; i++) addStagingResourceRef(vkSet.RefCounts[i]);
                 }
 
                 if (batchEnded)
@@ -1047,6 +1052,10 @@ namespace Veldrid.Vk
 
                 Debug.Assert(submittedStagingInfos.Count == 0);
 
+                // Release refs held by a recorded-but-never-submitted recording so
+                // resource lifetimes don't leak when a CommandList is disposed mid-cycle.
+                if (currentStagingInfo != null) { recycleStagingInfo(currentStagingInfo); currentStagingInfo = null; }
+
                 foreach (var buffer in availableStagingBuffers) buffer.Dispose();
             }
         }
@@ -1082,6 +1091,20 @@ namespace Veldrid.Vk
 
                 availableStagingInfos.Add(info);
             }
+        }
+
+        /// <summary>
+        /// Tracks a resource used by the current recording, taking one strong ref the
+        /// FIRST time it is seen this recording (HashSet dedupe). Invariant: membership
+        /// in StagingResourceInfo.Resources holds exactly one ref, released by
+        /// recycleStagingInfo \u2014 after GPU completion for submitted recordings, or at
+        /// Begin()/dispose for abandoned ones. Incrementing at record time (not submit
+        /// time) protects the record\u2192submit window: a consumer may Dispose a resource
+        /// immediately after recording commands that reference it.
+        /// </summary>
+        private void addStagingResourceRef(ResourceRefCount resourceRefCount)
+        {
+            if (currentStagingInfo.Resources.Add(resourceRefCount)) resourceRefCount.Increment();
         }
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
@@ -1174,14 +1197,14 @@ namespace Veldrid.Vk
             var deviceBuffer = vkBuffer.DeviceBuffer;
             ulong offset64 = offset;
             vkCmdBindVertexBuffers(CommandBuffer, index, 1, ref deviceBuffer, ref offset64);
-            currentStagingInfo.Resources.Add(vkBuffer.RefCount);
+            addStagingResourceRef(vkBuffer.RefCount);
         }
 
         private protected override void SetIndexBufferCore(DeviceBuffer buffer, IndexFormat format, uint offset)
         {
             var vkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(buffer);
             vkCmdBindIndexBuffer(CommandBuffer, vkBuffer.DeviceBuffer, offset, VkFormats.VdToVkIndexFormat(format));
-            currentStagingInfo.Resources.Add(vkBuffer.RefCount);
+            addStagingResourceRef(vkBuffer.RefCount);
         }
 
         private protected override void SetPipelineCore(Pipeline pipeline)
@@ -1205,14 +1228,14 @@ namespace Veldrid.Vk
                 currentComputePipeline = vkPipeline;
             }
 
-            currentStagingInfo.Resources.Add(vkPipeline.RefCount);
+            addStagingResourceRef(vkPipeline.RefCount);
         }
 
         private protected override void GenerateMipmapsCore(Texture texture)
         {
             ensureNoRenderPass();
             var vkTex = Util.AssertSubtype<Texture, VkTexture>(texture);
-            currentStagingInfo.Resources.Add(vkTex.RefCount);
+            addStagingResourceRef(vkTex.RefCount);
 
             uint layerCount = vkTex.ArrayLayers;
             if ((vkTex.Usage & TextureUsage.Cubemap) != 0) layerCount *= 6;

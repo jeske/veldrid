@@ -54,6 +54,11 @@ namespace Veldrid.MTL
                     contentView.wantsLayer = true;
                     contentView.layer = metalLayer.NativePtr;
                 }
+                else
+                {
+                    // Adopted the window's existing layer — retain to balance the release in Dispose().
+                    ObjectiveCRuntime.retain(metalLayer.NativePtr);
+                }
 
                 metalLayer.contentsScale = nswindow.backingScaleFactor;
             }
@@ -69,6 +74,11 @@ namespace Veldrid.MTL
                     metalLayer = CAMetalLayer.New();
                     contentView.wantsLayer = true;
                     contentView.layer = metalLayer.NativePtr;
+                }
+                else
+                {
+                    // Adopted the view's existing layer — retain to balance the release in Dispose().
+                    ObjectiveCRuntime.retain(metalLayer.NativePtr);
                 }
 
                 // Set contentsScale from the view's window backingScaleFactor for Retina support.
@@ -90,6 +100,11 @@ namespace Veldrid.MTL
                     metalLayer.frame = uiView.frame;
                     metalLayer.opaque = true;
                     uiView.layer.addSublayer(metalLayer.NativePtr);
+                }
+                else
+                {
+                    // Adopted the view's existing layer — retain to balance the release in Dispose().
+                    ObjectiveCRuntime.retain(metalLayer.NativePtr);
                 }
             }
             else
@@ -123,6 +138,8 @@ namespace Veldrid.MTL
 
         public override void Dispose()
         {
+            if (disposed) return;
+
             if (drawable.NativePtr != IntPtr.Zero) ObjectiveCRuntime.release(drawable.NativePtr);
             framebuffer.Dispose();
             ObjectiveCRuntime.release(metalLayer.NativePtr);

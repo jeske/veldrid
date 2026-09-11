@@ -15,6 +15,11 @@ namespace Veldrid.Vk
         public VkSwapchainKHR DeviceSwapchain => deviceSwapchain;
         public uint ImageIndex => currentImageIndex;
         public Vulkan.VkFence ImageAvailableFence => imageAvailableFence;
+
+        /// <summary>The render-complete semaphore that <c>vkQueuePresentKHR</c> must wait on for the currently
+        /// acquired image (see <see cref="presentReadySemaphorePerImage"/>).</summary>
+        public VkSemaphore CurrentImagePresentReadySemaphore => presentReadySemaphorePerImage[currentImageIndex];
+
         public VkSurfaceKHR Surface { get; }
 
         public VkQueue PresentQueue => presentQueue;
@@ -63,6 +68,18 @@ namespace Veldrid.Vk
         private readonly bool colorSrgb;
         private VkSwapchainKHR deviceSwapchain;
         private Vulkan.VkFence imageAvailableFence;
+
+        /// <summary>
+        /// One binary semaphore per swapchain image, indexed by acquired image index (NOT by frame-in-flight).
+        /// Signalled by an empty graphics-queue submit issued right before <c>vkQueuePresentKHR</c>, and waited on
+        /// by that present. This is what tells the presentation engine "rendering into this image is complete".
+        /// Without it, Mesa's Wayland WSI signals the explicit-sync (linux-drm-syncobj-v1) acquire point
+        /// immediately and the compositor may scan out the image's PREVIOUS contents — visible as a window
+        /// flickering between the current frame and an older one. Per-image indexing is what makes reuse safe:
+        /// re-acquiring image N (and waiting on the acquire fence) guarantees the prior present of image N — and
+        /// therefore its semaphore wait — has completed. See Vulkan Guide "Swapchain Semaphore Reuse".
+        /// </summary>
+        private VkSemaphore[] presentReadySemaphorePerImage = Array.Empty<VkSemaphore>();
         private bool syncToVBlank;
         private bool? newSyncToVBlank;
         private uint currentImageIndex;
@@ -270,6 +287,7 @@ namespace Veldrid.Vk
             if (oldSwapchain != VkSwapchainKHR.Null) vkDestroySwapchainKHR(gd.Device, oldSwapchain, null);
 
             framebuffer.SetNewSwapchain(deviceSwapchain, width, height, surfaceFormat, swapchainCi.imageExtent);
+            recreatePresentReadySemaphores();
             return true;
         }
 
@@ -307,12 +325,47 @@ namespace Veldrid.Vk
 
         private void disposeCore()
         {
+            destroyPresentReadySemaphores();
             vkDestroyFence(gd.Device, imageAvailableFence, null);
             framebuffer.Dispose();
             vkDestroySwapchainKHR(gd.Device, deviceSwapchain, null);
             vkDestroySurfaceKHR(gd.Instance, Surface, null);
 
             disposed = true;
+        }
+
+        /// <summary>
+        /// (Re)creates one binary semaphore per swapchain image. Sized from the REAL image count reported by
+        /// <c>vkGetSwapchainImagesKHR</c> (the driver may hand out more than <c>minImageCount</c>).
+        /// Called after every <c>vkCreateSwapchainKHR</c>. Any previous set is destroyed first — the caller has
+        /// already <c>WaitForIdle</c>'d, and the old swapchain (whose presents waited on them) is being destroyed.
+        /// </summary>
+        private void recreatePresentReadySemaphores()
+        {
+            destroyPresentReadySemaphores();
+
+            uint swapchainImageCount = 0;
+            var result = vkGetSwapchainImagesKHR(gd.Device, deviceSwapchain, ref swapchainImageCount, null);
+            CheckResult(result);
+
+            presentReadySemaphorePerImage = new VkSemaphore[swapchainImageCount];
+            var semaphoreCi = VkSemaphoreCreateInfo.New();
+            for (int i = 0; i < presentReadySemaphorePerImage.Length; i++)
+            {
+                result = vkCreateSemaphore(gd.Device, ref semaphoreCi, null, out presentReadySemaphorePerImage[i]);
+                CheckResult(result);
+            }
+        }
+
+        private void destroyPresentReadySemaphores()
+        {
+            for (int i = 0; i < presentReadySemaphorePerImage.Length; i++)
+            {
+                if (presentReadySemaphorePerImage[i] != VkSemaphore.Null)
+                    vkDestroySemaphore(gd.Device, presentReadySemaphorePerImage[i], null);
+            }
+
+            presentReadySemaphorePerImage = Array.Empty<VkSemaphore>();
         }
     }
 }

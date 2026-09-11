@@ -1250,16 +1250,38 @@ namespace Veldrid.Vk
         {
             var vkSc = Util.AssertSubtype<Swapchain, VkSwapchain>(swapchain);
             var deviceSwapchain = vkSc.DeviceSwapchain;
+            uint imageIndex = vkSc.ImageIndex;
+            VkSemaphore presentReadySemaphore = vkSc.CurrentImagePresentReadySemaphore;
+
+            // Signal "rendering into this swapchain image is complete" from the graphics queue. An empty submit
+            // with only a signal semaphore is valid Vulkan; because queue execution is in-order, the semaphore
+            // fires after every previously submitted command buffer (i.e. all of this frame's rendering).
+            var presentReadySubmitInfo = VkSubmitInfo.New();
+            presentReadySubmitInfo.signalSemaphoreCount = 1;
+            presentReadySubmitInfo.pSignalSemaphores = &presentReadySemaphore;
+
             var presentInfo = VkPresentInfoKHR.New();
             presentInfo.swapchainCount = 1;
             presentInfo.pSwapchains = &deviceSwapchain;
-            uint imageIndex = vkSc.ImageIndex;
             presentInfo.pImageIndices = &imageIndex;
+            // REQUIRED, not optional: the Vulkan spec says "semaphores must be used to ensure that prior rendering
+            // ... complete before the presentation begins". Mesa's Wayland WSI derives the linux-drm-syncobj-v1
+            // acquire point from exactly these wait semaphores. With zero waits the compositor is told the image
+            // is ready immediately and may display its previous contents (an older frame) — under implicit sync
+            // the kernel dma-fence hid this; under explicit sync (Mesa 26 + KWin 6.6) it is visible flicker.
+            presentInfo.waitSemaphoreCount = 1;
+            presentInfo.pWaitSemaphores = &presentReadySemaphore;
 
             object presentLock = vkSc.PresentQueueIndex == GraphicsQueueIndex ? graphicsQueueLock : vkSc;
 
             lock (presentLock)
             {
+                lock (graphicsQueueLock)
+                {
+                    var submitResult = vkQueueSubmit(graphicsQueue, 1, ref presentReadySubmitInfo, Vulkan.VkFence.Null);
+                    CheckResult(submitResult);
+                }
+
                 vkQueuePresentKHR(vkSc.PresentQueue, ref presentInfo);
 
                 if (vkSc.AcquireNextImage(device, VkSemaphore.Null, vkSc.ImageAvailableFence))

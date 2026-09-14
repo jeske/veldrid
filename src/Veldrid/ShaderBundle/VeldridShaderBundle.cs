@@ -48,15 +48,11 @@ namespace Veldrid
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string ComputeSource { get; set; }
 
-        /// <summary>ISO 8601 compilation timestamp (human-readable).</summary>
-        [JsonPropertyName("compiledAt")]
-        public string CompiledAt { get; set; }
+        // No compile timestamp: a bundle is a pure function of its inputs, so the SAME source must produce
+        // the SAME bytes (bit-reproducible, git-clean on recompile). Identity is InputHash / OutputHash.
+        // Older bundles that still carry "compiledAt"/"compiledAtEpoch" deserialize fine (unknown members are skipped).
 
-        /// <summary>Unix epoch seconds compilation timestamp (machine-comparable).</summary>
-        [JsonPropertyName("compiledAtEpoch")]
-        public long CompiledAtEpoch { get; set; }
-
-        /// <summary>SHA256 hash of the SPIR-V input bytes (vertex+fragment concatenated).</summary>
+        /// <summary>SHA256 hash of the SPIR-V input bytes (vertex+fragment concatenated) — the bundle's identity.</summary>
         [JsonPropertyName("inputHash")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string InputHash { get; set; }

@@ -1046,8 +1046,6 @@ property.VdShaderResourceElement.Name: string { get; set; }
 property.VdShaderResourceElement.Stages: ShaderStages { get; set; }
 property.VdShaderResourceLayout.Elements: VdShaderResourceElement[] { get; set; }
 property.VeldridShaderBundle.Backends: Dictionary`2<string, VdShaderBackendData> { get; set; }
-property.VeldridShaderBundle.CompiledAt: string { get; set; }
-property.VeldridShaderBundle.CompiledAtEpoch: long { get; set; }
 property.VeldridShaderBundle.ComputeSource: string { get; set; }
 property.VeldridShaderBundle.FlatBindingMap: VdShaderBindingEntry[] { get; set; }
 property.VeldridShaderBundle.FragmentSource: string { get; set; }

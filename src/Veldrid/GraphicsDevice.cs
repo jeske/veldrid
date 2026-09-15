@@ -376,6 +376,25 @@ namespace Veldrid
         }
 
         /// <summary>
+        ///     Hints the graphics driver/runtime that the application has gone idle and that any internal scratch or cache
+        ///     memory it retains to speed up subsequent rendering may be released now.
+        ///     <para>
+        ///     This is a mechanism only: <b>the caller decides what "idle" means and when to call it.</b> Veldrid does not
+        ///     schedule, defer, or repeat the trim. Re-allocating the released memory has a cost on the next frame, so callers
+        ///     should invoke this once from a trailing idle timer after rendering has stopped, not per-frame or per-resize.
+        ///     </para>
+        ///     <para>
+        ///     Direct3D 11: calls <c>IDXGIDevice3::Trim</c>. Measured (AN_Mirica/_BUGFIX/150): after a window-resize storm the
+        ///     D3D11 runtime retained ~100 MiB of process-private memory until the app went idle; one Trim released it.
+        ///     Other backends: no-op.
+        ///     </para>
+        /// </summary>
+        public void TrimDriverMemoryForIdle()
+        {
+            TrimDriverMemoryForIdleCore();
+        }
+
+        /// <summary>
         ///     A blocking method that returns when the GPU signals that the next frame is ready to be rendered.
         ///     In contrast to <see cref="Swapchain.SyncToVerticalBlank" />, this allows the next frame to be rendered as soon
         ///     as the next GPU buffer becomes available without incurring the extra frame of latency of
@@ -958,6 +977,14 @@ namespace Veldrid
         private protected abstract void SwapBuffersCore(Swapchain swapchain);
 
         private protected abstract void WaitForIdleCore();
+
+        /// <summary>
+        ///     Backend hook for <see cref="TrimDriverMemoryForIdle" />. Default: no-op. Backends whose driver/runtime keeps
+        ///     releasable internal scratch memory (D3D11: <c>IDXGIDevice3::Trim</c>) override this.
+        /// </summary>
+        private protected virtual void TrimDriverMemoryForIdleCore()
+        {
+        }
 
         private protected abstract void WaitForNextFrameReadyCore();
 

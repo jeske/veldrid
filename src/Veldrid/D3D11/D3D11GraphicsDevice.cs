@@ -677,6 +677,19 @@ namespace Veldrid.D3D11
         {
         }
 
+        private protected override void TrimDriverMemoryForIdleCore()
+        {
+            // IDXGIDevice3::Trim — Windows 8.1+ runtime. Releases driver/runtime internal scratch allocations
+            // (measured ~100 MiB retained after a resize storm; see AN_Mirica/_BUGFIX/150). ClearState is NOT
+            // required for the memory effect (5.3b), so pipeline state tracked by D3D11CommandList is left alone.
+            // Serialized against the immediate context like every other device-level call here.
+            lock (immediateContextLock)
+            {
+                using var dxgiDevice3 = device.QueryInterfaceOrNull<IDXGIDevice3>();
+                dxgiDevice3?.Trim();
+            }
+        }
+
         private protected override void WaitForNextFrameReadyCore()
         {
             mainSwapchain.WaitForNextFrameReady();

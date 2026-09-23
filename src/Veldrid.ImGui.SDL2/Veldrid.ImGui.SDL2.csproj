@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\AN.Veldrid.Build.props" />
+
+  <PropertyGroup Label="Nuget">
+    <PackageId>ArtificialNecessity.Veldrid.ImGui.SDL2</PackageId>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <DocumentationFile Condition="'$(Configuration)' == 'Release'">$(BinDir)/$(AssemblyName).xml</DocumentationFile>
+    <RootNamespace>Veldrid</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Veldrid.ImGui\Veldrid.ImGui.csproj" />
+    <ProjectReference Include="..\Veldrid.SDL2\Veldrid.SDL2.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Description>SDL2 InputSnapshot binding for ArtificialNecessity.Veldrid.ImGui. Reference implementation for other windowing hosts.</Description>
+    <PackageTags>3D Graphics Direct3D DirectX Vulkan OpenGL Metal Core Standard Game ImGui SDL2 Input</PackageTags>
+  </PropertyGroup>
+
+</Project>

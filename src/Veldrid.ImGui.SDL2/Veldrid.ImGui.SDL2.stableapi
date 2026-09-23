@@ -1,0 +1,6 @@
+__stableApiVersion: 2
+method.ImGuiRendererInputSnapshotExtensions.FeedInputSnapshot: void(ImGuiRenderer renderer, InputSnapshot snapshot)
+method.ImGuiRendererInputSnapshotExtensions.FeedInputSnapshot: void(ImGuiRenderer renderer, InputSnapshot snapshot, Sdl2Window window)
+method.ImGuiRendererInputSnapshotExtensions.TryMapKey: bool(Key key, ref ImGuiKey result)
+method.ImGuiRendererInputSnapshotExtensions.Update: void(ImGuiRenderer renderer, float deltaSeconds, InputSnapshot snapshot)
+type.ImGuiRendererInputSnapshotExtensions: static class

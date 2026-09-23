@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\AN.Veldrid.Build.props" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Veldrid.ImGuiSdl2Test</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Veldrid.ImGui.SDL2\Veldrid.ImGui.SDL2.csproj" />
+    <ProjectReference Include="..\Veldrid.StartupUtilities\Veldrid.StartupUtilities.csproj" />
+  </ItemGroup>
+
+  <!-- ProjectReference to Veldrid.SDL2 puts SDL2.dll under native\win-x64\ (the NuGet .targets handles placement for
+       package consumers). This in-repo test exe needs it next to the executable. Windows x64 only; it is a smoke test. -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <None Include="..\Veldrid.SDL2\native\win-x64\SDL2.dll" Link="SDL2.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+</Project>

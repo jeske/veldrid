@@ -438,14 +438,24 @@ namespace Veldrid.D3D11
         {
             lock (stagingResourcesLock)
             {
+                // Best fit: the SMALLEST pooled buffer that is large enough.
+                D3D11Buffer bestFit = null;
                 foreach (var buffer in availableStagingBuffers)
                 {
-                    if (buffer.SizeInBytes >= sizeInBytes)
-                    {
-                        availableStagingBuffers.Remove(buffer);
-                        return buffer;
-                    }
+                    if (buffer.SizeInBytes >= sizeInBytes && (bestFit == null || buffer.SizeInBytes < bestFit.SizeInBytes))
+                        bestFit = buffer;
                 }
+                if (bestFit != null)
+                {
+                    availableStagingBuffers.Remove(bestFit);
+                    return bestFit;
+                }
+
+                // Miss: every pooled buffer is smaller than this request; the one created below supersedes them all.
+                // Retire them or the pool grows by one exact-size CPU buffer per new high-water mark, forever
+                // (see D3D11CommandList.getFreeStagingBuffer for the AN_Monitor 2 GB case, 2026-09-24).
+                foreach (var buffer in availableStagingBuffers) buffer.Dispose();
+                availableStagingBuffers.Clear();
             }
 
             var staging = ResourceFactory.CreateBuffer(

@@ -1012,14 +1012,25 @@ namespace Veldrid.D3D11
 
         private D3D11Buffer getFreeStagingBuffer(uint sizeInBytes)
         {
+            // Best fit: the SMALLEST pooled buffer that is large enough.
+            D3D11Buffer bestFit = null;
             foreach (var buffer in availableStagingBuffers)
             {
-                if (buffer.SizeInBytes >= sizeInBytes)
-                {
-                    availableStagingBuffers.Remove(buffer);
-                    return buffer;
-                }
+                if (buffer.SizeInBytes >= sizeInBytes && (bestFit == null || buffer.SizeInBytes < bestFit.SizeInBytes))
+                    bestFit = buffer;
             }
+            if (bestFit != null)
+            {
+                availableStagingBuffers.Remove(bestFit);
+                return bestFit;
+            }
+
+            // Miss: every pooled buffer is smaller than this request. Retire them all — the buffer created below
+            // can serve any request they could. Without this the pool grew by one exact-size CPU buffer for every
+            // new high-water mark and never shrank (a frame whose vertex count grows a little each redraw — a live
+            // graph filling its history — leaked ~1 MB per redraw for half an hour: AN_Monitor, 2026-09-24, 2 GB).
+            foreach (var buffer in availableStagingBuffers) buffer.Dispose();
+            availableStagingBuffers.Clear();
 
             var staging = gd.ResourceFactory.CreateBuffer(
                 new BufferDescription(sizeInBytes, BufferUsage.Staging));

@@ -1020,20 +1020,24 @@ namespace Veldrid.Vk
         {
             lock (stagingLock)
             {
+                // Best fit: the SMALLEST pooled buffer that is large enough.
                 VkBuffer ret = null;
-
                 foreach (var buffer in availableStagingBuffers)
                 {
-                    if (buffer.SizeInBytes >= size)
-                    {
+                    if (buffer.SizeInBytes >= size && (ret == null || buffer.SizeInBytes < ret.SizeInBytes))
                         ret = buffer;
-                        availableStagingBuffers.Remove(buffer);
-                        break;
-                    }
                 }
 
-                if (ret == null)
+                if (ret != null)
+                    availableStagingBuffers.Remove(ret);
+                else
                 {
+                    // Miss: every pooled buffer is smaller than this request; the one created below supersedes them
+                    // all. Retire them or the pool grows by one exact-size buffer per new high-water mark, forever
+                    // (see D3D11CommandList.getFreeStagingBuffer for the AN_Monitor 2 GB case, 2026-09-24).
+                    foreach (var buffer in availableStagingBuffers) buffer.Dispose();
+                    availableStagingBuffers.Clear();
+
                     ret = (VkBuffer)gd.ResourceFactory.CreateBuffer(new BufferDescription(size, BufferUsage.Staging));
                     ret.Name = $"Staging Buffer (CommandList {name})";
                 }

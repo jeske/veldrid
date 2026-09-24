@@ -136,7 +136,7 @@ namespace Veldrid.D3D11
 
                 foreach (var boundComputeSet in computeResourceSets) boundComputeSet.Offsets.Dispose();
 
-                foreach (var buffer in availableStagingBuffers) buffer.Dispose();
+                foreach (var buffer in availableStagingBuffers) { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }
                 availableStagingBuffers.Clear();
 
                 disposed = true;
@@ -211,7 +211,7 @@ namespace Veldrid.D3D11
             foreach (var sc in referencedSwapchains) sc.RemoveCommandListReference(this);
             referencedSwapchains.Clear();
 
-            foreach (var buffer in submittedStagingBuffers) availableStagingBuffers.Add(buffer);
+            foreach (var buffer in submittedStagingBuffers) { availableStagingBuffers.Add(buffer); StagingBufferPoolTelemetry.NoteReturnedToPool(buffer.SizeInBytes); }
 
             submittedStagingBuffers.Clear();
         }
@@ -1022,6 +1022,7 @@ namespace Veldrid.D3D11
             if (bestFit != null)
             {
                 availableStagingBuffers.Remove(bestFit);
+                StagingBufferPoolTelemetry.NoteTakenFromPool(bestFit.SizeInBytes);
                 return bestFit;
             }
 
@@ -1029,11 +1030,12 @@ namespace Veldrid.D3D11
             // can serve any request they could. Without this the pool grew by one exact-size CPU buffer for every
             // new high-water mark and never shrank (a frame whose vertex count grows a little each redraw — a live
             // graph filling its history — leaked ~1 MB per redraw for half an hour: AN_Monitor, 2026-09-24, 2 GB).
-            foreach (var buffer in availableStagingBuffers) buffer.Dispose();
+            foreach (var buffer in availableStagingBuffers) { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }
             availableStagingBuffers.Clear();
 
             var staging = gd.ResourceFactory.CreateBuffer(
                 new BufferDescription(sizeInBytes, BufferUsage.Staging));
+            StagingBufferPoolTelemetry.NoteCreated(sizeInBytes);
 
             return Util.AssertSubtype<DeviceBuffer, D3D11Buffer>(staging);
         }

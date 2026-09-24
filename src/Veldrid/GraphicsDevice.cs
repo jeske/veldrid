@@ -395,6 +395,29 @@ namespace Veldrid
         }
 
         /// <summary>
+        ///     THIS PROCESS's GPU memory accounting as the OS/driver bills it: current usage and budget for the adapter's
+        ///     LOCAL segment (dedicated VRAM) and NON-LOCAL segment (shared system memory — where CPU-visible staging buffers,
+        ///     upload heaps and driver scratch live). The number a leak of GPU-side resources shows up in, regardless of which
+        ///     Veldrid object owns it. Cheap enough to sample every second.
+        ///     <para>
+        ///     Direct3D 11: <c>IDXGIAdapter3::QueryVideoMemoryInfo</c> (Windows 10+). Other backends: returns false today
+        ///     (Vulkan would need VK_EXT_memory_budget; Metal has <c>currentAllocatedSize</c> only).
+        ///     </para>
+        /// </summary>
+        /// <returns>True when <paramref name="usage" /> was filled; false = not available on this backend/OS (treat as UNKNOWN, never 0).</returns>
+        public bool TryQueryVideoMemoryUsage(out GraphicsDevice_VideoMemoryUsage usage)
+        {
+            return TryQueryVideoMemoryUsageCore(out usage);
+        }
+
+        /// <summary>Backend hook for <see cref="TryQueryVideoMemoryUsage" />. Default: unavailable.</summary>
+        private protected virtual bool TryQueryVideoMemoryUsageCore(out GraphicsDevice_VideoMemoryUsage usage)
+        {
+            usage = default;
+            return false;
+        }
+
+        /// <summary>
         ///     A blocking method that returns when the GPU signals that the next frame is ready to be rendered.
         ///     In contrast to <see cref="Swapchain.SyncToVerticalBlank" />, this allows the next frame to be rendered as soon
         ///     as the next GPU buffer becomes available without incurring the extra frame of latency of

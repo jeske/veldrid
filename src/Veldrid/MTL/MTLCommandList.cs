@@ -86,7 +86,7 @@ namespace Veldrid.MTL
                 lock (submittedStagingBuffers)
                 {
                     foreach (var buffer in availableStagingBuffers)
-                        buffer.Dispose();
+                    { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }
 
                     foreach (var buffer in submittedStagingBuffers.EnumerateItems())
                         buffer.Dispose();
@@ -172,7 +172,7 @@ namespace Veldrid.MTL
                     fence.Set();
 
                 foreach (var buffer in submittedStagingBuffers.EnumerateAndRemove(cb))
-                    availableStagingBuffers.Add(buffer);
+                { availableStagingBuffers.Add(buffer); StagingBufferPoolTelemetry.NoteReturnedToPool(buffer.SizeInBytes); }
             }
         }
 
@@ -698,18 +698,20 @@ namespace Veldrid.MTL
                 if (bestFit != null)
                 {
                     availableStagingBuffers.Remove(bestFit);
+                    StagingBufferPoolTelemetry.NoteTakenFromPool(bestFit.SizeInBytes);
                     return bestFit;
                 }
 
                 // Miss: every pooled buffer is smaller than this request; the one created below supersedes them all.
                 // Retire them or the pool grows by one exact-size buffer per new high-water mark, forever
                 // (see D3D11CommandList.getFreeStagingBuffer for the AN_Monitor 2 GB case, 2026-09-24).
-                foreach (var buffer in availableStagingBuffers) buffer.Dispose();
+                foreach (var buffer in availableStagingBuffers) { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }
                 availableStagingBuffers.Clear();
             }
 
             var staging = gd.ResourceFactory.CreateBuffer(
                 new BufferDescription(sizeInBytes, BufferUsage.Staging));
+            StagingBufferPoolTelemetry.NoteCreated(sizeInBytes);
 
             return Util.AssertSubtype<DeviceBuffer, MtlBuffer>(staging);
         }

@@ -383,7 +383,7 @@ namespace Veldrid.D3D11
         {
             // Dispose staging buffers
             foreach (D3D11Buffer buffer in availableStagingBuffers)
-                buffer.Dispose();
+            { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }
 
             availableStagingBuffers.Clear();
 
@@ -448,18 +448,20 @@ namespace Veldrid.D3D11
                 if (bestFit != null)
                 {
                     availableStagingBuffers.Remove(bestFit);
+                    StagingBufferPoolTelemetry.NoteTakenFromPool(bestFit.SizeInBytes);
                     return bestFit;
                 }
 
                 // Miss: every pooled buffer is smaller than this request; the one created below supersedes them all.
                 // Retire them or the pool grows by one exact-size CPU buffer per new high-water mark, forever
                 // (see D3D11CommandList.getFreeStagingBuffer for the AN_Monitor 2 GB case, 2026-09-24).
-                foreach (var buffer in availableStagingBuffers) buffer.Dispose();
+                foreach (var buffer in availableStagingBuffers) { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }
                 availableStagingBuffers.Clear();
             }
 
             var staging = ResourceFactory.CreateBuffer(
                 new BufferDescription(sizeInBytes, BufferUsage.Staging));
+            StagingBufferPoolTelemetry.NoteCreated(sizeInBytes);
 
             return Util.AssertSubtype<DeviceBuffer, D3D11Buffer>(staging);
         }
@@ -616,7 +618,7 @@ namespace Veldrid.D3D11
                         sourceRegion);
                 }
 
-                lock (stagingResourcesLock) availableStagingBuffers.Add(staging);
+                lock (stagingResourcesLock) { availableStagingBuffers.Add(staging); StagingBufferPoolTelemetry.NoteReturnedToPool(staging.SizeInBytes); }
             }
         }
 
@@ -703,6 +705,32 @@ namespace Veldrid.D3D11
         private protected override void WaitForNextFrameReadyCore()
         {
             mainSwapchain.WaitForNextFrameReady();
+        }
+
+        // IDXGIAdapter3 is Windows 10+; QueryInterface may fail on older DXGI. Resolved once, kept for the device's life
+        // (it is a reference on the SAME adapter we already own; disposed with it).
+        private IDXGIAdapter3 videoMemoryQueryAdapter;
+        private bool videoMemoryQueryAdapterProbed;
+
+        private protected override bool TryQueryVideoMemoryUsageCore(out GraphicsDevice_VideoMemoryUsage usage)
+        {
+            usage = default;
+            if (!videoMemoryQueryAdapterProbed)
+            {
+                videoMemoryQueryAdapterProbed = true;
+                try { videoMemoryQueryAdapter = dxgiAdapter.QueryInterfaceOrNull<IDXGIAdapter3>(); }
+                catch { videoMemoryQueryAdapter = null; }
+            }
+            if (videoMemoryQueryAdapter == null) return false;
+            try
+            {
+                // Node 0: the only node on a non-linked adapter; SLI/CrossFire nodes are not distinguished here.
+                QueryVideoMemoryInfo local = videoMemoryQueryAdapter.QueryVideoMemoryInfo(0, MemorySegmentGroup.Local);       // Vortice: returns the struct, throws on HRESULT failure
+                QueryVideoMemoryInfo nonLocal = videoMemoryQueryAdapter.QueryVideoMemoryInfo(0, MemorySegmentGroup.NonLocal);
+                usage = new GraphicsDevice_VideoMemoryUsage(local.CurrentUsage, local.Budget, nonLocal.CurrentUsage, nonLocal.Budget);
+                return true;
+            }
+            catch { return false; }
         }
     }
 }

@@ -1029,17 +1029,18 @@ namespace Veldrid.Vk
                 }
 
                 if (ret != null)
-                    availableStagingBuffers.Remove(ret);
+                { availableStagingBuffers.Remove(ret); StagingBufferPoolTelemetry.NoteTakenFromPool(ret.SizeInBytes); }
                 else
                 {
                     // Miss: every pooled buffer is smaller than this request; the one created below supersedes them
                     // all. Retire them or the pool grows by one exact-size buffer per new high-water mark, forever
                     // (see D3D11CommandList.getFreeStagingBuffer for the AN_Monitor 2 GB case, 2026-09-24).
-                    foreach (var buffer in availableStagingBuffers) buffer.Dispose();
+                    foreach (var buffer in availableStagingBuffers) { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }
                     availableStagingBuffers.Clear();
 
                     ret = (VkBuffer)gd.ResourceFactory.CreateBuffer(new BufferDescription(size, BufferUsage.Staging));
                     ret.Name = $"Staging Buffer (CommandList {name})";
+                    StagingBufferPoolTelemetry.NoteCreated(size);
                 }
 
                 currentStagingInfo.BuffersUsed.Add(ret);
@@ -1060,7 +1061,7 @@ namespace Veldrid.Vk
                 // resource lifetimes don't leak when a CommandList is disposed mid-cycle.
                 if (currentStagingInfo != null) { recycleStagingInfo(currentStagingInfo); currentStagingInfo = null; }
 
-                foreach (var buffer in availableStagingBuffers) buffer.Dispose();
+                foreach (var buffer in availableStagingBuffers) { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }
             }
         }
 
@@ -1087,7 +1088,7 @@ namespace Veldrid.Vk
         {
             lock (stagingLock)
             {
-                foreach (var buffer in info.BuffersUsed) availableStagingBuffers.Add(buffer);
+                foreach (var buffer in info.BuffersUsed) { availableStagingBuffers.Add(buffer); StagingBufferPoolTelemetry.NoteReturnedToPool(buffer.SizeInBytes); }
 
                 foreach (var rrc in info.Resources) rrc.Decrement();
 

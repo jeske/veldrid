@@ -516,7 +516,7 @@ namespace Veldrid.Vk
             foreach (var tex in availableStagingTextures) tex.Dispose();
 
             Debug.Assert(submittedStagingBuffers.Count == 0);
-            foreach (var buffer in availableStagingBuffers) buffer.Dispose();
+            foreach (var buffer in availableStagingBuffers) { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }
 
             lock (graphicsCommandPoolLock)
             {
@@ -700,7 +700,7 @@ namespace Veldrid.Vk
                 if (submittedStagingBuffers.Remove(completedCb, out var stagingBuffer))
                 {
                     if (stagingBuffer.SizeInBytes <= max_staging_buffer_size)
-                        availableStagingBuffers.Add(stagingBuffer);
+                    { availableStagingBuffers.Add(stagingBuffer); StagingBufferPoolTelemetry.NoteReturnedToPool(stagingBuffer.SizeInBytes); }
                     else
                         stagingBuffer.Dispose();
                 }
@@ -1230,6 +1230,7 @@ namespace Veldrid.Vk
                     if (buffer.SizeInBytes >= size)
                     {
                         availableStagingBuffers.RemoveAt(i);
+                        StagingBufferPoolTelemetry.NoteTakenFromPool(buffer.SizeInBytes);
                         return buffer;
                     }
                 }
@@ -1238,6 +1239,7 @@ namespace Veldrid.Vk
             uint newBufferSize = Math.Max(min_staging_buffer_size, size);
             var newBuffer = (VkBuffer)ResourceFactory.CreateBuffer(
                 new BufferDescription(newBufferSize, BufferUsage.Staging));
+            StagingBufferPoolTelemetry.NoteCreated(newBufferSize);
             return newBuffer;
         }
 

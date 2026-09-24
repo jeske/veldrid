@@ -362,6 +362,10 @@ field.GraphicsDeviceOptions.ResourceBindingModel: ResourceBindingModel
 field.GraphicsDeviceOptions.SwapchainDepthFormat: Nullable`1<PixelFormat>
 field.GraphicsDeviceOptions.SwapchainSrgbFormat: bool
 field.GraphicsDeviceOptions.SyncToVerticalBlank: bool
+field.GraphicsDevice_VideoMemoryUsage.LocalBudgetBytes: readonly ulong
+field.GraphicsDevice_VideoMemoryUsage.LocalUsageBytes: readonly ulong
+field.GraphicsDevice_VideoMemoryUsage.NonLocalBudgetBytes: readonly ulong
+field.GraphicsDevice_VideoMemoryUsage.NonLocalUsageBytes: readonly ulong
 field.GraphicsPipelineDescription.BlendState: BlendStateDescription
 field.GraphicsPipelineDescription.DepthStencilState: DepthStencilStateDescription
 field.GraphicsPipelineDescription.Outputs: OutputDescription
@@ -678,6 +682,7 @@ method.GraphicsDevice.SubmitCommands: void(CommandList commandList, Fence fence)
 method.GraphicsDevice.SwapBuffers: void()
 method.GraphicsDevice.SwapBuffers: void(Swapchain swapchain)
 method.GraphicsDevice.TrimDriverMemoryForIdle: void()
+method.GraphicsDevice.TryQueryVideoMemoryUsage: bool(ref GraphicsDevice_VideoMemoryUsage usage)
 method.GraphicsDevice.Unmap: void(IMappableResource resource)
 method.GraphicsDevice.Unmap: void(IMappableResource resource, uint subresource)
 method.GraphicsDevice.UpdateActiveDisplay: void(int x, int y, int w, int h)
@@ -706,6 +711,7 @@ method.GraphicsDeviceOptions..ctor: void(bool debug, Nullable`1<PixelFormat> swa
 method.GraphicsDeviceOptions..ctor: void(bool debug, Nullable`1<PixelFormat> swapchainDepthFormat, bool syncToVerticalBlank, ResourceBindingModel resourceBindingModel, bool preferDepthRangeZeroToOne)
 method.GraphicsDeviceOptions..ctor: void(bool debug, Nullable`1<PixelFormat> swapchainDepthFormat, bool syncToVerticalBlank, ResourceBindingModel resourceBindingModel, bool preferDepthRangeZeroToOne, bool preferStandardClipSpaceYDirection)
 method.GraphicsDeviceOptions..ctor: void(bool debug, Nullable`1<PixelFormat> swapchainDepthFormat, bool syncToVerticalBlank, ResourceBindingModel resourceBindingModel, bool preferDepthRangeZeroToOne, bool preferStandardClipSpaceYDirection, bool swapchainSrgbFormat)
+method.GraphicsDevice_VideoMemoryUsage..ctor: void(ulong localUsageBytes, ulong localBudgetBytes, ulong nonLocalUsageBytes, ulong nonLocalBudgetBytes)
 method.GraphicsPipelineDescription..ctor: void(BlendStateDescription blendState, DepthStencilStateDescription depthStencilStateDescription, RasterizerStateDescription rasterizerState, PrimitiveTopology primitiveTopology, ShaderSetDescription shaderSet, ResourceLayout resourceLayout, OutputDescription outputs)
 method.GraphicsPipelineDescription..ctor: void(BlendStateDescription blendState, DepthStencilStateDescription depthStencilStateDescription, RasterizerStateDescription rasterizerState, PrimitiveTopology primitiveTopology, ShaderSetDescription shaderSet, ResourceLayout[] resourceLayouts, OutputDescription outputs)
 method.GraphicsPipelineDescription..ctor: void(BlendStateDescription blendState, DepthStencilStateDescription depthStencilStateDescription, RasterizerStateDescription rasterizerState, PrimitiveTopology primitiveTopology, ShaderSetDescription shaderSet, ResourceLayout[] resourceLayouts, OutputDescription outputs, ResourceBindingModel resourceBindingModel)
@@ -1001,6 +1007,12 @@ property.Shader.EntryPoint: string { get; }
 property.Shader.IsDisposed: bool { get; }
 property.Shader.Name: string { get; set; }
 property.Shader.Stage: ShaderStages { get; }
+property.StagingBufferPoolTelemetry.CreatedTotalBytes: long { get; }
+property.StagingBufferPoolTelemetry.CreatedTotalCount: long { get; }
+property.StagingBufferPoolTelemetry.EvictedTotalBytes: long { get; }
+property.StagingBufferPoolTelemetry.EvictedTotalCount: long { get; }
+property.StagingBufferPoolTelemetry.PooledBytes: long { get; }
+property.StagingBufferPoolTelemetry.PooledCount: long { get; }
 property.Swapchain.CompositorBackgroundColor: Nullable`1<RgbaFloat> { get; set; }
 property.Swapchain.Framebuffer: Framebuffer { get; }
 property.Swapchain.IsDisposed: bool { get; }
@@ -1155,6 +1167,13 @@ struct.GraphicsDeviceOptions.field4.ResourceBindingModel: ResourceBindingModel
 struct.GraphicsDeviceOptions.field5.PreferDepthRangeZeroToOne: bool
 struct.GraphicsDeviceOptions.field6.PreferStandardClipSpaceYDirection: bool
 struct.GraphicsDeviceOptions.field7.SwapchainSrgbFormat: bool
+struct.GraphicsDevice_VideoMemoryUsage._layout: Sequential
+struct.GraphicsDevice_VideoMemoryUsage._pack: 0
+struct.GraphicsDevice_VideoMemoryUsage._size: 0
+struct.GraphicsDevice_VideoMemoryUsage.field0.LocalUsageBytes: ulong
+struct.GraphicsDevice_VideoMemoryUsage.field1.LocalBudgetBytes: ulong
+struct.GraphicsDevice_VideoMemoryUsage.field2.NonLocalUsageBytes: ulong
+struct.GraphicsDevice_VideoMemoryUsage.field3.NonLocalBudgetBytes: ulong
 struct.GraphicsPipelineDescription._layout: Sequential
 struct.GraphicsPipelineDescription._pack: 0
 struct.GraphicsPipelineDescription._size: 0
@@ -1393,6 +1412,7 @@ type.GraphicsBackend: enum
 type.GraphicsDevice: abstract class
 type.GraphicsDeviceFeatures: class
 type.GraphicsDeviceOptions: struct
+type.GraphicsDevice_VideoMemoryUsage: struct
 type.GraphicsPipelineDescription: struct
 type.IBindableResource: interface
 type.IDeviceResource: interface
@@ -1437,6 +1457,7 @@ type.ShaderDescription: struct
 type.ShaderSetDescription: struct
 type.ShaderStages: enum
 type.SpecializationConstant: struct
+type.StagingBufferPoolTelemetry: static class
 type.StencilBehaviorDescription: struct
 type.StencilOperation: enum
 type.Swapchain: abstract class

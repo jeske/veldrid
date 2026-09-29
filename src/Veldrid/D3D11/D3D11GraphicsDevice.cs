@@ -528,7 +528,15 @@ namespace Veldrid.D3D11
                 return false;
             }
 
-            var dxgiFormat = D3D11Formats.ToDxgiFormat(format, (usage & TextureUsage.DepthStencil) != 0);
+            bool isDepthStencilUsage = (usage & TextureUsage.DepthStencil) != 0;
+            // ToDxgiFormat(depthFormat: true) yields the TYPELESS resource format (R24G8_Typeless, ...), which is
+            // what depth textures are CREATED with so they can be viewed as depth OR shader resource. But
+            // CheckFormatSupport on a typeless format never reports DepthStencil/ShaderSample - the capability
+            // bits live on the typed formats. Query the typed depth format instead (2026-09-28: every depth
+            // format reported "unsupported", which broke callers choosing D24S8 vs D32S8 at runtime).
+            var dxgiFormat = isDepthStencilUsage
+                ? D3D11Formats.GetDepthFormat(format)
+                : D3D11Formats.ToDxgiFormat(format, false);
             var fs = device.CheckFormatSupport(dxgiFormat);
 
             if (((usage & TextureUsage.RenderTarget) != 0 && (fs & FormatSupport.RenderTarget) == 0)

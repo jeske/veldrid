@@ -396,6 +396,7 @@ field.MappedResource.Subresource: readonly uint
 field.MappedResourceView`1.Count: readonly int
 field.MappedResourceView`1.MappedResource: readonly MappedResource
 field.MappedResourceView`1.SizeInBytes: readonly uint
+field.MetalDeviceOptions.MaxCommandBufferCount: int
 field.MetalDeviceOptions.PreferMemorylessDepthTargets: bool
 field.OutputAttachmentDescription.Format: PixelFormat
 field.OutputDescription.ColorAttachments: OutputAttachmentDescription[]
@@ -1226,6 +1227,7 @@ struct.MetalDeviceOptions._layout: Sequential
 struct.MetalDeviceOptions._pack: 0
 struct.MetalDeviceOptions._size: 0
 struct.MetalDeviceOptions.field0.PreferMemorylessDepthTargets: bool
+struct.MetalDeviceOptions.field1.MaxCommandBufferCount: int
 struct.OutputAttachmentDescription._layout: Sequential
 struct.OutputAttachmentDescription._pack: 0
 struct.OutputAttachmentDescription._size: 0

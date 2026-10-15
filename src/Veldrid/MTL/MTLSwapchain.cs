@@ -44,9 +44,12 @@ namespace Veldrid.MTL
             {
                 var nswindow = new NSWindow(nsWindowSource.NSWindow);
                 var contentView = nswindow.contentView;
-                var windowContentSize = contentView.frame.size;
-                width = (uint)windowContentSize.width;
-                height = (uint)windowContentSize.height;
+                double backingScale = nswindow.backingScaleFactor;
+
+                // drawableSize is in PIXELS. Honor the caller's requested pixel size (like the D3D11/Vulkan
+                // backends do); only if none was given derive it from the content view's POINT frame x the
+                // backing scale. Using the point frame directly produced a quarter-area drawable on Retina.
+                ResolveMacOSDrawableSize(ref description, contentView.frame.size, backingScale, out width, out height);
 
                 if (!CAMetalLayer.TryCast(contentView.layer, out metalLayer))
                 {
@@ -60,14 +63,16 @@ namespace Veldrid.MTL
                     ObjectiveCRuntime.retain(metalLayer.NativePtr);
                 }
 
-                metalLayer.contentsScale = nswindow.backingScaleFactor;
+                metalLayer.contentsScale = backingScale;
             }
             else if (source is NSViewSwapchainSource nsViewSource)
             {
                 var contentView = new NSView(nsViewSource.NSView);
-                var windowContentSize = contentView.frame.size;
-                width = (uint)windowContentSize.width;
-                height = (uint)windowContentSize.height;
+                // NSView.window.backingScaleFactor gives the correct Retina scale; a view not yet in a window has none.
+                var viewWindow = contentView.window;
+                double backingScale = viewWindow.NativePtr != IntPtr.Zero ? viewWindow.backingScaleFactor : 1.0;
+
+                ResolveMacOSDrawableSize(ref description, contentView.frame.size, backingScale, out width, out height);
 
                 if (!CAMetalLayer.TryCast(contentView.layer, out metalLayer))
                 {
@@ -81,11 +86,8 @@ namespace Veldrid.MTL
                     ObjectiveCRuntime.retain(metalLayer.NativePtr);
                 }
 
-                // Set contentsScale from the view's window backingScaleFactor for Retina support.
-                // NSView.window.backingScaleFactor gives the correct scale on macOS.
-                var viewWindow = contentView.window;
                 if (viewWindow.NativePtr != IntPtr.Zero)
-                    metalLayer.contentsScale = viewWindow.backingScaleFactor;
+                    metalLayer.contentsScale = backingScale;
             }
             else if (source is UIViewSwapchainSource uiViewSource)
             {
@@ -148,6 +150,30 @@ namespace Veldrid.MTL
         }
 
         #endregion
+
+        /// <summary>
+        /// Resolve the swapchain's pixel size on macOS. <c>CAMetalLayer.drawableSize</c> is in PIXELS, whereas
+        /// AppKit frames are in POINTS. Preference order:
+        ///   1. The caller's explicit <see cref="SwapchainDescription.Width"/>/<see cref="SwapchainDescription.Height"/>
+        ///      (same contract as the D3D11/Vulkan backends, which honor the description).
+        ///   2. The view's point frame multiplied by the window's backing scale (hidden windows may have a frame
+        ///      but no swapchain-resize event follows that would otherwise correct a point-sized drawable).
+        /// </summary>
+        private static void ResolveMacOSDrawableSize(
+            ref SwapchainDescription description, CGSize viewFramePoints, double backingScale,
+            out uint pixelWidth, out uint pixelHeight)
+        {
+            if (description.Width > 0 && description.Height > 0)
+            {
+                pixelWidth = description.Width;
+                pixelHeight = description.Height;
+                return;
+            }
+
+            if (!(backingScale > 0) || double.IsNaN(backingScale) || double.IsInfinity(backingScale)) backingScale = 1.0;
+            pixelWidth = (uint)Math.Round(viewFramePoints.width * backingScale, MidpointRounding.AwayFromZero);
+            pixelHeight = (uint)Math.Round(viewFramePoints.height * backingScale, MidpointRounding.AwayFromZero);
+        }
 
         public override void Resize(uint width, uint height)
         {

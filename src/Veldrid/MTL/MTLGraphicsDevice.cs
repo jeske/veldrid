@@ -160,7 +160,9 @@ namespace Veldrid.MTL
             }
 
             ResourceFactory = new MtlResourceFactory(this);
-            commandQueue = device.newCommandQueue();
+            // Explicit so the count is KNOWN (Metal cannot be asked): the same 64 newCommandQueue() defaults to. See MaxCommandBufferCount.
+            MaxCommandBufferCount = metalOptions.MaxCommandBufferCount > 0 ? metalOptions.MaxCommandBufferCount : 64;
+            commandQueue = device.newCommandQueueWithMaxCommandBufferCount((ulong)MaxCommandBufferCount);
 
             var allSampleCounts = (TextureSampleCount[])Enum.GetValues(typeof(TextureSampleCount));
             supportedSampleCounts = new bool[allSampleCounts.Length];
@@ -296,6 +298,67 @@ namespace Veldrid.MTL
             return MetalFeatures.IsMacOS ? 16u : 256u;
         }
 
+        #region Command-buffer in-flight accounting (fail loudly instead of blocking in -[MTLCommandQueue commandBuffer])
+
+        /// <summary>
+        /// The queue's maximum number of command buffers alive at once (created and not yet completed; an UNCOMMITTED buffer
+        /// counts until it is deallocated). Metal exposes no API to read this or the live count, so the device remembers what it
+        /// asked for and counts acquisitions itself. Reaching it makes <c>-[MTLCommandQueue commandBuffer]</c> BLOCK FOREVER
+        /// (a dispatch semaphore, no error) - which is why <see cref="MtlCommandList.Begin"/> checks first and throws.
+        /// </summary>
+        public int MaxCommandBufferCount { get; }
+
+        /// <summary>Command buffers created through <see cref="MtlCommandList.Begin"/> and not yet retired (completed, or released uncommitted).</summary>
+        public int InFlightCommandBufferCount => Volatile.Read(ref inFlightCommandBuffers);
+
+        private int inFlightCommandBuffers;
+        private readonly object uncommittedLock = new object();
+        private readonly Dictionary<IntPtr, string> uncommittedByBuffer = new Dictionary<IntPtr, string>();   // cb -> owning command list name
+
+        /// <summary>Called by <see cref="MtlCommandList.Begin"/> BEFORE acquiring. Throws when the acquisition would block.</summary>
+        internal void EnsureCommandBufferAvailable(string requestingListName)
+        {
+            if (Volatile.Read(ref inFlightCommandBuffers) < MaxCommandBufferCount) return;
+
+            string uncommitted;
+            int uncommittedCount;
+            lock (uncommittedLock)
+            {
+                uncommittedCount = uncommittedByBuffer.Count;
+                var byName = new Dictionary<string, int>();
+                foreach (string name in uncommittedByBuffer.Values) byName[name] = byName.TryGetValue(name, out int n) ? n + 1 : 1;
+                uncommitted = string.Join(", ", byName.Select(kv => $"{kv.Key} x{kv.Value}"));
+            }
+            int committedPending = Volatile.Read(ref inFlightCommandBuffers) - uncommittedCount;
+            throw new VeldridException(
+                $"Metal command queue exhausted: {InFlightCommandBufferCount}/{MaxCommandBufferCount} command buffers in flight while '{requestingListName}' called CommandList.Begin(). " +
+                $"-[MTLCommandQueue commandBuffer] would now block forever. {uncommittedCount} are Begin()'d and NOT YET submitted (a Begin()/End() batch awaiting SubmitCommands - or a list never submitted/disposed): [{uncommitted}]; " +
+                $"{committedPending} are submitted and not yet completed by the GPU. Submit each CommandList soon after End() instead of batching many; a workload that legitimately keeps more live buffers raises MetalDeviceOptions.MaxCommandBufferCount.");
+        }
+
+        internal void NoteCommandBufferAcquired(MTLCommandBuffer cb, string owningListName)
+        {
+            Interlocked.Increment(ref inFlightCommandBuffers);
+            lock (uncommittedLock) uncommittedByBuffer[cb.NativePtr] = owningListName;
+        }
+
+        /// <summary>Begin()'d buffer is now committed: it stays in flight until <see cref="OnCommandBufferCompleted"/>, but is no longer "uncommitted".</summary>
+        internal void NoteCommandBufferCommitted(MTLCommandBuffer cb)
+        {
+            lock (uncommittedLock) uncommittedByBuffer.Remove(cb.NativePtr);
+        }
+
+        /// <summary>A buffer left the queue: completed on the GPU (<paramref name="wasCommitted"/>), or released while still uncommitted (Begin()/Dispose() of a stale list).</summary>
+        internal void NoteCommandBufferRetired(MTLCommandBuffer cb, bool wasCommitted)
+        {
+            bool known;
+            lock (uncommittedLock) known = uncommittedByBuffer.Remove(cb.NativePtr) || wasCommitted;
+            // Present buffers (SwapBuffersCore) are created directly on the queue and never registered; do not count them down.
+            if (known) Interlocked.Decrement(ref inFlightCommandBuffers);
+        }
+
+        #endregion
+
         internal override uint GetStructuredBufferMinOffsetAlignmentCore()
         {
             return 16u;
@@ -394,6 +457,7 @@ namespace Veldrid.MTL
                     latestSubmittedCb = default;
             }
 
+            NoteCommandBufferRetired(cb, wasCommitted: true);
             ObjectiveCRuntime.release(cb.NativePtr);
         }
 

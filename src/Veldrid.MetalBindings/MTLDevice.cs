@@ -92,6 +92,10 @@ namespace Veldrid.MetalBindings
 
         public MTLCommandQueue newCommandQueue() => objc_msgSend<MTLCommandQueue>(NativePtr, sel_newCommandQueue);
 
+        /// <summary>Queue whose in-flight command-buffer cap is <paramref name="maxCommandBufferCount"/> (newCommandQueue() = 64). Metal offers no way to read it back.</summary>
+        public MTLCommandQueue newCommandQueueWithMaxCommandBufferCount(ulong maxCommandBufferCount)
+            => objc_msgSend<MTLCommandQueue>(NativePtr, sel_newCommandQueueWithMaxCommandBufferCount, (IntPtr)(long)maxCommandBufferCount);
+
         public MTLBuffer newBuffer(void* pointer, UIntPtr length, MTLResourceOptions options)
         {
             IntPtr buffer = IntPtr_objc_msgSend(NativePtr, sel_newBufferWithBytes,
@@ -138,6 +142,7 @@ namespace Veldrid.MetalBindings
         private static readonly Selector sel_newRenderPipelineStateWithDescriptor = "newRenderPipelineStateWithDescriptor:error:";
         private static readonly Selector sel_newComputePipelineStateWithDescriptor = "newComputePipelineStateWithDescriptor:options:reflection:error:";
         private static readonly Selector sel_newCommandQueue = "newCommandQueue";
+        private static readonly Selector sel_newCommandQueueWithMaxCommandBufferCount = "newCommandQueueWithMaxCommandBufferCount:";
         private static readonly Selector sel_newBufferWithBytes = "newBufferWithBytes:length:options:";
         private static readonly Selector sel_newBufferWithLength = "newBufferWithLength:options:";
         private static readonly Selector sel_newTextureWithDescriptor = "newTextureWithDescriptor:";

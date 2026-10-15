@@ -94,7 +94,12 @@ namespace Veldrid.MTL
                     submittedStagingBuffers.Clear();
                 }
 
-                if (cb.NativePtr != IntPtr.Zero) ObjectiveCRuntime.release(cb.NativePtr);
+                if (cb.NativePtr != IntPtr.Zero)
+                {
+                    gd.NoteCommandBufferRetired(cb, wasCommitted: false);   // disposed with a Begin()'d, never-submitted buffer
+                    ObjectiveCRuntime.release(cb.NativePtr);
+                    cb = default;
+                }
             }
         }
 
@@ -103,6 +108,7 @@ namespace Veldrid.MTL
         public MTLCommandBuffer Commit()
         {
             cb.commit();
+            gd.NoteCommandBufferCommitted(cb);   // in flight until the device's completion handler retires it
             var ret = cb;
             cb = default;
             return ret;
@@ -110,13 +116,23 @@ namespace Veldrid.MTL
 
         public override void Begin()
         {
-            if (cb.NativePtr != IntPtr.Zero) ObjectiveCRuntime.release(cb.NativePtr);
+            if (cb.NativePtr != IntPtr.Zero)
+            {
+                // Previous Begin() was never submitted (End() without SubmitCommands). Releasing frees its queue slot.
+                gd.NoteCommandBufferRetired(cb, wasCommitted: false);
+                ObjectiveCRuntime.release(cb.NativePtr);
+                cb = default;
+            }
+
+            // Fail loudly BEFORE -[MTLCommandQueue commandBuffer] would park this thread on the queue's semaphore forever.
+            gd.EnsureCommandBufferAvailable(Name ?? "<unnamed CommandList>");
 
             using (NSAutoreleasePool.Begin())
             {
                 cb = gd.CommandQueue.commandBuffer();
                 ObjectiveCRuntime.retain(cb.NativePtr);
             }
+            gd.NoteCommandBufferAcquired(cb, Name ?? "<unnamed CommandList>");
 
             ClearCachedState();
         }

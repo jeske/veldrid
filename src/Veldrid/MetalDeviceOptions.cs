@@ -13,5 +13,13 @@ namespace Veldrid
         ///     This only affects Apple GPUs.
         /// </summary>
         public bool PreferMemorylessDepthTargets;
+
+        /// <summary>
+        ///     Cap on command buffers alive at once on the device's MTLCommandQueue (created and not yet completed; uncommitted ones
+        ///     count until released). 0 = Metal's own default (64). Reaching the cap would make -[MTLCommandQueue commandBuffer] block
+        ///     forever, so Veldrid tracks the count itself and <see cref="CommandList.Begin"/> throws a <see cref="VeldridException"/>
+        ///     naming the un-submitted command lists instead. Raise this only for a workload that legitimately keeps more in flight.
+        /// </summary>
+        public int MaxCommandBufferCount;
     }
 }

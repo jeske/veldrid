@@ -277,9 +277,19 @@ namespace Veldrid.D3D11
                 using (infoQueue)
                 {
                     var producer = Vortice.DXGI.DXGI.DebugAll;
+                    // Live-object report lands in the same queue: names every live DXGI/D3D object with its refcounts,
+                    // which is the only way to see WHO still holds a retired swapchain / back buffer.
+                    try
+                    {
+                        if (Vortice.DXGI.DXGI.DXGIGetDebugInterface1(out Vortice.DXGI.Debug.IDXGIDebug1 dxgiDebug).Success && dxgiDebug != null)
+                        {
+                            using (dxgiDebug) dxgiDebug.ReportLiveObjects(producer, Vortice.DXGI.Debug.ReportLiveObjectFlags.Detail | Vortice.DXGI.Debug.ReportLiveObjectFlags.IgnoreInternal);
+                        }
+                    }
+                    catch { /* diagnostics only */ }
                     ulong count = infoQueue.GetNumStoredMessages(producer);
                     var text = new System.Text.StringBuilder();
-                    ulong first = count > 20 ? count - 20 : 0;
+                    ulong first = count > 400 ? count - 400 : 0;
                     for (ulong i = first; i < count; i++)
                     {
                         var message = infoQueue.GetMessage(producer, i);

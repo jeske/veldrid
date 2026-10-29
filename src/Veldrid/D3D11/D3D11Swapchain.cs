@@ -146,16 +146,7 @@ namespace Veldrid.D3D11
         {
             if (!disposed)
             {
-                depthTexture?.Dispose();
-                framebuffer.Dispose();
-                // Release the back-buffer reference BEFORE destroying the swapchain
-                // (Resize() already did this at line ~175; Dispose() never did).
-                // An outstanding GetBuffer reference on a flip-model swapchain keeps
-                // the whole buffer chain alive in DXGI *and DWM* after destroy —
-                // one leaked back buffer per popup/window close (2026-08-30 hunt).
-                backBufferTexture?.Dispose();
-                DxgiSwapChain.Dispose();
-
+                ReleaseNativeObjectsForDeviceLoss();
                 disposed = true;
             }
         }
@@ -341,7 +332,6 @@ namespace Veldrid.D3D11
 
         private void releaseNativeObjects()
         {
-            try { DxgiSwapChain?.Release(); } catch { /* dead device */ }
             try { DxgiSwapChain?.Dispose(); } catch { /* dead device */ }
             DxgiSwapChain = null;
 

@@ -373,11 +373,13 @@ namespace Veldrid.D3D11
                     try { videoMemoryQueryAdapter?.Dispose(); } catch { /* dead device */ }
                     videoMemoryQueryAdapter = null;
                     videoMemoryQueryAdapterProbed = false;
-                    // Keep the old context alive (see FlushRetiredDeviceContext): D3D11 destroys released objects
-                    // DEFERRED, on the next Flush of their owning context. The old swapchains' back buffers are
-                    // released only later (Swapchain.RecreateOnRestoredDevice) and must be flushed out of the old
-                    // device before DXGI will accept a new swapchain on the same HWND.
-                    retiredImmediateContext = immediateContext;
+                    // Owners have released ALL children before entering recovery. Finalize deferred
+                    // destruction on the OLD context, then release it before creating the replacement.
+                    PointSampler?.Dispose();
+                    LinearSampler?.Dispose();
+                    if (Features.SamplerAnisotropy) Aniso4XSampler?.Dispose();
+                    try { immediateContext?.ClearState(); immediateContext?.Flush(); } catch { /* removed device */ }
+                    immediateContext?.Dispose();
                     try { device.Dispose(); } catch { /* dead device */ }
                     try { dxgiAdapter?.Dispose(); } catch { /* dead device */ }
                     d3d11ResourceFactory = null;

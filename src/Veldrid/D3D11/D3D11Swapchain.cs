@@ -257,9 +257,41 @@ namespace Veldrid.D3D11
             catch (SharpGenException nativeFailure)
             {
                 gd.rethrowAsDeviceLostIfApplicable(nativeFailure);
-                throw;
+                // With the debug layer on, DXGI explains E_ACCESSDENIED precisely (e.g. "Only one flip model swap chain
+                // can be associated with an HWND ... MISCELLANEOUS ERROR #297"). Surface it in the exception text.
+                string debugMessages = drainDxgiDebugMessages();
+                if (debugMessages.Length == 0) throw;
+                throw new VeldridException(
+                    $"Swapchain recreate failed: {nativeFailure.Message.Trim()}\nDXGI debug messages:\n{debugMessages}", nativeFailure);
             }
             disposed = false;
+        }
+
+        /// <summary>DXGI info-queue messages (debug layer only; empty otherwise). Best-effort, never throws.</summary>
+        private static string drainDxgiDebugMessages()
+        {
+            try
+            {
+                if (!Vortice.DXGI.DXGI.DXGIGetDebugInterface1(out Vortice.DXGI.Debug.IDXGIInfoQueue infoQueue).Success || infoQueue == null)
+                    return string.Empty;
+                using (infoQueue)
+                {
+                    var producer = Vortice.DXGI.DXGI.DebugAll;
+                    ulong count = infoQueue.GetNumStoredMessages(producer);
+                    var text = new System.Text.StringBuilder();
+                    ulong first = count > 20 ? count - 20 : 0;
+                    for (ulong i = first; i < count; i++)
+                    {
+                        var message = infoQueue.GetMessage(producer, i);
+                        text.Append("  [").Append(message.Severity).Append("] ").AppendLine(message.Description);
+                    }
+                    return text.ToString();
+                }
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         private void recreateSwapchainCore()

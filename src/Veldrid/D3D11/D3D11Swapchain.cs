@@ -274,6 +274,13 @@ namespace Veldrid.D3D11
             try { depthTexture?.Dispose(); } catch { /* dead device */ }
             depthTexture = null;
 
+            // Flip-model rule (ID3D11DeviceContext::Flush docs, "Deferred Destruction Issues with Flip Presentation
+            // Swap Chains"): an HWND may own ONE flip swapchain, and D3D11 destroys released objects DEFERRED — the
+            // old swapchain is not gone until its owning context is flushed. Without this, CreateSwapChainForHwnd
+            // below fails E_ACCESSDENIED. The owning context is the CURRENT one for AllowTearing recreation, and the
+            // RETIRED one after RecoverFromDeviceLost (which ClearState'd it already).
+            gd.FlushContextsForDeferredDestruction();
+
             frameLatencyWaitHandle?.Dispose();
             frameLatencyWaitHandle = null;
 

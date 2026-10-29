@@ -342,6 +342,8 @@ namespace Veldrid.D3D11
                 //    the driver already destroyed; Release() on them is legal but any other call may fail.
                 if (device != null)
                 {
+                    try { retiredImmediateContext?.Dispose(); } catch { /* dead device */ }
+                    retiredImmediateContext = null;
                     // FIRST: unbind everything from the old immediate context. It still holds references to the
                     // last frame's render targets — i.e. every swapchain's back buffer. Other children (textures,
                     // buffers owned by consumers) keep the old device alive past our Dispose below, so without
@@ -365,7 +367,11 @@ namespace Veldrid.D3D11
                     try { videoMemoryQueryAdapter?.Dispose(); } catch { /* dead device */ }
                     videoMemoryQueryAdapter = null;
                     videoMemoryQueryAdapterProbed = false;
-                    try { immediateContext?.Dispose(); } catch { /* dead device */ }
+                    // Keep the old context alive (see FlushRetiredDeviceContext): D3D11 destroys released objects
+                    // DEFERRED, on the next Flush of their owning context. The old swapchains' back buffers are
+                    // released only later (Swapchain.RecreateOnRestoredDevice) and must be flushed out of the old
+                    // device before DXGI will accept a new swapchain on the same HWND.
+                    retiredImmediateContext = immediateContext;
                     try { device.Dispose(); } catch { /* dead device */ }
                     try { dxgiAdapter?.Dispose(); } catch { /* dead device */ }
                     d3d11ResourceFactory = null;
@@ -388,6 +394,44 @@ namespace Veldrid.D3D11
             //    lock: subscribers may legitimately call back into the device.
             RecreateCommonResourcesAfterRecovery();
             OnDeviceRecovered();
+        }
+
+        /// <summary>
+        /// The immediate context of the device retired by the last <see cref="RecoverFromDeviceLost"/> (null if none,
+        /// or if that device is truly gone). Kept so retired children released AFTER recovery can be flushed out.
+        /// </summary>
+        private ID3D11DeviceContext retiredImmediateContext;
+
+        /// <summary>
+        /// Force D3D11's DEFERRED object destruction to complete, on the current immediate context AND on the context
+        /// retired by the last <see cref="RecoverFromDeviceLost"/>. Call after releasing objects whose destruction must
+        /// be COMPLETE before continuing — the flip-model swapchain rule: an HWND may own only one, and the old one
+        /// counts as alive until its owning context is flushed (CreateSwapChainForHwnd → E_ACCESSDENIED otherwise;
+        /// observed with SimulateDeviceLost 2026-10-29; ID3D11DeviceContext::Flush docs, "Deferred Destruction Issues
+        /// with Flip Presentation Swap Chains"). Retired context: ClearState + Flush (nothing live on it). Current
+        /// context: Flush only — ClearState would wipe a live frame's pipeline state.
+        /// </summary>
+        internal void FlushContextsForDeferredDestruction()
+        {
+            ID3D11DeviceContext retired = retiredImmediateContext;
+            if (retired != null)
+            {
+                try { retired.ClearState(); retired.Flush(); } catch { /* dead device */ }
+            }
+            lock (immediateContextLock)
+            {
+                ID3D11DeviceContext current = immediateContext;
+                if (current == null) return;
+                try
+                {
+                    current.Flush();
+                }
+                catch (SharpGenException nativeFailure)
+                {
+                    rethrowAsDeviceLostIfApplicable(nativeFailure);
+                    throw;
+                }
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════

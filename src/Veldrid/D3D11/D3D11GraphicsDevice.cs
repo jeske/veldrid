@@ -342,6 +342,15 @@ namespace Veldrid.D3D11
                 //    the driver already destroyed; Release() on them is legal but any other call may fail.
                 if (device != null)
                 {
+                    // FIRST: unbind everything from the old immediate context. It still holds references to the
+                    // last frame's render targets — i.e. every swapchain's back buffer. Other children (textures,
+                    // buffers owned by consumers) keep the old device alive past our Dispose below, so without
+                    // ClearState those back-buffer references survive and DXGI refuses to create a new swapchain
+                    // on the same HWND (E_ACCESSDENIED from CreateSwapChainForHwnd — seen with SimulateDeviceLost,
+                    // 2026-10-29; DirectXTK DeviceResources::HandleDeviceLost does exactly this).
+                    try { immediateContext?.ClearState(); } catch { /* dead device */ }
+                    try { immediateContext?.Flush(); } catch { /* dead device */ }
+
                     try { d3d11ResourceFactory?.Dispose(); } catch { /* dead device */ }
                     lock (stagingResourcesLock)
                     {

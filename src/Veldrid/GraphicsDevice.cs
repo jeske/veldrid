@@ -376,6 +376,33 @@ namespace Veldrid
         public event Action DeviceRestored;
 
         /// <summary>
+        /// Asynchronous native device-loss notification, tagged with the native generation that was lost.
+        /// May run on a thread-pool thread. Handlers MUST only enqueue/wake their owner thread, never perform
+        /// GPU work, recovery, or blocking waits here. Notifications queued before recovery can arrive late;
+        /// compare the supplied generation before acting. Not implemented by every backend.
+        /// </summary>
+        public event Action<GpuDeviceGeneration> DeviceLost;
+
+        /// <summary>Whether native asynchronous device-loss notification was registered successfully.</summary>
+        public virtual bool SupportsDeviceLostNotifications => false;
+
+        /// <summary>On the device owner thread, query and throw the typed loss reason if the device is lost.</summary>
+        public virtual void ThrowIfDeviceLost()
+        {
+            if (IsDeviceLost)
+                throw new VeldridDeviceLostException(GpuDeviceLostReason.Unknown, 0, "The graphics device is lost.");
+        }
+
+        private protected void NotifyDeviceLost(GpuDeviceGeneration generation)
+        {
+            var handlers = DeviceLost;
+            if (handlers == null) return;
+            foreach (Action<GpuDeviceGeneration> handler in handlers.GetInvocationList())
+                try { handler(generation); }
+                catch (Exception error) { System.Diagnostics.Trace.TraceError($"DeviceLost notification handler failed: {error}"); }
+        }
+
+        /// <summary>
         ///     Disposes the dead native device and creates a fresh one IN PLACE: this <see cref="GraphicsDevice"/>
         ///     object (and its <see cref="ResourceFactory"/> property) keep their identity, so references held by
         ///     consumers stay valid.

@@ -301,6 +301,7 @@ enum.VertexElementSemantic.Normal: 1
 enum.VertexElementSemantic.Position: 0
 enum.VertexElementSemantic.TextureCoordinate: 2
 enum.VertexElementSemantic._type: byte
+event.GraphicsDevice.DeviceLost: Action`1<GpuDeviceGeneration>
 event.GraphicsDevice.DeviceRestored: Action
 field.BackendInfoVulkan.ExtensionProperties.Name: readonly string
 field.BackendInfoVulkan.ExtensionProperties.SpecVersion: readonly uint
@@ -702,6 +703,7 @@ method.GraphicsDevice.SubmitCommands: void(CommandList commandList)
 method.GraphicsDevice.SubmitCommands: void(CommandList commandList, Fence fence)
 method.GraphicsDevice.SwapBuffers: void()
 method.GraphicsDevice.SwapBuffers: void(Swapchain swapchain)
+method.GraphicsDevice.ThrowIfDeviceLost: void()
 method.GraphicsDevice.TrimDriverMemoryForIdle: void()
 method.GraphicsDevice.TryQueryVideoMemoryUsage: bool(ref GraphicsDevice_VideoMemoryUsage usage)
 method.GraphicsDevice.Unmap: void(IMappableResource resource)
@@ -972,6 +974,7 @@ property.GraphicsDevice.MainSwapchain: Swapchain { get; }
 property.GraphicsDevice.PointSampler: Sampler { get; }
 property.GraphicsDevice.ResourceFactory: ResourceFactory { get; }
 property.GraphicsDevice.StructuredBufferMinOffsetAlignment: uint { get; }
+property.GraphicsDevice.SupportsDeviceLostNotifications: bool { get; }
 property.GraphicsDevice.SwapchainFramebuffer: Framebuffer { get; }
 property.GraphicsDevice.SyncToVerticalBlank: bool { get; set; }
 property.GraphicsDevice.UniformBufferMinOffsetAlignment: uint { get; }

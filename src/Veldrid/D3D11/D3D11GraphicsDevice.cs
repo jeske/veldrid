@@ -176,6 +176,42 @@ namespace Veldrid.D3D11
             d3d11Info = new BackendInfoD3D11(this);
 
             PostDeviceCreated();
+            RegisterDeviceLostNotification();
+        }
+
+        private D3D11DeviceLostRegistration deviceLostRegistration;
+
+        public override bool SupportsDeviceLostNotifications => deviceLostRegistration != null;
+
+        private void RegisterDeviceLostNotification()
+        {
+            // Native registration is per generation. ID3D11Device4 is runtime-dependent,
+            // not tied to the adapter's feature level. Existing HRESULT detection remains available.
+            var notificationDevice = device.QueryInterfaceOrNull<ID3D11Device4>();
+            if (notificationDevice == null) return;
+            GpuDeviceGeneration generation = DeviceGeneration;
+            try
+            {
+                deviceLostRegistration = new D3D11DeviceLostRegistration(notificationDevice,
+                    () => NotifyDeviceLost(generation));
+            }
+            catch (Exception error)
+            {
+                // The registration constructor releases its owned interface on failure.
+                Trace.TraceWarning($"D3D11 asynchronous device-loss registration unavailable: {error}");
+            }
+        }
+
+        public override void ThrowIfDeviceLost()
+        {
+            if (simulatedDeviceLost) throwIfDeviceKnownLost();
+            if (device != null)
+            {
+                Result reason = device.DeviceRemovedReason;
+                if (reason.Failure)
+                    throw tryClassifyDeviceLost(reason.Code, null);
+            }
+            throwIfDeviceKnownLost();
         }
 
         /// <summary>
@@ -332,6 +368,10 @@ namespace Veldrid.D3D11
         public override void SimulateDeviceLost()
         {
             simulatedDeviceLost = true;
+            if (deviceLostRegistration != null)
+                deviceLostRegistration.SignalForSimulation();
+            else
+                NotifyDeviceLost(DeviceGeneration);
         }
 
         public override void RecoverFromDeviceLost()
@@ -339,6 +379,8 @@ namespace Veldrid.D3D11
             lock (immediateContextLock)
             {
                 // 1. Tear down the dead native device. Everything here is best-effort: the objects belong to a device
+                deviceLostRegistration?.Dispose();
+                deviceLostRegistration = null;
                 //    the driver already destroyed; Release() on them is legal but any other call may fail.
                 if (device != null)
                 {
@@ -402,6 +444,7 @@ namespace Veldrid.D3D11
             //    lock: subscribers may legitimately call back into the device.
             RecreateCommonResourcesAfterRecovery();
             OnDeviceRecovered();
+            RegisterDeviceLostNotification();
         }
 
         /// <summary>
@@ -619,6 +662,8 @@ namespace Veldrid.D3D11
 
         protected override void PlatformDispose()
         {
+            deviceLostRegistration?.Dispose();
+            deviceLostRegistration = null;
             // Dispose staging buffers
             foreach (D3D11Buffer buffer in availableStagingBuffers)
             { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }

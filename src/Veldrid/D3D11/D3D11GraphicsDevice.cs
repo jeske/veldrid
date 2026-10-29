@@ -353,6 +353,12 @@ namespace Veldrid.D3D11
                     try { immediateContext?.ClearState(); } catch { /* dead device */ }
                     try { immediateContext?.Flush(); } catch { /* dead device */ }
 
+                    // The main swapchain (FluidUI: the 1x1 bootstrap window) is OURS, not a consumer's: release its
+                    // natives here so it cannot pin the old device (its framebuffer kept the old device at refcount 33
+                    // in the 2026-10-29 live-object report). The consumer rebuilds it via RecreateOnRestoredDevice
+                    // like any other swapchain.
+                    mainSwapchain?.ReleaseNativeObjectsForDeviceLoss();
+
                     try { d3d11ResourceFactory?.Dispose(); } catch { /* dead device */ }
                     lock (stagingResourcesLock)
                     {

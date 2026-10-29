@@ -313,6 +313,34 @@ namespace Veldrid.D3D11
 
         private void recreateSwapchainCore()
         {
+            releaseNativeObjects();
+
+            // Flip-model rule (ID3D11DeviceContext::Flush docs, "Deferred Destruction Issues with Flip Presentation
+            // Swap Chains"): an HWND may own ONE flip swapchain, and D3D11 destroys released objects DEFERRED — the
+            // old swapchain is not gone until its owning context is flushed. Without this, CreateSwapChainForHwnd
+            // below fails E_ACCESSDENIED. The owning context is the CURRENT one for AllowTearing recreation, and the
+            // RETIRED one after RecoverFromDeviceLost (which ClearState'd it already).
+            gd.FlushContextsForDeferredDestruction();
+
+            createNativeSwapchain();
+        }
+
+        /// <summary>
+        /// GPU DEVICE-LOST teardown entry for the device: release this swapchain's native objects (they belong to the
+        /// dying device) WITHOUT creating replacements. Used by <c>D3D11GraphicsDevice.RecoverFromDeviceLost</c> for
+        /// its main swapchain so nothing of the old device survives; the owner later calls
+        /// <see cref="RecreateOnRestoredDevice"/>. Best-effort, never throws.
+        /// </summary>
+        internal void ReleaseNativeObjectsForDeviceLoss()
+        {
+            lock (referencedCLsLock) referencedCLs.Clear();
+            try { backBufferTexture?.Dispose(); } catch { /* dead device */ }
+            backBufferTexture = null;
+            releaseNativeObjects();
+        }
+
+        private void releaseNativeObjects()
+        {
             try { DxgiSwapChain?.Release(); } catch { /* dead device */ }
             try { DxgiSwapChain?.Dispose(); } catch { /* dead device */ }
             DxgiSwapChain = null;
@@ -323,16 +351,12 @@ namespace Veldrid.D3D11
             try { depthTexture?.Dispose(); } catch { /* dead device */ }
             depthTexture = null;
 
-            // Flip-model rule (ID3D11DeviceContext::Flush docs, "Deferred Destruction Issues with Flip Presentation
-            // Swap Chains"): an HWND may own ONE flip swapchain, and D3D11 destroys released objects DEFERRED — the
-            // old swapchain is not gone until its owning context is flushed. Without this, CreateSwapChainForHwnd
-            // below fails E_ACCESSDENIED. The owning context is the CURRENT one for AllowTearing recreation, and the
-            // RETIRED one after RecoverFromDeviceLost (which ClearState'd it already).
-            gd.FlushContextsForDeferredDestruction();
-
             frameLatencyWaitHandle?.Dispose();
             frameLatencyWaitHandle = null;
+        }
 
+        private void createNativeSwapchain()
+        {
             // FlipDiscard is only supported on DXGI 1.4+
             bool canUseFlipDiscard;
 

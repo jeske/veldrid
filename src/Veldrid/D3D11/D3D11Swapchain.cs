@@ -228,14 +228,50 @@ namespace Veldrid.D3D11
 
         private void recreateSwapchain()
         {
-            DxgiSwapChain?.Release();
-            DxgiSwapChain?.Dispose();
+            recreateSwapchainCore();
+        }
+
+        public override void RecreateOnRestoredDevice()
+        {
+            // The old IDXGISwapChain / back buffer / framebuffer belong to the dead device. recreateSwapchainCore
+            // disposes them first; Release() on COM objects of a removed device is legal, but we still guard the
+            // teardown so a misbehaving driver cannot turn recovery into a second failure.
+            try
+            {
+                lock (referencedCLsLock)
+                {
+                    referencedCLs.Clear(); // their deferred contexts are dead too; owners recreate command lists
+                }
+                backBufferTexture?.Dispose();
+                backBufferTexture = null;
+            }
+            catch
+            {
+                // dead device — fall through to creation
+            }
+
+            try
+            {
+                recreateSwapchainCore();
+            }
+            catch (SharpGenException nativeFailure)
+            {
+                gd.rethrowAsDeviceLostIfApplicable(nativeFailure);
+                throw;
+            }
+            disposed = false;
+        }
+
+        private void recreateSwapchainCore()
+        {
+            try { DxgiSwapChain?.Release(); } catch { /* dead device */ }
+            try { DxgiSwapChain?.Dispose(); } catch { /* dead device */ }
             DxgiSwapChain = null;
 
-            framebuffer?.Dispose();
+            try { framebuffer?.Dispose(); } catch { /* dead device */ }
             framebuffer = null;
 
-            depthTexture?.Dispose();
+            try { depthTexture?.Dispose(); } catch { /* dead device */ }
             depthTexture = null;
 
             frameLatencyWaitHandle?.Dispose();

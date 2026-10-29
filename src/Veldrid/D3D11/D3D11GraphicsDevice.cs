@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using SharpGen.Runtime;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.Direct3D11.Debug;
@@ -19,9 +20,9 @@ namespace Veldrid.D3D11
 {
     internal class D3D11GraphicsDevice : GraphicsDevice
     {
-        public override string DeviceName { get; }
+        public override string DeviceName => deviceName;
 
-        public override string VendorName { get; }
+        public override string VendorName => vendorName;
 
         public override GraphicsApiVersion ApiVersion { get; }
 
@@ -45,7 +46,7 @@ namespace Veldrid.D3D11
 
         public bool SupportsCommandLists => supportsCommandLists;
 
-        public int DeviceId { get; }
+        public int DeviceId => deviceId;
 
         public override Swapchain MainSwapchain => mainSwapchain;
 
@@ -57,10 +58,23 @@ namespace Veldrid.D3D11
             set => mainSwapchain.AllowTearing = value;
         }
 
-        private readonly IDXGIAdapter dxgiAdapter;
-        private readonly ID3D11Device device;
-        private readonly ID3D11DeviceContext immediateContext;
-        private readonly D3D11ResourceFactory d3d11ResourceFactory;
+        // NOT readonly: swapped in place by RecoverFromDeviceLost (spec 1000 D2 — same GraphicsDevice identity,
+        // fresh native device). Every access to these happens under immediateContextLock or on the owner's
+        // single render thread; the recovery contract requires all rendering threads to be stopped.
+        private IDXGIAdapter dxgiAdapter;
+        private ID3D11Device device;
+        private ID3D11DeviceContext immediateContext;
+        private D3D11ResourceFactory d3d11ResourceFactory;
+        private string deviceName;
+        private string vendorName;
+        private int deviceId;
+        private readonly DeviceCreationFlags nativeDeviceCreationFlags;
+
+        /// <summary>Set by SimulateDeviceLost; cleared by RecoverFromDeviceLost. Makes the next Submit/Present throw.</summary>
+        private volatile bool simulatedDeviceLost;
+        /// <summary>Sticky once any choke point classified a native failure as device-lost; cleared by recovery.</summary>
+        private volatile bool deviceLostObserved;
+
         private readonly D3D11Swapchain mainSwapchain;
         private readonly bool supportsConcurrentResources;
         private readonly bool supportsCommandLists;
@@ -91,56 +105,9 @@ namespace Veldrid.D3D11
 #endif
             // If debug flag set but SDK layers aren't available we can't enable debug.
             if (0 != (flags & DeviceCreationFlags.Debug) && !VorticeD3D11.SdkLayersAvailable()) flags &= ~DeviceCreationFlags.Debug;
+            nativeDeviceCreationFlags = flags;
 
-            try
-            {
-                if (options.AdapterPtr != IntPtr.Zero)
-                {
-                    VorticeD3D11.D3D11CreateDevice(options.AdapterPtr,
-                        DriverType.Hardware,
-                        flags,
-                        new[]
-                        {
-                            FeatureLevel.Level_11_1,
-                            FeatureLevel.Level_11_0,
-                            FeatureLevel.Level_10_0
-                        },
-                        out device).CheckError();
-                }
-                else
-                {
-                    VorticeD3D11.D3D11CreateDevice(IntPtr.Zero,
-                        DriverType.Hardware,
-                        flags,
-                        new[]
-                        {
-                            FeatureLevel.Level_11_1,
-                            FeatureLevel.Level_11_0,
-                            FeatureLevel.Level_10_0
-                        },
-                        out device).CheckError();
-                }
-            }
-            catch
-            {
-                VorticeD3D11.D3D11CreateDevice(IntPtr.Zero,
-                    DriverType.Hardware,
-                    flags,
-                    Array.Empty<FeatureLevel>(),
-                    out device).CheckError();
-            }
-
-            using (var dxgiDevice = device!.QueryInterface<IDXGIDevice>())
-            {
-                // Store a pointer to the DXGI adapter.
-                // This is for the case of no preferred DXGI adapter, or fallback to WARP.
-                dxgiDevice.GetAdapter(out dxgiAdapter).CheckError();
-
-                var desc = dxgiAdapter.Description;
-                DeviceName = desc.Description;
-                VendorName = "id:" + ((uint)desc.VendorId).ToString("x8");
-                DeviceId = desc.DeviceId;
-            }
+            createNativeDeviceAndAdapter(options.AdapterPtr);
 
             switch (device.FeatureLevel)
             {
@@ -210,6 +177,211 @@ namespace Veldrid.D3D11
 
             PostDeviceCreated();
         }
+
+        /// <summary>
+        ///     Creates the ID3D11Device + DXGI adapter and fills the identity fields. Shared by the constructor and
+        ///     <see cref="RecoverFromDeviceLost"/> so both take the same feature-level list, debug-flag logic and
+        ///     WARP/empty-feature-level fallback. Throws (SharpGenException) when no device can be created — during a
+        ///     driver reinstall window this is the normal "not yet" signal.
+        /// </summary>
+        private void createNativeDeviceAndAdapter(IntPtr preferredAdapterPtr)
+        {
+            var featureLevels = new[]
+            {
+                FeatureLevel.Level_11_1,
+                FeatureLevel.Level_11_0,
+                FeatureLevel.Level_10_0
+            };
+
+            try
+            {
+                VorticeD3D11.D3D11CreateDevice(preferredAdapterPtr,
+                    DriverType.Hardware,
+                    nativeDeviceCreationFlags,
+                    featureLevels,
+                    out device).CheckError();
+            }
+            catch
+            {
+                VorticeD3D11.D3D11CreateDevice(IntPtr.Zero,
+                    DriverType.Hardware,
+                    nativeDeviceCreationFlags,
+                    Array.Empty<FeatureLevel>(),
+                    out device).CheckError();
+            }
+
+            using (var dxgiDevice = device!.QueryInterface<IDXGIDevice>())
+            {
+                // Store a pointer to the DXGI adapter.
+                // This is for the case of no preferred DXGI adapter, or fallback to WARP.
+                dxgiDevice.GetAdapter(out dxgiAdapter).CheckError();
+
+                var desc = dxgiAdapter.Description;
+                deviceName = desc.Description;
+                vendorName = "id:" + ((uint)desc.VendorId).ToString("x8");
+                deviceId = desc.DeviceId;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+        // DEVICE LOST: detection
+        // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+        private const int DxgiErrorDeviceRemoved = unchecked((int)0x887A0005);
+        private const int DxgiErrorDeviceHung = unchecked((int)0x887A0006);
+        private const int DxgiErrorDeviceReset = unchecked((int)0x887A0007);
+        private const int DxgiErrorDriverInternalError = unchecked((int)0x887A0020);
+
+        public override bool IsDeviceLost
+        {
+            get
+            {
+                if (simulatedDeviceLost || deviceLostObserved) return true;
+                ID3D11Device currentDevice = device;
+                if (currentDevice == null) return true; // torn down by a failed recovery attempt
+                try
+                {
+                    return currentDevice.DeviceRemovedReason.Failure;
+                }
+                catch
+                {
+                    return true;
+                }
+            }
+        }
+
+        private static GpuDeviceLostReason? classifyDxgiCode(int hresult)
+        {
+            switch (hresult)
+            {
+                case DxgiErrorDeviceRemoved: return GpuDeviceLostReason.DeviceRemoved;
+                case DxgiErrorDeviceReset: return GpuDeviceLostReason.DeviceReset;
+                case DxgiErrorDeviceHung: return GpuDeviceLostReason.DeviceHung;
+                case DxgiErrorDriverInternalError: return GpuDeviceLostReason.DriverInternalError;
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        ///     Decide whether a native failure means "the device is gone". First by the failing call's own HRESULT,
+        ///     then — because many calls fail with a generic E_FAIL/E_INVALIDARG once the device is removed — by asking
+        ///     the device itself (<c>GetDeviceRemovedReason</c>). Returns null when the failure is NOT a device loss.
+        ///     Marks <see cref="deviceLostObserved"/> so later calls short-circuit via <see cref="throwIfDeviceKnownLost"/>.
+        /// </summary>
+        private VeldridDeviceLostException tryClassifyDeviceLost(int failingCallHResult, Exception innerException)
+        {
+            GpuDeviceLostReason? reason = classifyDxgiCode(failingCallHResult);
+            int reasonCode = failingCallHResult;
+
+            if (reason == null)
+            {
+                ID3D11Device currentDevice = device;
+                if (currentDevice == null) return null;
+                Result removedReason;
+                try
+                {
+                    removedReason = currentDevice.DeviceRemovedReason;
+                }
+                catch
+                {
+                    return null;
+                }
+                if (removedReason.Success) return null;
+                reasonCode = removedReason.Code;
+                reason = classifyDxgiCode(removedReason.Code) ?? GpuDeviceLostReason.Unknown;
+            }
+
+            deviceLostObserved = true;
+            string message = $"The Direct3D 11 device was lost ({reason}, DXGI reason 0x{(uint)reasonCode:X8}). " +
+                             "All GPU resources are invalid; call GraphicsDevice.RecoverFromDeviceLost() and rebuild them.";
+            return innerException != null
+                ? new VeldridDeviceLostException(reason.Value, reasonCode, message, innerException)
+                : new VeldridDeviceLostException(reason.Value, reasonCode, message);
+        }
+
+        /// <summary>
+        ///     For catch blocks around native calls: if <paramref name="nativeFailure"/> is (or reveals) a device loss,
+        ///     throw the typed <see cref="VeldridDeviceLostException"/> instead; otherwise return so the caller rethrows
+        ///     the original. Internal so <see cref="D3D11CommandList"/> and <see cref="D3D11Swapchain"/> share it.
+        /// </summary>
+        internal void rethrowAsDeviceLostIfApplicable(SharpGenException nativeFailure)
+        {
+            VeldridDeviceLostException deviceLost = tryClassifyDeviceLost(nativeFailure.ResultCode.Code, nativeFailure);
+            if (deviceLost != null) throw deviceLost;
+        }
+
+        /// <summary>Fast path once a loss has been observed (or simulated): fail typed without touching the dead device.</summary>
+        private void throwIfDeviceKnownLost()
+        {
+            if (simulatedDeviceLost)
+            {
+                throw new VeldridDeviceLostException(GpuDeviceLostReason.Simulated, 0,
+                    "Simulated device loss (GraphicsDevice.SimulateDeviceLost). Call RecoverFromDeviceLost() to clear.");
+            }
+            if (deviceLostObserved || device == null)
+            {
+                throw new VeldridDeviceLostException(GpuDeviceLostReason.Unknown, 0,
+                    "The Direct3D 11 device is lost and has not been recovered yet (RecoverFromDeviceLost pending).");
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+        // DEVICE LOST: recovery
+        // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+        public override void SimulateDeviceLost()
+        {
+            simulatedDeviceLost = true;
+        }
+
+        public override void RecoverFromDeviceLost()
+        {
+            lock (immediateContextLock)
+            {
+                // 1. Tear down the dead native device. Everything here is best-effort: the objects belong to a device
+                //    the driver already destroyed; Release() on them is legal but any other call may fail.
+                if (device != null)
+                {
+                    try { d3d11ResourceFactory?.Dispose(); } catch { /* dead device */ }
+                    lock (stagingResourcesLock)
+                    {
+                        foreach (D3D11Buffer buffer in availableStagingBuffers)
+                        {
+                            StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes);
+                            try { buffer.Dispose(); } catch { /* dead device */ }
+                        }
+                        availableStagingBuffers.Clear();
+                    }
+                    lock (mappedResourceLock) mappedResources.Clear();
+                    try { videoMemoryQueryAdapter?.Dispose(); } catch { /* dead device */ }
+                    videoMemoryQueryAdapter = null;
+                    videoMemoryQueryAdapterProbed = false;
+                    try { immediateContext?.Dispose(); } catch { /* dead device */ }
+                    try { device.Dispose(); } catch { /* dead device */ }
+                    try { dxgiAdapter?.Dispose(); } catch { /* dead device */ }
+                    d3d11ResourceFactory = null;
+                    immediateContext = null;
+                    device = null;
+                    dxgiAdapter = null;
+                }
+
+                // 2. Fresh device on the DEFAULT adapter (spec 1000 D5). Throws while the driver is still down —
+                //    we stay torn down (device == null → IsDeviceLost) and the caller retries later.
+                createNativeDeviceAndAdapter(IntPtr.Zero);
+                immediateContext = device.ImmediateContext;
+                d3d11ResourceFactory = new D3D11ResourceFactory(this);
+
+                simulatedDeviceLost = false;
+                deviceLostObserved = false;
+            }
+
+            // 3. Device-level common resources (samplers) + generation bump + DeviceRestored event. Outside the
+            //    lock: subscribers may legitimately call back into the device.
+            RecreateCommonResourcesAfterRecovery();
+            OnDeviceRecovered();
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════
 
         public override TextureSampleCount GetSampleCountLimit(PixelFormat format, bool depthFormat)
         {
@@ -387,6 +559,13 @@ namespace Veldrid.D3D11
 
             availableStagingBuffers.Clear();
 
+            if (device == null)
+            {
+                // Lost and never recovered: the native side was already released in RecoverFromDeviceLost's teardown.
+                mainSwapchain?.Dispose();
+                return;
+            }
+
             d3d11ResourceFactory.Dispose();
             mainSwapchain?.Dispose();
             immediateContext.Dispose();
@@ -497,10 +676,19 @@ namespace Veldrid.D3D11
 
             lock (immediateContextLock)
             {
-                if (d3d11Cl.DeviceCommandList != null) // CommandList may have been reset in the meantime (resized swapchain).
+                throwIfDeviceKnownLost();
+                try
                 {
-                    immediateContext.ExecuteCommandList(d3d11Cl.DeviceCommandList, false);
-                    d3d11Cl.OnCompleted();
+                    if (d3d11Cl.DeviceCommandList != null) // CommandList may have been reset in the meantime (resized swapchain).
+                    {
+                        immediateContext.ExecuteCommandList(d3d11Cl.DeviceCommandList, false);
+                        d3d11Cl.OnCompleted();
+                    }
+                }
+                catch (SharpGenException nativeFailure)
+                {
+                    rethrowAsDeviceLostIfApplicable(nativeFailure);
+                    throw;
                 }
             }
 
@@ -511,8 +699,28 @@ namespace Veldrid.D3D11
         {
             lock (immediateContextLock)
             {
+                throwIfDeviceKnownLost();
                 var d3d11Sc = Util.AssertSubtype<Swapchain, D3D11Swapchain>(swapchain);
-                d3d11Sc.DxgiSwapChain.Present(d3d11Sc.SyncInterval, d3d11Sc.PresentFlags);
+                // Present is where a TDR / driver restart is FIRST observable (DXGI_ERROR_DEVICE_REMOVED/RESET). The
+                // result used to be discarded, so the loss only surfaced as an unrelated CheckError later
+                // (AN_FluidUI/_SPECS/1000, crash logs 2026-10-28/29: D3D11CommandList.End, D3D11Swapchain.Resize).
+                Result presentResult = d3d11Sc.DxgiSwapChain.Present(d3d11Sc.SyncInterval, d3d11Sc.PresentFlags);
+                if (presentResult.Failure)
+                {
+                    VeldridDeviceLostException deviceLost = tryClassifyDeviceLost(presentResult.Code, innerException: null);
+                    if (deviceLost != null) throw deviceLost;
+                    // DXGI_STATUS_OCCLUDED and friends are SUCCESS codes and never reach here; a genuine non-device-lost
+                    // failure surfaces as the raw SharpGen exception exactly as other Vortice calls would.
+                    try
+                    {
+                        presentResult.CheckError();
+                    }
+                    catch (SharpGenException nativeFailure)
+                    {
+                        rethrowAsDeviceLostIfApplicable(nativeFailure);
+                        throw;
+                    }
+                }
             }
         }
 
@@ -575,7 +783,20 @@ namespace Veldrid.D3D11
             return true;
         }
 
-        private protected override unsafe void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
+        private protected override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
+        {
+            try
+            {
+                updateBufferUnchecked(buffer, bufferOffsetInBytes, source, sizeInBytes);
+            }
+            catch (SharpGenException nativeFailure)
+            {
+                rethrowAsDeviceLostIfApplicable(nativeFailure);
+                throw;
+            }
+        }
+
+        private unsafe void updateBufferUnchecked(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
         {
             var d3dBuffer = Util.AssertSubtype<DeviceBuffer, D3D11Buffer>(buffer);
             if (sizeInBytes == 0) return;
@@ -630,7 +851,31 @@ namespace Veldrid.D3D11
             }
         }
 
-        private protected override unsafe void UpdateTextureCore(
+        private protected override void UpdateTextureCore(
+            Texture texture,
+            IntPtr source,
+            uint sizeInBytes,
+            uint x,
+            uint y,
+            uint z,
+            uint width,
+            uint height,
+            uint depth,
+            uint mipLevel,
+            uint arrayLayer)
+        {
+            try
+            {
+                updateTextureUnchecked(texture, source, sizeInBytes, x, y, z, width, height, depth, mipLevel, arrayLayer);
+            }
+            catch (SharpGenException nativeFailure)
+            {
+                rethrowAsDeviceLostIfApplicable(nativeFailure);
+                throw;
+            }
+        }
+
+        private unsafe void updateTextureUnchecked(
             Texture texture,
             IntPtr source,
             uint sizeInBytes,
@@ -705,8 +950,17 @@ namespace Veldrid.D3D11
             // Serialized against the immediate context like every other device-level call here.
             lock (immediateContextLock)
             {
-                using var dxgiDevice3 = device.QueryInterfaceOrNull<IDXGIDevice3>();
-                dxgiDevice3?.Trim();
+                if (device == null) return; // lost and not yet recovered — nothing to trim
+                try
+                {
+                    using var dxgiDevice3 = device.QueryInterfaceOrNull<IDXGIDevice3>();
+                    dxgiDevice3?.Trim();
+                }
+                catch (SharpGenException nativeFailure)
+                {
+                    rethrowAsDeviceLostIfApplicable(nativeFailure);
+                    throw;
+                }
             }
         }
 

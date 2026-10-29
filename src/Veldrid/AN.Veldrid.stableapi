@@ -59,6 +59,13 @@ enum.FaceCullMode._type: byte
 enum.FrontFace.Clockwise: 0
 enum.FrontFace.CounterClockwise: 1
 enum.FrontFace._type: byte
+enum.GpuDeviceLostReason.DeviceHung: 2
+enum.GpuDeviceLostReason.DeviceRemoved: 0
+enum.GpuDeviceLostReason.DeviceReset: 1
+enum.GpuDeviceLostReason.DriverInternalError: 3
+enum.GpuDeviceLostReason.Simulated: 5
+enum.GpuDeviceLostReason.Unknown: 4
+enum.GpuDeviceLostReason._type: int
 enum.GraphicsBackend.Direct3D11: 0
 enum.GraphicsBackend.Metal: 3
 enum.GraphicsBackend.OpenGL: 2
@@ -294,6 +301,7 @@ enum.VertexElementSemantic.Normal: 1
 enum.VertexElementSemantic.Position: 0
 enum.VertexElementSemantic.TextureCoordinate: 2
 enum.VertexElementSemantic._type: byte
+event.GraphicsDevice.DeviceRestored: Action
 field.BackendInfoVulkan.ExtensionProperties.Name: readonly string
 field.BackendInfoVulkan.ExtensionProperties.SpecVersion: readonly uint
 field.BlendAttachmentDescription.ADDITIVE_BLEND: static readonly BlendAttachmentDescription
@@ -354,6 +362,7 @@ field.FramebufferAttachmentDescription.MipLevel: uint
 field.FramebufferAttachmentDescription.Target: Texture
 field.FramebufferDescription.ColorTargets: FramebufferAttachmentDescription[]
 field.FramebufferDescription.DepthTarget: Nullable`1<FramebufferAttachmentDescription>
+field.GpuDeviceGeneration.Initial: static readonly GpuDeviceGeneration
 field.GraphicsDeviceOptions.Debug: bool
 field.GraphicsDeviceOptions.HasMainSwapchain: bool
 field.GraphicsDeviceOptions.PreferDepthRangeZeroToOne: bool
@@ -635,6 +644,15 @@ method.FramebufferDescription..ctor: void(Nullable`1<FramebufferAttachmentDescri
 method.FramebufferDescription..ctor: void(Texture depthTarget, Texture[] colorTargets)
 method.FramebufferDescription.Equals: bool(FramebufferDescription other)
 method.FramebufferDescription.GetHashCode: int()
+method.GpuDeviceGeneration..ctor: void(int Value)
+method.GpuDeviceGeneration.Deconstruct: void(ref int Value)
+method.GpuDeviceGeneration.Equals: bool(GpuDeviceGeneration other)
+method.GpuDeviceGeneration.Equals: bool(object obj)
+method.GpuDeviceGeneration.GetHashCode: int()
+method.GpuDeviceGeneration.Next: GpuDeviceGeneration()
+method.GpuDeviceGeneration.ToString: string()
+method.GpuDeviceGeneration.op_Equality: bool(GpuDeviceGeneration left, GpuDeviceGeneration right)
+method.GpuDeviceGeneration.op_Inequality: bool(GpuDeviceGeneration left, GpuDeviceGeneration right)
 method.GraphicsApiVersion..ctor: void(int major, int minor, int subminor, int patch)
 method.GraphicsApiVersion.ToString: string()
 method.GraphicsApiVersion.TryParseGLVersion: bool(string versionString, ref GraphicsApiVersion version)
@@ -676,8 +694,10 @@ method.GraphicsDevice.Map: MappedResource(IMappableResource resource, MapMode mo
 method.GraphicsDevice.Map: MappedResource(IMappableResource resource, MapMode mode, uint subresource)
 method.GraphicsDevice.Map: MappedResourceView`1<!!0>(IMappableResource resource, MapMode mode)
 method.GraphicsDevice.Map: MappedResourceView`1<!!0>(IMappableResource resource, MapMode mode, uint subresource)
+method.GraphicsDevice.RecoverFromDeviceLost: void()
 method.GraphicsDevice.ResetFence: void(Fence fence)
 method.GraphicsDevice.ResizeMainWindow: void(uint width, uint height)
+method.GraphicsDevice.SimulateDeviceLost: void()
 method.GraphicsDevice.SubmitCommands: void(CommandList commandList)
 method.GraphicsDevice.SubmitCommands: void(CommandList commandList, Fence fence)
 method.GraphicsDevice.SwapBuffers: void()
@@ -824,6 +844,7 @@ method.StencilBehaviorDescription..ctor: void(StencilOperation fail, StencilOper
 method.StencilBehaviorDescription.Equals: bool(StencilBehaviorDescription other)
 method.StencilBehaviorDescription.GetHashCode: int()
 method.Swapchain.Dispose: void()
+method.Swapchain.RecreateOnRestoredDevice: void()
 method.Swapchain.Resize: void(uint width, uint height)
 method.SwapchainDescription..ctor: void(SwapchainSource source, uint width, uint height, Nullable`1<PixelFormat> depthFormat, bool syncToVerticalBlank)
 method.SwapchainDescription..ctor: void(SwapchainSource source, uint width, uint height, Nullable`1<PixelFormat> depthFormat, bool syncToVerticalBlank, bool colorSrgb)
@@ -858,6 +879,8 @@ method.VdShaderBackendData..ctor: void()
 method.VdShaderBindingEntry..ctor: void()
 method.VdShaderResourceElement..ctor: void()
 method.VdShaderResourceLayout..ctor: void()
+method.VeldridDeviceLostException..ctor: void(GpuDeviceLostReason lostReason, int nativeReasonCode, string message)
+method.VeldridDeviceLostException..ctor: void(GpuDeviceLostReason lostReason, int nativeReasonCode, string message, Exception innerException)
 method.VeldridException..ctor: void()
 method.VeldridException..ctor: void(string message)
 method.VeldridException..ctor: void(string message, Exception innerException)
@@ -926,6 +949,7 @@ property.Framebuffer.Width: uint { get; }
 property.FramebufferAttachment.ArrayLayer: uint { get; }
 property.FramebufferAttachment.MipLevel: uint { get; }
 property.FramebufferAttachment.Target: Texture { get; }
+property.GpuDeviceGeneration.Value: int { get; set; }
 property.GraphicsApiVersion.IsKnown: bool { get; }
 property.GraphicsApiVersion.Major: int { get; }
 property.GraphicsApiVersion.Minor: int { get; }
@@ -936,10 +960,12 @@ property.GraphicsDevice.AllowTearing: bool { get; set; }
 property.GraphicsDevice.Aniso4XSampler: Sampler { get; }
 property.GraphicsDevice.ApiVersion: GraphicsApiVersion { get; }
 property.GraphicsDevice.BackendType: GraphicsBackend { get; }
+property.GraphicsDevice.DeviceGeneration: GpuDeviceGeneration { get; }
 property.GraphicsDevice.DeviceName: string { get; }
 property.GraphicsDevice.Features: GraphicsDeviceFeatures { get; }
 property.GraphicsDevice.IsClipSpaceYInverted: bool { get; }
 property.GraphicsDevice.IsDepthRangeZeroToOne: bool { get; }
+property.GraphicsDevice.IsDeviceLost: bool { get; }
 property.GraphicsDevice.IsUvOriginTopLeft: bool { get; }
 property.GraphicsDevice.LinearSampler: Sampler { get; }
 property.GraphicsDevice.MainSwapchain: Swapchain { get; }
@@ -1059,6 +1085,8 @@ property.VdShaderResourceElement.Kind: ResourceKind { get; set; }
 property.VdShaderResourceElement.Name: string { get; set; }
 property.VdShaderResourceElement.Stages: ShaderStages { get; set; }
 property.VdShaderResourceLayout.Elements: VdShaderResourceElement[] { get; set; }
+property.VeldridDeviceLostException.LostReason: GpuDeviceLostReason { get; }
+property.VeldridDeviceLostException.NativeReasonCode: int { get; }
 property.VeldridShaderBundle.Backends: Dictionary`2<string, VdShaderBackendData> { get; set; }
 property.VeldridShaderBundle.ComputeSource: string { get; set; }
 property.VeldridShaderBundle.FlatBindingMap: VdShaderBindingEntry[] { get; set; }
@@ -1150,6 +1178,10 @@ struct.FramebufferDescription._pack: 0
 struct.FramebufferDescription._size: 0
 struct.FramebufferDescription.field0.DepthTarget: Nullable`1<FramebufferAttachmentDescription>
 struct.FramebufferDescription.field1.ColorTargets: FramebufferAttachmentDescription[]
+struct.GpuDeviceGeneration._layout: Sequential
+struct.GpuDeviceGeneration._pack: 0
+struct.GpuDeviceGeneration._size: 0
+struct.GpuDeviceGeneration.field0.<Value>k__BackingField: int
 struct.GraphicsApiVersion._layout: Sequential
 struct.GraphicsApiVersion._pack: 0
 struct.GraphicsApiVersion._size: 0
@@ -1409,6 +1441,8 @@ type.FramebufferAttachment: struct
 type.FramebufferAttachmentDescription: struct
 type.FramebufferDescription: struct
 type.FrontFace: enum
+type.GpuDeviceGeneration: struct
+type.GpuDeviceLostReason: enum
 type.GraphicsApiVersion: struct
 type.GraphicsBackend: enum
 type.GraphicsDevice: abstract class
@@ -1477,6 +1511,7 @@ type.VdShaderBackendData: sealed class
 type.VdShaderBindingEntry: sealed class
 type.VdShaderResourceElement: sealed class
 type.VdShaderResourceLayout: sealed class
+type.VeldridDeviceLostException: class
 type.VeldridException: class
 type.VeldridShaderBundle: sealed class
 type.VertexElementDescription: struct

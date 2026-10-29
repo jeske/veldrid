@@ -350,6 +350,89 @@ namespace Veldrid
             SwapBuffersCore(swapchain);
         }
 
+        // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+        // DEVICE LOST / RECOVERY (AN_FluidUI/_SPECS/1000_Handling_Windows_GPU_Lost.md)
+        // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        ///     True when the native device behind this instance has been removed/reset and every child resource is
+        ///     dead. D3D11 polls <c>ID3D11Device::GetDeviceRemovedReason</c>; backends without recovery support return
+        ///     false. Cleared by a successful <see cref="RecoverFromDeviceLost"/>.
+        /// </summary>
+        public virtual bool IsDeviceLost => false;
+
+        /// <summary>
+        ///     Identifies the lifetime of the NATIVE device. Starts at <see cref="GpuDeviceGeneration.Initial"/> and is
+        ///     bumped by every successful <see cref="RecoverFromDeviceLost"/>. Consumers snapshot it when caching
+        ///     device-derived objects and compare at use time.
+        /// </summary>
+        public GpuDeviceGeneration DeviceGeneration { get; private protected set; } = GpuDeviceGeneration.Initial;
+
+        /// <summary>
+        ///     Raised on the calling thread at the end of a successful <see cref="RecoverFromDeviceLost"/>. The device
+        ///     object is usable again; every child resource created before the event is dead and must be recreated by
+        ///     its owner. Swapchains must additionally be rebuilt via <see cref="Swapchain.RecreateOnRestoredDevice"/>.
+        /// </summary>
+        public event Action DeviceRestored;
+
+        /// <summary>
+        ///     Disposes the dead native device and creates a fresh one IN PLACE: this <see cref="GraphicsDevice"/>
+        ///     object (and its <see cref="ResourceFactory"/> property) keep their identity, so references held by
+        ///     consumers stay valid.
+        ///     <para>
+        ///     CONTRACT: the caller has stopped ALL threads that touch this device. After this call every child
+        ///     resource (buffers, textures, pipelines, shaders, resource sets, command lists, fences, samplers) is
+        ///     invalid and must be recreated by its owner. For each live <see cref="Swapchain"/> the owner then calls
+        ///     <see cref="Swapchain.RecreateOnRestoredDevice"/>. The device is recreated on the DEFAULT adapter.
+        ///     </para>
+        ///     <para>
+        ///     Throws if the native device cannot be created yet (typical while a driver is still reinstalling) —
+        ///     the instance stays in the lost state and the caller may retry later.
+        ///     </para>
+        /// </summary>
+        /// <exception cref="NotSupportedException">The backend does not support in-place recovery.</exception>
+        public virtual void RecoverFromDeviceLost()
+        {
+            throw new NotSupportedException($"{BackendType} does not support in-place device recovery.");
+        }
+
+        /// <summary>
+        ///     DEBUG/TEST ONLY. Marks the device as lost without any native failure: <see cref="IsDeviceLost"/> reads
+        ///     true and the next <see cref="SwapBuffers(Swapchain)"/> (or <see cref="SubmitCommands(CommandList)"/>)
+        ///     throws <see cref="VeldridDeviceLostException"/> with <see cref="GpuDeviceLostReason.Simulated"/>, until
+        ///     <see cref="RecoverFromDeviceLost"/> runs. Exercises the full consumer recovery path; it cannot
+        ///     reproduce driver-side effects (real TDR testing: <c>dxcap -forcetdr</c>).
+        /// </summary>
+        /// <exception cref="NotSupportedException">The backend does not support in-place device recovery.</exception>
+        public virtual void SimulateDeviceLost()
+        {
+            throw new NotSupportedException($"{BackendType} does not support simulated device loss.");
+        }
+
+        /// <summary>Backend hook: bump the generation and raise <see cref="DeviceRestored"/>. Call once per successful recovery.</summary>
+        private protected void OnDeviceRecovered()
+        {
+            DeviceGeneration = DeviceGeneration.Next();
+            DeviceRestored?.Invoke();
+        }
+
+        /// <summary>
+        ///     Shared post-recovery housekeeping for backends: the common samplers created by
+        ///     <see cref="PostDeviceCreated"/> belong to the dead device, so recreate them from the new factory.
+        /// </summary>
+        private protected void RecreateCommonResourcesAfterRecovery()
+        {
+            // The old sampler objects belong to the dead native device. Dispose is best-effort (the native side may
+            // already be gone) — the managed wrappers must not keep a dangling COM reference alive either way.
+            try { PointSampler?.Dispose(); } catch { /* dead device */ }
+            try { LinearSampler?.Dispose(); } catch { /* dead device */ }
+            try { aniso4XSampler?.Dispose(); } catch { /* dead device */ }
+            PointSampler = null;
+            LinearSampler = null;
+            aniso4XSampler = null;
+            PostDeviceCreated();
+        }
+
         /// <summary>
         ///     Notifies this instance that the main window has been resized. This causes the <see cref="SwapchainFramebuffer" />
         ///     to

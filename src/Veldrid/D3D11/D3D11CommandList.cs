@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using SharpGen.Runtime;
 using System.Runtime.CompilerServices;
 using Vortice;
 using Vortice.Direct3D11;
@@ -157,7 +158,17 @@ namespace Veldrid.D3D11
         {
             if (commandList != null) throw new VeldridException("Invalid use of End().");
 
-            DeviceContext.FinishCommandList(false, out commandList).CheckError();
+            try
+            {
+                DeviceContext.FinishCommandList(false, out commandList).CheckError();
+            }
+            catch (SharpGenException nativeFailure)
+            {
+                // FinishCommandList is the first CheckError after a TDR in a typical frame — surface it typed
+                // (AN_FluidUI crash log 2026-10-28: DXGI_ERROR_DEVICE_RESET escaped from exactly here).
+                gd.rethrowAsDeviceLostIfApplicable(nativeFailure);
+                throw;
+            }
             commandList.DebugName = name;
             resetManagedState();
             begun = false;

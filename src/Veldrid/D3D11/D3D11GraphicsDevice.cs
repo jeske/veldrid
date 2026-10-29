@@ -417,6 +417,11 @@ namespace Veldrid.D3D11
             if (retired != null)
             {
                 try { retired.ClearState(); retired.Flush(); } catch { /* dead device */ }
+                // DirectXTK HandleDeviceLost does m_d3dContext.Reset(): DESTROYING the old context is what finalizes
+                // the device's deferred destruction. Keeping it alive left the retired swapchain's buffers/RTV/DSV
+                // live (DXGI live-object report, 2026-10-29) even after ClearState+Flush. Release it now.
+                try { retired.Dispose(); } catch { /* dead device */ }
+                retiredImmediateContext = null;
             }
             lock (immediateContextLock)
             {

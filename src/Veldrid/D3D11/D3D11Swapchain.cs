@@ -108,6 +108,9 @@ namespace Veldrid.D3D11
         private uint width;
         private uint height;
 
+        private static int nextSwapchainInstanceId;
+        private readonly int swapchainInstanceId = System.Threading.Interlocked.Increment(ref nextSwapchainInstanceId);
+
         private ID3D11Texture2D backBufferTexture;
 
         public D3D11Swapchain(D3D11GraphicsDevice gd, ref SwapchainDescription description)
@@ -188,6 +191,9 @@ namespace Veldrid.D3D11
 
             // Get the backbuffer from the swapchain
             backBufferTexture = DxgiSwapChain.GetBuffer<ID3D11Texture2D>(0);
+            // Debug-layer names so a DXGI live-object report can tell swapchains/back buffers apart (recovery diagnostics).
+            try { backBufferTexture.DebugName = $"VdSwapchain#{swapchainInstanceId}.BackBuffer"; } catch { /* no debug layer */ }
+            try { DxgiSwapChain.DebugName = $"VdSwapchain#{swapchainInstanceId}"; } catch { /* no debug layer */ }
 
             if (depthFormat != null)
             {
@@ -197,6 +203,7 @@ namespace Veldrid.D3D11
                     TextureUsage.DepthStencil,
                     TextureType.Texture2D);
                 depthTexture = new D3D11Texture(gd.Device, ref depthDesc);
+                try { depthTexture.DeviceTexture.DebugName = $"VdSwapchain#{swapchainInstanceId}.Depth"; } catch { /* no debug layer */ }
             }
 
             var backBufferVdTexture = new D3D11Texture(

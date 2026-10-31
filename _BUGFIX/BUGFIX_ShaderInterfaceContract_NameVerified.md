@@ -324,6 +324,110 @@ exist; nothing can be half-migrated and still start. Order: AN_Veldrid (links 1-
 single-matrix writes migrate with the least churn and the most safety.) O8 - do push-constant-style per-draw updates need a batching
 helper so member-level writes do not multiply `UpdateBuffer` calls? (Measure after migration.)
 
+### 5.3 S8 FINAL - D10: the pipeline shape is a C# TYPE whose field names ARE the GLSL names (user, 2026-10-31)
+
+**Why this beats 5.2.** A string at every call is checked at RUNTIME, at every call site, and can be typo'd. A C# type is checked at
+COMPILE time by the identifier and ONCE at construction against the shader; an instance that exists is itself the proof the check
+passed. It also deletes more hand-written data (vertex layouts, resource layouts, set descriptions) instead of renaming it.
+
+- **D10 By construction, in two levels.** (1) `ShaderPipelineShape.Bind<TShape>(bundleResult, factory)` takes the shape's DESCRIPTOR
+  (every field: NAME == GLSL resource / block / vertex-input name; TYPE == kind, plus struct members by name/offset/size for blocks and
+  vertex inputs), checks it against the bundle BOTH directions (a GLSL resource with no field, or a field with no resource, fails) and
+  is the ONLY way to obtain an instance. (2) Renderer code touches slots only through the fields (`shape.AlbedoTexture.Set(view)`,
+  `shape.ShadowTransforms.Update(cl, in v)`): a misspelt name is a C# compile error; a renamed GLSL variable fails at Bind naming the
+  orphan. No string and no number anywhere in renderer code. The C# field name equals the GLSL name NOT because two strings are compared,
+  but because the field is the sole handle and the sole handle exists only after level 1 passed.
+- **Identifier rule:** the GLSL name must be a legal C# identifier, matched EXACTLY (case-sensitive). No attribute override - an override
+  is a string that can drift. A shader whose names are not legal C# identifiers fails at Bind with "rename the GLSL variable".
+
+```csharp
+// One PARTIAL class per pipeline (partial so a generator can supply the plumbing - 5.4). Field names are the GLSL identifiers.
+public sealed partial class ShadowDepthShape : ShaderPipelineShape
+{
+    public VertexInput<MeshVertex_PNCT>   Vertices;          // MeshVertex_PNCT's fields are the GLSL `in` names -> VertexLayoutDescription GENERATED (V7a by construction)
+    [PerInstance] public VertexInput<MeshInstanceData> Instances;   // step rate 1; slot order = field order
+    public UniformBlock<ShadowTransforms> ShadowTransforms;  // block by field name; struct members by name/offset/size (V7c by construction)
+    public TextureSlot                    AlbedoTexture;     // set/binding come from the bundle, never from C#
+    public TextureSlot                    NormalTexture;
+    public TextureSlot                    SpecularTexture;
+    public TextureSlot                    EmissiveTexture;
+    public SamplerSlot                    MaterialSampler;
+    public UniformBlock<MaterialParams>   MaterialParams;
+    // also StorageBufferSlot<T>, StorageImageSlot; compute shapes have no VertexInput
+}
+
+public abstract class ShaderPipelineShape
+{
+    protected abstract ShapeDescriptor Describe();          // the verification INPUT as data: built by reflection (5.3) or by generated code (5.4)
+    public static TShape Bind<TShape>(PrecompiledShaderResult bundle, ResourceFactory factory) where TShape : ShaderPipelineShape, new();   // THE constructor; throws ShaderContractException
+    public static IReadOnlyList<ShaderContractViolation> Verify<TShape>(VeldridShaderBundle bundle) where TShape : ShaderPipelineShape, new(); // test time, no device
+    public Pipeline CreateGraphicsPipeline(ResourceFactory f, BlendStateDescription, DepthStencilStateDescription, RasterizerStateDescription, PrimitiveTopology, OutputDescription);
+    public Pipeline CreateComputePipeline(ResourceFactory f, uint x, uint y, uint z);
+    public void BindResourceSets(CommandList cl);            // sets built from the slots by the shape; a slot never Set() throws here
+    public void BindVertexBuffers(CommandList cl, DeviceBuffer vertices, DeviceBuffer instances = null);   // slot order = field order
+}
+public sealed class UniformBlock<T> where T : unmanaged { public void Update(CommandList cl, in T value); public void UpdateMember<TM>(CommandList cl, Expression<Func<T, TM>> member, in TM value) where TM : unmanaged; }
+public sealed class TextureSlot { public void Set(TextureView view); }   public sealed class SamplerSlot { public void Set(Sampler sampler); }
+public sealed class VertexInput<TVertex> where TVertex : unmanaged { }  // layout from TVertex fields: name, format from field type, offset from Marshal.OffsetOf (or generated)
+public sealed record ShapeDescriptor(/* ordered slots: FieldName, Kind, StructType, Members(name, offset, size), PerInstance */);
+```
+
+**What becomes internal (no public path around the shape):** `ResourceLayout` creation from hand-written descriptions, `ResourceSetDescription`,
+`VertexLayoutDescription` authoring for shader pipelines, `GraphicsPipelineDescription` / `ComputePipelineDescription` construction with
+shaders, `CommandList.UpdateBuffer` on a uniform buffer (the `DeviceBuffer` behind a `UniformBlock<T>` is not exposed). Shaders not from a
+bundle are refused. `ResourceFactory.CreateFromSpirv`, `[VdShaderUniformBlock]`, `ShaderUniformBlockRegistry`, the S7 data-record shape and
+`GraphicsPipelineDescription.ShaderUniformStructs` are DELETED. Vertex/index/staging buffers keep `UpdateBuffer`. Backends are untouched:
+the shape produces the same ordered arrays they consume today.
+
+**Test time:** `Verify<T>(bundle)` is Bind without GPU objects. A per-assembly test enumerates every `ShaderPipelineShape` subclass (the
+base class is the marker - nothing to forget) and verifies each against its bundle (embedded, or compiled at test time through
+`ShaderBundlePipeline` for runtime GLSL); a second test lists bundles with no shape.
+
+**GL:** the shape's field names are what `OpenGLPipeline` already looks up by name; D3D11/Vulkan/Metal get set/binding/location from the
+bundle. One source of truth; GL was the existence proof (5.2).
+
+**Open (D10):** O9 - shared sets: GBuffer and ShadowDepth bind the SAME material `ResourceSet`; both shapes declare the same slot fields and a
+set created through one shape may be bound through another IF the layouts are identical by name (checked at `BindResourceSets`).
+O10 - dynamic uniform offsets (`DeviceBufferRange`): `UniformBlock<T>.UpdateAt(cl, index, in T)` + `BindResourceSets(cl, dynamicIndex)`;
+audit who uses them during migration.
+
+### 5.4 S9 - source-generated shapes: the same contract at C# COMPILE time, no runtime reflection (user, 2026-10-31)
+
+**Goal:** FluidUI (precompiled bundles, Android/AOT) gets the contract as Roslyn build ERRORS and zero reflection at runtime. 5.3's API is
+designed so this is an alternative IMPLEMENTATION of the same contract, not a second contract:
+1. Shapes are `partial`; the generator adds a partial.
+2. The verification input is `ShapeDescriptor` (data). Reflection builds it in 5.3; the generator emits it as a static readonly instance,
+   overriding `Describe()`. Slot objects are constructed from descriptor + bundle, never from `FieldInfo`. `Bind` = Verify(Describe(), bundle)
+   + create slots, identical for both implementations.
+3. The compiled interface exists at C# compile time: the `.interface.json` snapshot (S2c, committed beside each bundle) is an
+   `AdditionalFile`. Precompiled consumers have it; runtime-compiled consumers already run the shader compile before `CoreCompile`
+   (RenderKit targets), so it exists in time.
+The generator (`Veldrid.ShaderShapes.Generator`, shipped as an analyzer in the Veldrid package): for every `partial class X : ShaderPipelineShape`,
+find its bundle's interface json (by a `[ShaderBundle("ShadowDepth")]` attribute on the class - the ONE string, and it names a file, not a field),
+then (a) report a Roslyn ERROR for each mismatch - "field `AlbedoTex` has no GLSL resource in bundle ShadowDepth", "GLSL block `MaterialParams`
+has no field", "`ShadowTransforms.LightMVP` is at offset 0, the shader member is at 16", "GLSL name `gl_Foo` is not a legal C# identifier" -
+so the contract fails the C# BUILD; (b) emit the static `ShapeDescriptor` and vertex layouts (offsets computed for sequential blittable structs);
+(c) emit `const string CompiledInterfaceHash`; `Bind` compares it with the loaded bundle's hash and throws on drift (the single residual
+runtime check: the bundle must be the one the code was compiled against). A shape with no generator partial falls back to reflection -
+both paths run the same `Verify`.
+
+**Order:** 5.3 reflection first (S8), then the generator (S9) BEFORE FluidUI migrates, so Fluid adopts the generated form once. Estimate: one
+day for the generator + tests. Trim/AOT note: reflection over struct fields is exactly what trimming breaks; the generator removes that dependency.
+
+**S8 checklist (D10)** - [ ]
+- [ ] AN_Veldrid: `ShaderPipelineShape` (`Describe`/`Bind`/`Verify`), `ShapeDescriptor`, `VertexInput<T>` (+`[PerInstance]`, layout generation),
+      `UniformBlock<T>` (+`UpdateMember` by expression), `TextureSlot`, `SamplerSlot`, `StorageBufferSlot<T>`, `StorageImageSlot`; pipeline / set /
+      vertex binding on the shape; refuse non-bundle shaders; compute abstract -> Core hook; bypass APIs internal; delete S7 record / attribute /
+      registry / `ShaderUniformStructs`; ContractTests (good shape; each mismatch kind; illegal identifier; per-instance order; Verify == Bind); publish.
+- [ ] AN_VeldridSpirv: delete `NormalizeResourceNames`; publish.
+- [ ] S9 generator (5.4) + tests; publish.
+- [ ] SilkyNvg (shapes per family; sample D3D11 + Vulkan) -> FluidUI (`StretchBlitShape`, generated; gtest/vk-gtest) [D1b gate]; publish both.
+- [ ] Monsters/RenderKit/SpaceGame: one shape class per renderer; `Matrix4x4_ColumnMajor` writes -> `Update(cl, in struct)`; RenderKit tests enumerate
+      shapes; legacy `[ShaderUniformBlock]` + `KitUniformStructs_MatchKitManifest` retired.
+- [ ] ArcaneSiege/TileMapKit/TOMF: `ChunkInstancedShape` x3 modes, `TileLitShape`, `SpriteShape`, `MultiTextureShape`, `ParallaxShape`, debug shapes,
+      `TomfBillboardShape`; ImGui renderer (raw bytecode) -> bundle + shape; all six gates 0 px.
+- [ ] Spec: D0 detector list gains "a binding without a name is impossible by API"; S7 closed as subsumed.
+
 ## 6. Open
 
 - O1. `preserve_interface` in the pinned SPIRV-Tools (`ext/known_good.json`) and header availability to `libveldrid-spirv` (decides 4.1 option 1 vs 2). First task of S2.

@@ -257,6 +257,21 @@ GLSL variable HAS a name; a C# API that binds to it without that name is the def
   uniform block member, texture, sampler, storage buffer or image slot without the GLSL name being supplied and verified against the
   compiled bundle. Vertex buffers are covered by vertex ELEMENT names (V7a). Deleting the positional/offset APIs makes a half-migrated
   tree fail to COMPILE, not render wrong.
+- **D9 The NAME is the type (user, 2026-10-31).** The structural types at a shader boundary are degenerate: `Position`, `Normal`,
+  `Color`, `TexCoord` are all `vec3`/`vec4`; `Model` and `LightViewProjection` are both `mat4`. Every misalignment we have had was
+  TYPE-CORRECT - the bytes fit, the meaning was swapped. Locations, bindings, offsets and registers are ADDRESSES, not types; a vec4 at
+  the wrong address type-checks. The only token in the whole pipeline that carries MEANING is the identifier the author wrote. So the
+  verification space is the set of GLSL identifiers, and every rule in this spec reduces to one sentence: *the thing named X on the C#
+  side is bound to the thing named X in the GLSL, at every link, or it is an exception.* Structural checks (component count, size,
+  std140 offset) are secondary - they catch a wrong struct for the right name; they can never catch the right struct for the wrong name.
+- **GLES is the existence proof, not the exception.** `OpenGLPipeline.cs` has ALWAYS bound by name - `glBindAttribLocation(slot,
+  VertexElementDescription.Name)`, `glGetUniformBlockIndex(ResourceLayoutElementDescription.Name)`, `glGetUniformLocation(name)`,
+  `glGetProgramResourceIndex(name)` - and a wrong name THROWS ("There was no attribute variable with the name X"). This bug class was
+  impossible on GL. D3D11 / Vulkan / Metal bind by number, so the same mismatch was silent there. Veldrid.SPIRV papered over GL's name
+  requirement by SYNTHESISING names from numbers (`NormalizeResourceNames` -> `vdspv_{set}_{binding}`, varyings -> `vdspv_fsin{N}`,
+  libveldrid-spirv.cpp 90-118 / 416-428) - i.e. it degraded the one backend that had the contract right. S8 therefore: (a) the real GLSL
+  names flow to every backend (normalisation and `vdspv_*` renaming removed; the fork already preserves uniform block names on GL), and
+  (b) GL's existing name lookups are the REFERENCE behaviour the new link-2/link-3 checks reproduce on the other three backends.
 
 **The chain (each link by name, each verified where it is formed):**
 ```csharp

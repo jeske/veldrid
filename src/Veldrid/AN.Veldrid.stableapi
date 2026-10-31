@@ -12,9 +12,7 @@ default.ResourceFactory.CreateFromBundle.basePath: object null
 default.ResourceFactory.CreateFromBundle.basePath: object null
 default.ResourceFactory.CreateFromBundle.fileResolver: object null
 default.ResourceFactory.CreateFromBundle.fileResolver: object null
-default.ShaderPipelineShape.BindResourceSets.compute: bool false
-default.ShaderPipelineShape.CreateGraphicsPipeline.specializations: object null
-default.ShaderVertexBuffer`1.Update.firstVertex: uint 0
+default.ShaderSetDescription..ctor.specializations: object null
 default.VeldridShaderBundle.GetVertexFragmentShaderData.basePath: object null
 default.VeldridShaderBundle.GetVertexFragmentShaderData.fileResolver: object null
 enum.BlendFactor.BlendFactor: 10
@@ -603,15 +601,19 @@ method.CommandList.InsertDebugMarker: void(string name)
 method.CommandList.PopDebugGroup: void()
 method.CommandList.PushDebugGroup: void(string name)
 method.CommandList.ResolveTexture: void(Texture source, Texture destination)
+method.CommandList.SetComputeResourceSet: void(ResourceSet rs, UniformArenaElement[] elements)
 method.CommandList.SetFramebuffer: void(Framebuffer fb)
 method.CommandList.SetFullScissorRect: void(uint index)
 method.CommandList.SetFullScissorRects: void()
 method.CommandList.SetFullViewport: void(uint index)
 method.CommandList.SetFullViewports: void()
+method.CommandList.SetGraphicsResourceSet: void(ResourceSet rs, UniformArenaElement[] elements)
 method.CommandList.SetIndexBuffer: void(DeviceBuffer buffer, IndexFormat format)
 method.CommandList.SetIndexBuffer: void(DeviceBuffer buffer, IndexFormat format, uint offset)
 method.CommandList.SetPipeline: void(Pipeline pipeline)
 method.CommandList.SetScissorRect: void(uint index, uint x, uint y, uint width, uint height)
+method.CommandList.SetVertexBuffer: void(VertexInput`1<!!0> input, ShaderVertexBuffer`1<!!0> buffer)
+method.CommandList.SetVertexBuffer: void(VertexInput`1<!!0> input, ShaderVertexBuffer`1<!!0> buffer, uint offset)
 method.CommandList.SetViewport: void(uint index, Viewport viewport)
 method.CommandList.SetViewport: void(uint index, ref Viewport viewport)
 method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, !!0 source)
@@ -621,6 +623,11 @@ method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBy
 method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, Span`1<!!0> source)
 method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ref !!0 source)
 method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ref !!0 source, uint sizeInBytes)
+method.CommandList.UpdateBuffer: void(ShaderUniformArena`1<!!0> arena)
+method.CommandList.UpdateBuffer: void(ShaderUniformBuffer`1<!!0> storage, ref !!0 value)
+method.CommandList.UpdateBuffer: void(ShaderVertexBuffer`1<!!0> buffer, uint firstVertex, ReadOnlySpan`1<!!0> vertices)
+method.CommandList.UpdateBuffer: void(UniformBlock`1<!!0> block, Expression`1<Func`2<!!0, !!1>> member, ref !!1 value)
+method.CommandList.UpdateBuffer: void(UniformBlock`1<!!0> block, ref !!0 value)
 method.CommandListDescription.Equals: bool(CommandListDescription other)
 method.ComputePipelineDescription..ctor: void(Shader computeShader, ResourceLayout[] resourceLayouts, uint threadGroupSizeX, uint threadGroupSizeY, uint threadGroupSizeZ)
 method.ComputePipelineDescription..ctor: void(Shader shaderStage, ResourceLayout resourceLayout, uint threadGroupSizeX, uint threadGroupSizeY, uint threadGroupSizeZ)
@@ -768,11 +775,19 @@ method.ResourceFactory.CreateBuffer: DeviceBuffer(ref BufferDescription descript
 method.ResourceFactory.CreateCommandList: CommandList()
 method.ResourceFactory.CreateCommandList: CommandList(CommandListDescription description)
 method.ResourceFactory.CreateCommandList: CommandList(ref CommandListDescription description)
+method.ResourceFactory.CreateComputePipeline: Pipeline(ComputePipelineDescription description)
+method.ResourceFactory.CreateComputePipeline: Pipeline(ref ComputePipelineDescription description)
 method.ResourceFactory.CreateFence: Fence(bool signaled)
 method.ResourceFactory.CreateFramebuffer: Framebuffer(FramebufferDescription description)
 method.ResourceFactory.CreateFramebuffer: Framebuffer(ref FramebufferDescription description)
 method.ResourceFactory.CreateFromBundle: PrecompiledShaderResult(VeldridShaderBundle bundle, Func`2<string, byte[]> fileResolver, string basePath)
 method.ResourceFactory.CreateFromBundle: PrecompiledShaderResult(string vdshaderJson, Func`2<string, byte[]> fileResolver, string basePath)
+method.ResourceFactory.CreateGraphicsPipeline: Pipeline(GraphicsPipelineDescription description)
+method.ResourceFactory.CreateGraphicsPipeline: Pipeline(ref GraphicsPipelineDescription description)
+method.ResourceFactory.CreateResourceLayout: ResourceLayout(ResourceLayoutDescription description)
+method.ResourceFactory.CreateResourceLayout: ResourceLayout(ref ResourceLayoutDescription description)
+method.ResourceFactory.CreateResourceSet: ResourceSet(ResourceSetDescription description)
+method.ResourceFactory.CreateResourceSet: ResourceSet(ref ResourceSetDescription description)
 method.ResourceFactory.CreateSampler: Sampler(SamplerDescription description)
 method.ResourceFactory.CreateSampler: Sampler(ref SamplerDescription description)
 method.ResourceFactory.CreateSwapchain: Swapchain(SwapchainDescription description)
@@ -785,7 +800,7 @@ method.ResourceFactory.CreateTextureView: TextureView(Texture target)
 method.ResourceFactory.CreateTextureView: TextureView(TextureViewDescription description)
 method.ResourceFactory.CreateTextureView: TextureView(ref TextureViewDescription description)
 method.ResourceLayout.Dispose: void()
-method.ResourceLayoutDescription..ctor: void(ResourceLayoutElementDescription[] elements)
+method.ResourceLayoutDescription..ctor: void(ShapeSlot[] slots)
 method.ResourceLayoutDescription.Equals: bool(ResourceLayoutDescription other)
 method.ResourceLayoutDescription.GetHashCode: int()
 method.ResourceLayoutElementDescription..ctor: void(string name, ResourceKind kind, ShaderStages stages)
@@ -793,7 +808,7 @@ method.ResourceLayoutElementDescription..ctor: void(string name, ResourceKind ki
 method.ResourceLayoutElementDescription.Equals: bool(ResourceLayoutElementDescription other)
 method.ResourceLayoutElementDescription.GetHashCode: int()
 method.ResourceSet.Dispose: void()
-method.ResourceSetDescription..ctor: void(ResourceLayout layout, IBindableResource[] boundResources)
+method.ResourceSetDescription..ctor: void(ResourceLayout layout, ShapeResourceBinding[] bindings)
 method.ResourceSetDescription.Equals: bool(ResourceSetDescription other)
 method.ResourceSetDescription.GetHashCode: int()
 method.RgbaByte..ctor: void(byte r, byte g, byte b, byte a)
@@ -817,7 +832,7 @@ method.SamplerDescription..ctor: void(SamplerAddressMode addressModeU, SamplerAd
 method.SamplerDescription.Equals: bool(SamplerDescription other)
 method.SamplerDescription.GetHashCode: int()
 method.SamplerSlot..ctor: void()
-method.SamplerSlot.Set: void(Sampler sampler)
+method.SamplerSlot.With: ShapeResourceBinding(Sampler sampler)
 method.Shader.Dispose: void()
 method.ShaderBundleAttribute..ctor: void(string bundleName)
 method.ShaderContractException..ctor: void(string bundleName, IReadOnlyList`1<ShaderContractViolation> violations)
@@ -842,24 +857,18 @@ method.ShaderDescription.Equals: bool(ShaderDescription other)
 method.ShaderDescription.GetHashCode: int()
 method.ShaderInterfaceRegistry.TryGetBundle: PrecompiledShaderResult(Shader shader)
 method.ShaderPipelineShape.Bind: !!0(PrecompiledShaderResult bundle, ResourceFactory factory)
-method.ShaderPipelineShape.BindResourceSets: void(CommandList cl, bool compute)
-method.ShaderPipelineShape.CreateComputePipeline: Pipeline(uint threadGroupSizeX, uint threadGroupSizeY, uint threadGroupSizeZ)
-method.ShaderPipelineShape.CreateGraphicsPipeline: Pipeline(BlendStateDescription blend, DepthStencilStateDescription depthStencil, RasterizerStateDescription rasterizer, PrimitiveTopology topology, OutputDescription outputs, SpecializationConstant[] specializations)
 method.ShaderPipelineShape.Dispose: void()
 method.ShaderPipelineShape.EnumerateShapes: IReadOnlyList`1<ValueTuple`2<Type, string>>(Assembly assembly)
 method.ShaderPipelineShape.Verify: IReadOnlyList`1<ShaderContractViolation>(Type shapeType, VeldridShaderBundle bundle)
 method.ShaderPipelineShape.Verify: IReadOnlyList`1<ShaderContractViolation>(VeldridShaderBundle bundle)
-method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts, Shader[] shaders)
-method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts, Shader[] shaders, SpecializationConstant[] specializations)
+method.ShaderSetDescription..ctor: void(VertexInput[] vertexInputs, Shader[] shaders, SpecializationConstant[] specializations)
 method.ShaderSetDescription.Equals: bool(ShaderSetDescription other)
 method.ShaderSetDescription.GetHashCode: int()
 method.ShaderUniformArena`1.Dispose: void()
+method.ShaderUniformArena`1.EnsureAlive: void()
 method.ShaderUniformArena`1.Stage: void(UniformArenaElement element, ref !0 value)
-method.ShaderUniformArena`1.Upload: void(CommandList commands)
 method.ShaderUniformBuffer`1.Dispose: void()
-method.ShaderUniformBuffer`1.Update: void(CommandList commands, ref !0 value)
 method.ShaderVertexBuffer`1.Dispose: void()
-method.ShaderVertexBuffer`1.Update: void(CommandList commands, ReadOnlySpan`1<!0> vertices, uint firstVertex)
 method.ShapeDescriptor..ctor: void(string BundleName, ShapeSlotDescriptor[] Slots, ShapeVertexInputDescriptor[] VertexInputs)
 method.ShapeDescriptor.<Clone>$: ShapeDescriptor()
 method.ShapeDescriptor.Deconstruct: void(ref string BundleName, ref ShapeSlotDescriptor[] Slots, ref ShapeVertexInputDescriptor[] VertexInputs)
@@ -905,9 +914,9 @@ method.StencilBehaviorDescription..ctor: void(StencilOperation fail, StencilOper
 method.StencilBehaviorDescription.Equals: bool(StencilBehaviorDescription other)
 method.StencilBehaviorDescription.GetHashCode: int()
 method.StorageBufferSlot..ctor: void()
-method.StorageBufferSlot.Set: void(DeviceBuffer buffer)
+method.StorageBufferSlot.With: ShapeResourceBinding(DeviceBuffer buffer)
 method.StorageImageSlot..ctor: void()
-method.StorageImageSlot.Set: void(TextureView view)
+method.StorageImageSlot.With: ShapeResourceBinding(TextureView view)
 method.Swapchain.Dispose: void()
 method.Swapchain.RecreateOnRestoredDevice: void()
 method.Swapchain.Resize: void(uint width, uint height)
@@ -934,10 +943,8 @@ method.TextureDescription.Texture2D: TextureDescription(uint width, uint height,
 method.TextureDescription.Texture2D: TextureDescription(uint width, uint height, uint mipLevels, uint arrayLayers, PixelFormat format, TextureUsage usage, TextureSampleCount sampleCount)
 method.TextureDescription.Texture3D: TextureDescription(uint width, uint height, uint depth, uint mipLevels, PixelFormat format, TextureUsage usage)
 method.TextureSlot..ctor: void()
-method.TextureSlot.Forget: void(Texture texture)
-method.TextureSlot.Forget: void(TextureView view)
-method.TextureSlot.Set: void(Texture texture)
-method.TextureSlot.Set: void(TextureView view)
+method.TextureSlot.With: ShapeResourceBinding(Texture texture)
+method.TextureSlot.With: ShapeResourceBinding(TextureView view)
 method.TextureView.Dispose: void()
 method.TextureViewDescription..ctor: void(Texture target)
 method.TextureViewDescription..ctor: void(Texture target, PixelFormat format)
@@ -958,10 +965,9 @@ method.UniformBlock`1.CreateArena: ShaderUniformArena`1<!0>(GraphicsDevice devic
 method.UniformBlock`1.CreateBuffer: void(BufferUsage usage)
 method.UniformBlock`1.CreateSharedBuffer: ShaderUniformBuffer`1<!0>(BufferUsage usage)
 method.UniformBlock`1.Dispose: void()
-method.UniformBlock`1.Select: void(ShaderUniformArena`1<!0> arena, UniformArenaElement element)
-method.UniformBlock`1.Share: void(ShaderUniformBuffer`1<!0> storage)
-method.UniformBlock`1.Update: void(CommandList cl, ref !0 value)
-method.UniformBlock`1.UpdateMember: void(CommandList cl, Expression`1<Func`2<!0, !!0>> member, ref !!0 value)
+method.UniformBlock`1.With: ShapeResourceBinding()
+method.UniformBlock`1.With: ShapeResourceBinding(ShaderUniformArena`1<!0> arena)
+method.UniformBlock`1.With: ShapeResourceBinding(ShaderUniformBuffer`1<!0> storage)
 method.UniformBufferBindingTimeOffsetSelectableAttribute..ctor: void()
 method.VdShaderBackendData..ctor: void()
 method.VdShaderBindingEntry..ctor: void()
@@ -994,7 +1000,6 @@ method.VertexElementDescription.Equals: bool(VertexElementDescription other)
 method.VertexElementDescription.GetHashCode: int()
 method.VertexFormatAttribute..ctor: void(VertexElementFormat format)
 method.VertexInput`1..ctor: void()
-method.VertexInput`1.Bind: void(CommandList commands, ShaderVertexBuffer`1<!0> buffer)
 method.VertexInput`1.CreateBuffer: ShaderVertexBuffer`1<!0>(uint vertexCapacity, BufferUsage usage)
 method.VertexLayoutDescription..ctor: void(VertexElementDescription[] elements)
 method.VertexLayoutDescription..ctor: void(uint stride, VertexElementDescription[] elements)
@@ -1151,6 +1156,8 @@ property.ShaderUniformArena`1.SizeInBytes: uint { get; }
 property.ShaderUniformArena`1.StrideBytes: uint { get; }
 property.ShaderUniformBuffer`1.SizeInBytes: uint { get; }
 property.ShaderVertexBuffer`1.Capacity: uint { get; }
+property.ShaderVertexBuffer`1.SizeInBytes: uint { get; }
+property.ShaderVertexBuffer`1.Usage: BufferUsage { get; }
 property.ShapeDescriptor.BundleName: string { get; set; }
 property.ShapeDescriptor.Slots: ShapeSlotDescriptor[] { get; set; }
 property.ShapeDescriptor.VertexInputs: ShapeVertexInputDescriptor[] { get; set; }
@@ -1252,8 +1259,8 @@ property.VeldridShaderBundle.ShaderName: string { get; set; }
 property.VeldridShaderBundle.Version: int { get; set; }
 property.VeldridShaderBundle.VertexSource: string { get; set; }
 property.VertexFormatAttribute.Format: VertexElementFormat { get; }
-property.VertexInput`1.Layout: VertexLayoutDescription { get; }
-property.VertexInput`1.SlotIndex: uint { get; }
+property.VertexInput.Layout: VertexLayoutDescription { get; }
+property.VertexInput.SlotIndex: uint { get; }
 struct.BackendInfoVulkan.ExtensionProperties._layout: Sequential
 struct.BackendInfoVulkan.ExtensionProperties._pack: 0
 struct.BackendInfoVulkan.ExtensionProperties._size: 0
@@ -1449,6 +1456,8 @@ struct.ResourceLayoutDescription._layout: Sequential
 struct.ResourceLayoutDescription._pack: 0
 struct.ResourceLayoutDescription._size: 0
 struct.ResourceLayoutDescription.field0.Elements: ResourceLayoutElementDescription[]
+struct.ResourceLayoutDescription.field1.VerifiedShape: ShaderPipelineShape
+struct.ResourceLayoutDescription.field2.VerifiedSetIndex: uint
 struct.ResourceLayoutElementDescription._layout: Sequential
 struct.ResourceLayoutElementDescription._pack: 0
 struct.ResourceLayoutElementDescription._size: 0
@@ -1461,6 +1470,7 @@ struct.ResourceSetDescription._pack: 0
 struct.ResourceSetDescription._size: 0
 struct.ResourceSetDescription.field0.Layout: ResourceLayout
 struct.ResourceSetDescription.field1.BoundResources: IBindableResource[]
+struct.ResourceSetDescription.field2.VerifiedOffsetArenas: IUniformArenaOffsets[]
 struct.RgbaByte._layout: Sequential
 struct.RgbaByte._pack: 0
 struct.RgbaByte._size: 0
@@ -1506,6 +1516,13 @@ struct.ShaderSetDescription._size: 0
 struct.ShaderSetDescription.field0.VertexLayouts: VertexLayoutDescription[]
 struct.ShaderSetDescription.field1.Shaders: Shader[]
 struct.ShaderSetDescription.field2.Specializations: SpecializationConstant[]
+struct.ShaderSetDescription.field3.VerifiedShape: ShaderPipelineShape
+struct.ShapeResourceBinding._layout: Sequential
+struct.ShapeResourceBinding._pack: 0
+struct.ShapeResourceBinding._size: 0
+struct.ShapeResourceBinding.field0.<Slot>k__BackingField: ShapeSlot
+struct.ShapeResourceBinding.field1.<Resource>k__BackingField: IBindableResource
+struct.ShapeResourceBinding.field2.<Arena>k__BackingField: IUniformArenaOffsets
 struct.SpecializationConstant._layout: Sequential
 struct.SpecializationConstant._pack: 0
 struct.SpecializationConstant._size: 0
@@ -1675,6 +1692,7 @@ type.ShaderUniformBuffer`1: sealed class
 type.ShaderVertexBuffer`1: sealed class
 type.ShapeDescriptor: sealed class
 type.ShapeDescriptorBuilder: static class
+type.ShapeResourceBinding: struct
 type.ShapeSlot: abstract class
 type.ShapeSlotDescriptor: sealed class
 type.ShapeVertexInputDescriptor: sealed class
@@ -1715,6 +1733,7 @@ type.VertexElementDescription: struct
 type.VertexElementFormat: enum
 type.VertexElementSemantic: enum
 type.VertexFormatAttribute: sealed class
+type.VertexInput: abstract class
 type.VertexInput`1: sealed class
 type.VertexLayoutDescription: struct
 type.Viewport: struct

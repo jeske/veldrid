@@ -37,12 +37,12 @@ namespace Veldrid.D3D11
             return new D3D11Framebuffer(device, ref description);
         }
 
-        internal override Pipeline CreateComputePipeline(ref ComputePipelineDescription description)
+        protected override Pipeline CreateComputePipelineCore(ref ComputePipelineDescription description)
         {
             return new D3D11Pipeline(cache, ref description);
         }
 
-        internal override ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description)
+        protected override ResourceLayout CreateResourceLayoutCore(ref ResourceLayoutDescription description)
         {
             return new D3D11ResourceLayout(ref description);
         }
@@ -60,7 +60,7 @@ namespace Veldrid.D3D11
             return new D3D11ResourceLayout(ref description);
         }
 
-        internal override ResourceSet CreateResourceSet(ref ResourceSetDescription description)
+        protected override ResourceSet CreateResourceSetCore(ref ResourceSetDescription description)
         {
             ValidationHelpers.ValidateResourceSet(gd, ref description);
             return new D3D11ResourceSet(ref description);

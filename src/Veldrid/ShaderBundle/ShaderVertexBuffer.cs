@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace Veldrid;
 
-/// <summary>Vertex storage whose upload and binding type are identical. The raw buffer is never exposed publicly.</summary>
+/// <summary>Vertex storage whose upload and binding type are identical; written through <see cref="CommandList.UpdateBuffer{TVertex}(ShaderVertexBuffer{TVertex}, uint, ReadOnlySpan{TVertex})"/>, bound through <see cref="CommandList.SetVertexBuffer{TVertex}(VertexInput{TVertex}, ShaderVertexBuffer{TVertex})"/>. The raw buffer is never exposed publicly.</summary>
 public sealed class ShaderVertexBuffer<TVertex> : IDisposable where TVertex : unmanaged
 {
     internal DeviceBuffer Buffer { get; }
@@ -21,15 +21,10 @@ public sealed class ShaderVertexBuffer<TVertex> : IDisposable where TVertex : un
         Buffer = factory.CreateBuffer(new BufferDescription(size, usage));
     }
 
-    /// <summary>Upload elements, not anonymously typed bytes. The offset is measured in vertices.</summary>
-    public void Update(CommandList commands, ReadOnlySpan<TVertex> vertices, uint firstVertex = 0)
-    {
-        EnsureAlive();
-        ArgumentNullException.ThrowIfNull(commands);
-        if (firstVertex > Capacity || (uint)vertices.Length > Capacity - firstVertex)
-            throw new ArgumentOutOfRangeException(nameof(firstVertex));
-        commands.UpdateBuffer(Buffer, checked(firstVertex * (uint)Unsafe.SizeOf<TVertex>()), vertices);
-    }
+    /// <summary>Byte size of the whole buffer (for consumers that preserve a full-buffer upload policy).</summary>
+    public uint SizeInBytes => Buffer.SizeInBytes;
+    /// <summary>The native-usage flags this storage was created with.</summary>
+    public BufferUsage Usage => Buffer.Usage;
 
     internal void EnsureAlive()
     {

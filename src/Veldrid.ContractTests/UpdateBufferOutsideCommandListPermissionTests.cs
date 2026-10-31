@@ -125,9 +125,9 @@ public sealed class UpdateBufferOutsideCommandListPermissionTests
             shape.Projection.CreateBuffer(BufferUsage.UniformBuffer | BufferUsage.Dynamic);
             using var vertices = shape.Vertices.CreateBuffer(3, BufferUsage.VertexBuffer | BufferUsage.Dynamic);
             // Typed storage writes only through CommandList.UpdateBuffer; even Dynamic typed storage does not opt in.
-            Assert.False(shape.Projection.Buffer.AllowUpdateBufferOutsideCommandList);
+            Assert.False(shape.Projection.PrivateBuffer.AllowUpdateBufferOutsideCommandList);
             Assert.False(vertices.Buffer.AllowUpdateBufferOutsideCommandList);
-            Assert.Throws<VeldridException>(() => device.UpdateBufferOutsideCommandList(shape.Projection.Buffer, 0, new ImGuiProjection()));
+            Assert.Throws<VeldridException>(() => device.UpdateBufferOutsideCommandList(shape.Projection.PrivateBuffer, 0, new ImGuiProjection()));
         }
         finally { foreach (var shader in bundle.Shaders) shader.Dispose(); }
     }

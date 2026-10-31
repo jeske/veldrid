@@ -30,6 +30,9 @@ namespace Veldrid
         /// </summary>
         public SpecializationConstant[] Specializations;
 
+        /// <summary>The shape whose vertex inputs built this description (null for Veldrid-internal raw sets).</summary>
+        internal ShaderPipelineShape VerifiedShape;
+
         /// <summary>
         ///     Constructs a new ShaderSetDescription.
         /// </summary>
@@ -44,11 +47,51 @@ namespace Veldrid
         ///     All
         ///     other stages are optional, but if either Tessellation stage is present, then the other must also be.
         /// </param>
-        public ShaderSetDescription(VertexLayoutDescription[] vertexLayouts, Shader[] shaders)
+        internal ShaderSetDescription(VertexLayoutDescription[] vertexLayouts, Shader[] shaders)
         {
             VertexLayouts = vertexLayouts;
             Shaders = shaders;
             Specializations = null;
+            VerifiedShape = null;
+        }
+
+        /// <summary>
+        ///     Constructs a new ShaderSetDescription from a shape's verified vertex inputs - the SAME call as before, with each positional
+        ///     vertex layout replaced by the typed <see cref="VertexInput"/> that owns it (array position was the vertex slot index).
+        ///     All inputs must belong to one shape and appear in slot order; the shaders must be that shape's bundle shaders.
+        /// </summary>
+        /// <param name="vertexInputs">The shape's <c>VertexInput</c> fields, in slot order.</param>
+        /// <param name="shaders">The shape's bundle shaders (<c>shape.Bundle.Shaders</c>).</param>
+        /// <param name="specializations">Specialization constants, if the GLSL declares any.</param>
+        public ShaderSetDescription(VertexInput[] vertexInputs, Shader[] shaders, SpecializationConstant[] specializations = null)
+        {
+            ArgumentNullException.ThrowIfNull(vertexInputs);
+            ArgumentNullException.ThrowIfNull(shaders);
+            var violations = new System.Collections.Generic.List<ShaderContractViolation>();
+            ShaderPipelineShape shape = null;
+            for (int i = 0; i < vertexInputs.Length; i++)
+            {
+                var input = vertexInputs[i];
+                if (input is null) { violations.Add(new ShaderContractViolation("SHADERSET", $"[{i}]", "null", "a shape VertexInput", "vertex layouts come from shape fields")); continue; }
+                if (input.Owner is null) { violations.Add(new ShaderContractViolation("SHADERSET", $"[{i}]", "unbound VertexInput", "field of a Bind()-created shape", "vertex inputs come from ShaderPipelineShape.Bind")); continue; }
+                shape ??= input.Owner;
+                if (!ReferenceEquals(input.Owner, shape)) violations.Add(new ShaderContractViolation("SHADERSET", $"[{i}]", $"input of {input.Owner.GetType().Name}", shape.GetType().Name, "one shader set binds one shape's inputs"));
+                else if (input.SlotIndex != i) violations.Add(new ShaderContractViolation("SHADERSET", $"[{i}]", $"slot {input.SlotIndex}", $"slot {i}", "vertex inputs are listed in slot order"));
+            }
+            if (violations.Count > 0) throw new ShaderContractException("shader set", violations);
+            if (shape is null && vertexInputs.Length == 0)
+                throw new ShaderContractException("shader set", [new ShaderContractViolation("SHADERSET", "vertexInputs", "empty", "the shape's VertexInput fields", "a graphics shader set names its vertex inputs")]);
+            shape.EnsureBound();
+            if (vertexInputs.Length != shape.VertexInputCount)
+                violations.Add(new ShaderContractViolation("SHADERSET", "vertexInputs", $"{vertexInputs.Length}", $"{shape.VertexInputCount}", "every VertexInput of the shape must be listed"));
+            if (!Util.ArrayEquals(shaders, shape.Bundle.Shaders))
+                violations.Add(new ShaderContractViolation(ShaderContractVerifier.Rule_V7_ShaderSet, "shaders", "different Shader objects", "shape.Bundle.Shaders", "the shaders must be the verified bundle's shaders"));
+            if (violations.Count > 0) throw new ShaderContractException(shape.BundleName, violations);
+            VertexLayouts = new VertexLayoutDescription[vertexInputs.Length];
+            for (int i = 0; i < vertexInputs.Length; i++) VertexLayouts[i] = vertexInputs[i].Layout;
+            Shaders = shaders;
+            Specializations = specializations;
+            VerifiedShape = shape;
         }
 
         /// <summary>
@@ -71,7 +114,7 @@ namespace Veldrid
         ///     which
         ///     will be matched with the constants specified in each <see cref="Shader" />.
         /// </param>
-        public ShaderSetDescription(
+        internal ShaderSetDescription(
             VertexLayoutDescription[] vertexLayouts,
             Shader[] shaders,
             SpecializationConstant[] specializations)
@@ -79,6 +122,7 @@ namespace Veldrid
             VertexLayouts = vertexLayouts;
             Shaders = shaders;
             Specializations = specializations;
+            VerifiedShape = null;
         }
 
         /// <summary>

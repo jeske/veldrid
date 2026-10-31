@@ -28,6 +28,11 @@ namespace Veldrid
         private Texture _fontTexture;
         private PrecompiledShaderResult _bundle;
         private ImGuiShape _shape;
+        private ResourceLayout _mainLayout;      // set 0: Projection + FontSampler
+        private ResourceLayout _textureLayout;   // set 1: FontTexture
+        private ResourceSet _mainResourceSet;
+        private ResourceSet _fontTextureResourceSet;
+        private readonly Dictionary<TextureView, ResourceSet> _setsByView = new Dictionary<TextureView, ResourceSet>();
         private Pipeline _pipeline;
         private IntPtr _fontAtlasID = (IntPtr)1;
 
@@ -97,14 +102,25 @@ namespace Veldrid
             _shape = ShaderPipelineShape.Bind<ImGuiShape>(_bundle, factory);
             _shape.Projection.CreateBuffer(BufferUsage.UniformBuffer);
             _vertexBuffer = _shape.Vertices.CreateBuffer(500, BufferUsage.VertexBuffer | BufferUsage.Dynamic);
-            _shape.FontSampler.Set(gd.PointSampler);
 
-            _pipeline = _shape.CreateGraphicsPipeline(
+            // Same calls as the raw API; the positional elements/resources are the shape's named slots.
+            _mainLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(_shape.Projection, _shape.FontSampler));
+            _mainLayout.Name = "ImGui.NET Main Layout";
+            _textureLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(_shape.FontTexture));
+            _textureLayout.Name = "ImGui.NET Texture Layout";
+            _mainResourceSet = factory.CreateResourceSet(new ResourceSetDescription(_mainLayout,
+                _shape.Projection.With(),
+                _shape.FontSampler.With(gd.PointSampler)));
+            _mainResourceSet.Name = "ImGui.NET Main Set";
+
+            _pipeline = factory.CreateGraphicsPipeline(new GraphicsPipelineDescription(
                 BlendStateDescription.SINGLE_ALPHA_BLEND,
                 new DepthStencilStateDescription(false, false, ComparisonKind.Always),
                 new RasterizerStateDescription(FaceCullMode.None, PolygonFillMode.Solid, FrontFace.Clockwise, true, true),
                 PrimitiveTopology.TriangleList,
-                outputDescription);
+                new ShaderSetDescription(new VertexInput[] { _shape.Vertices }, _bundle.Shaders),
+                new[] { _mainLayout, _textureLayout },
+                outputDescription));
             _pipeline.Name = "ImGui.NET Pipeline";
 
             RecreateFontDeviceTexture(gd);
@@ -128,8 +144,20 @@ namespace Veldrid
             {
                 _idsByView.Remove(textureView);
                 _viewsById.Remove(id);
-                _shape.FontTexture.Forget(textureView);
+                if (_setsByView.Remove(textureView, out ResourceSet set)) set.Dispose();
             }
+        }
+
+        /// <summary>One resource set per distinct image view (set 1 = FontTexture), created on first use and kept until the binding is removed.</summary>
+        private ResourceSet GetOrCreateTextureResourceSet(TextureView view)
+        {
+            if (!_setsByView.TryGetValue(view, out ResourceSet set))
+            {
+                set = _gd.ResourceFactory.CreateResourceSet(new ResourceSetDescription(_textureLayout, _shape.FontTexture.With(view)));
+                set.Name = $"ImGui.NET {view.Name} Set";
+                _setsByView.Add(view, set);
+            }
+            return set;
         }
 
         private IntPtr GetNextImGuiBindingID()
@@ -174,7 +202,8 @@ namespace Veldrid
 
         public void ClearCachedImageResources()
         {
-            foreach (var view in _idsByView.Keys) _shape.FontTexture.Forget(view);
+            foreach (var set in _setsByView.Values) set.Dispose();
+            _setsByView.Clear();
             foreach (IDisposable resource in _ownedResources)
             {
                 resource.Dispose();
@@ -207,13 +236,16 @@ namespace Veldrid
 
             if (_fontTexture != null)
             {
-                _shape.FontTexture.Forget(_fontTexture);
+                _fontTextureResourceSet?.Dispose();
+                _fontTextureResourceSet = null;
                 _fontTexture.Dispose();
             }
             _fontTexture = gd.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
                 (uint)width, (uint)height, 1, 1, PixelFormat.R8G8B8A8UNorm, TextureUsage.Sampled));
             _fontTexture.Name = "ImGui.NET Font Texture";
             gd.UpdateTexture(_fontTexture, (IntPtr)pixels, (uint)(bytesPerPixel * width * height), 0, 0, 0, (uint)width, (uint)height, 1, 0, 0);
+            _fontTextureResourceSet = gd.ResourceFactory.CreateResourceSet(new ResourceSetDescription(_textureLayout, _shape.FontTexture.With(_fontTexture)));
+            _fontTextureResourceSet.Name = "ImGui.NET Font Texture Set";
 
             io.Fonts.ClearTexData();
         }
@@ -301,7 +333,7 @@ namespace Veldrid
                             vsin_color = source.col,
                         };
                     }
-                    _vertexBuffer.Update(cl, vertices.AsSpan(0, count), vertexOffsetInVertices);
+                    cl.UpdateBuffer(_vertexBuffer, vertexOffsetInVertices, (ReadOnlySpan<ImGuiVertex>)vertices.AsSpan(0, count));
                 }
                 finally { System.Buffers.ArrayPool<ImGuiVertex>.Shared.Return(vertices); }
                 cl.UpdateBuffer(_indexBuffer, indexOffsetInElements * sizeof(ushort), cmd_list.IdxBuffer.Data, (uint)(cmd_list.IdxBuffer.Size * sizeof(ushort)));
@@ -313,7 +345,7 @@ namespace Veldrid
             {
                 var io = ImGui.GetIO();
                 Matrix4x4 mvp = Matrix4x4.CreateOrthographicOffCenter(0f, io.DisplaySize.X, io.DisplaySize.Y, 0.0f, -1.0f, 1.0f);
-                _shape.Projection.Update(cl, new ImGuiProjection
+                cl.UpdateBuffer(_shape.Projection, new ImGuiProjection
                 {
                     projection = mvp,
                     IsClipSpaceYInverted = gd.IsClipSpaceYInverted ? 1 : 0,
@@ -322,8 +354,9 @@ namespace Veldrid
             }
 
             cl.SetPipeline(_pipeline);
-            _shape.Vertices.Bind(cl, _vertexBuffer);
+            cl.SetVertexBuffer(_shape.Vertices, _vertexBuffer);
             cl.SetIndexBuffer(_indexBuffer, IndexFormat.UInt16);
+            cl.SetGraphicsResourceSet(_mainResourceSet);
 
             draw_data.ScaleClipRects(ImGui.GetIO().DisplayFramebufferScale);
 
@@ -342,10 +375,9 @@ namespace Veldrid
 
                     if (pcmd.TextureId != IntPtr.Zero)
                     {
-                        if (pcmd.TextureId == _fontAtlasID) _shape.FontTexture.Set(_fontTexture);
-                        else _shape.FontTexture.Set(GetImageTextureView(pcmd.TextureId));
+                        if (pcmd.TextureId == _fontAtlasID) cl.SetGraphicsResourceSet(_fontTextureResourceSet);
+                        else cl.SetGraphicsResourceSet(GetOrCreateTextureResourceSet(GetImageTextureView(pcmd.TextureId)));
                     }
-                    _shape.BindResourceSets(cl);   // cached per distinct texture; free after first use
 
                     cl.SetScissorRect(0, (uint)pcmd.ClipRect.X, (uint)pcmd.ClipRect.Y, (uint)(pcmd.ClipRect.Z - pcmd.ClipRect.X), (uint)(pcmd.ClipRect.W - pcmd.ClipRect.Y));
                     cl.DrawIndexed(pcmd.ElemCount, 1, pcmd.IdxOffset + (uint)idx_offset, (int)(pcmd.VtxOffset + vtx_offset), 0);
@@ -360,8 +392,14 @@ namespace Veldrid
         {
             _vertexBuffer.Dispose();
             _indexBuffer.Dispose();
+            _fontTextureResourceSet?.Dispose();
+            foreach (var set in _setsByView.Values) set.Dispose();
+            _setsByView.Clear();
+            _mainResourceSet.Dispose();
             _fontTexture.Dispose();
             _pipeline.Dispose();
+            _textureLayout.Dispose();
+            _mainLayout.Dispose();
             _shape.Dispose();
             foreach (Shader shader in _bundle.Shaders) shader.Dispose();
             foreach (IDisposable resource in _ownedResources)

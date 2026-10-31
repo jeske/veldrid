@@ -25,19 +25,19 @@ namespace Veldrid.OpenGL
             return new OpenGLFramebuffer(gd, ref description);
         }
 
-        internal override Pipeline CreateComputePipeline(ref ComputePipelineDescription description)
+        protected override Pipeline CreateComputePipelineCore(ref ComputePipelineDescription description)
         {
             var pipeline = new OpenGLPipeline(gd, ref description);
             gd.EnsureResourceInitialized(pipeline);
             return pipeline;
         }
 
-        internal override ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description)
+        protected override ResourceLayout CreateResourceLayoutCore(ref ResourceLayoutDescription description)
         {
             return new OpenGLResourceLayout(ref description);
         }
 
-        internal override ResourceSet CreateResourceSet(ref ResourceSetDescription description)
+        protected override ResourceSet CreateResourceSetCore(ref ResourceSetDescription description)
         {
             ValidationHelpers.ValidateResourceSet(gd, ref description);
             return new OpenGLResourceSet(ref description);

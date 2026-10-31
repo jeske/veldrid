@@ -16,7 +16,7 @@ namespace Veldrid.MTL
             return new MtlCommandList(ref description, gd);
         }
 
-        internal override Pipeline CreateComputePipeline(ref ComputePipelineDescription description)
+        protected override Pipeline CreateComputePipelineCore(ref ComputePipelineDescription description)
         {
             return new MtlPipeline(ref description, gd);
         }
@@ -26,7 +26,7 @@ namespace Veldrid.MTL
             return new MtlFramebuffer(gd, ref description);
         }
 
-        internal override ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description)
+        protected override ResourceLayout CreateResourceLayoutCore(ref ResourceLayoutDescription description)
         {
             return new MtlResourceLayout(ref description, gd);
         }
@@ -44,7 +44,7 @@ namespace Veldrid.MTL
             return new MtlResourceLayout(ref description, gd);
         }
 
-        internal override ResourceSet CreateResourceSet(ref ResourceSetDescription description)
+        protected override ResourceSet CreateResourceSetCore(ref ResourceSetDescription description)
         {
             ValidationHelpers.ValidateResourceSet(gd, ref description);
             return new MtlResourceSet(ref description, gd);

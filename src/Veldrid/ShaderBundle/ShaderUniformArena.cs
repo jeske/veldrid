@@ -12,7 +12,7 @@ public readonly record struct UniformArenaElement(uint Value);
 public sealed class UniformBufferBindingTimeOffsetSelectableAttribute : Attribute { }
 
 /// <summary>Fixed-capacity, aligned uniform storage. Stage typed values, upload once, select elements through named UniformBlock fields.</summary>
-public sealed class ShaderUniformArena<T> : IDisposable where T : unmanaged
+public sealed class ShaderUniformArena<T> : IDisposable, IUniformArenaOffsets where T : unmanaged
 {
     internal DeviceBuffer Buffer { get; }
     internal ResourceFactory Factory { get; }
@@ -57,15 +57,12 @@ public sealed class ShaderUniformArena<T> : IDisposable where T : unmanaged
         MemoryMarshal.Write(staging.AsSpan(checked((int)offset), Unsafe.SizeOf<T>()), in value);
     }
 
-    /// <summary>One upload for the entire segment. Previously recorded draws retain the preceding contents according to command order.</summary>
-    public void Upload(CommandList commands)
-    {
-        EnsureAlive();
-        ArgumentNullException.ThrowIfNull(commands);
-        commands.UpdateBuffer(Buffer, 0, staging);
-    }
+    /// <summary>The staged bytes for one full-buffer upload (<see cref="CommandList.UpdateBuffer{T}(ShaderUniformArena{T})"/>).</summary>
+    internal byte[] Staging => staging;
 
-    internal void EnsureAlive()
+    uint IUniformArenaOffsets.OffsetOf(UniformArenaElement element) => OffsetOf(element);
+
+    public void EnsureAlive()
     {
         if (disposed || Buffer.IsDisposed) throw new ObjectDisposedException(nameof(ShaderUniformArena<T>));
     }

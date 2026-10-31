@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+
 namespace Veldrid
 {
     /// <summary>
@@ -27,7 +30,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="Pipeline" />.</returns>
-        internal Pipeline CreateGraphicsPipeline(GraphicsPipelineDescription description)
+        public Pipeline CreateGraphicsPipeline(GraphicsPipelineDescription description)
         {
             return CreateGraphicsPipeline(ref description);
         }
@@ -37,8 +40,15 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="Pipeline" /> which, when bound to a CommandList, is used to dispatch draw commands.</returns>
-        internal Pipeline CreateGraphicsPipeline(ref GraphicsPipelineDescription description)
+        public Pipeline CreateGraphicsPipeline(ref GraphicsPipelineDescription description)
         {
+            // Typed slot arguments (BUGFIX_ShaderInterfaceContract_TypedSlotArguments.md): the shader set and every layout carry the
+            // shape they were built from; they must agree. Then the SAME V7 verification and backend path as before.
+            var shaderSetShape = description.ShaderSet.VerifiedShape
+                ?? throw new ShaderContractException("graphics pipeline", [new ShaderContractViolation("SHADERSET", "ShaderSet", "raw vertex layouts", "new ShaderSetDescription(new VertexInput[]{ shape.X }, shape.Bundle.Shaders)", "pipelines take the shape's vertex inputs")]);
+            var layoutShape = RequireOneShapeForLayouts(description.ResourceLayouts, "graphics pipeline");
+            if (!ReferenceEquals(shaderSetShape, layoutShape))
+                throw new ShaderContractException(shaderSetShape.BundleName, [new ShaderContractViolation("SHAPE", "ResourceLayouts", $"layouts of {layoutShape.GetType().Name}", shaderSetShape.GetType().Name, "shader set and layouts must come from the same shape instance")]);
             // Shader interface contract V7 (AN_Veldrid/_BUGFIX/BUGFIX_ShaderInterfaceContract_NameVerified.md): if the shaders came from a
             // .vdshader bundle, the vertex layouts, resource layouts and registered uniform structs must match the compiled interface by
             // NAME. Throws ShaderContractException before any native call. Protects every Veldrid consumer, on every backend.
@@ -103,7 +113,11 @@ namespace Veldrid
                 }
             }
 #endif
-            return CreateGraphicsPipelineCore(ref description);
+            var pipeline = CreateGraphicsPipelineCore(ref description);
+            pipeline.VerifiedShape = shaderSetShape;
+            pipeline.VerifiedVertexInputCount = shaderSetShape.VertexInputCount;
+            pipeline.VerifiedHasResources = shaderSetShape.HasResources;
+            return pipeline;
         }
 
         /// <summary>
@@ -111,17 +125,58 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desirede properties of the created object.</param>
         /// <returns>A new <see cref="Pipeline" /> which, when bound to a CommandList, is used to dispatch compute commands.</returns>
-        internal Pipeline CreateComputePipeline(ComputePipelineDescription description)
+        public Pipeline CreateComputePipeline(ComputePipelineDescription description)
         {
             return CreateComputePipeline(ref description);
         }
 
         /// <summary>
-        ///     Creates a new compute <see cref="Pipeline" /> object.
+        ///     Creates a new compute <see cref="Pipeline" /> object. Same call as before; the layouts must be slot-built layouts of ONE
+        ///     shape whose bundle shader is the given compute shader.
         /// </summary>
         /// <param name="description">The desirede properties of the created object.</param>
         /// <returns>A new <see cref="Pipeline" /> which, when bound to a CommandList, is used to dispatch compute commands.</returns>
-        internal abstract Pipeline CreateComputePipeline(ref ComputePipelineDescription description);
+        public Pipeline CreateComputePipeline(ref ComputePipelineDescription description)
+        {
+            ArgumentNullException.ThrowIfNull(description.ComputeShader);
+            var shape = RequireOneShapeForLayouts(description.ResourceLayouts, "compute pipeline");
+            if (shape.VertexInputCount != 0)
+                throw new ShaderContractException(shape.BundleName, [new ShaderContractViolation("SHAPE", shape.GetType().Name, $"{shape.VertexInputCount} VertexInput field(s)", "none", "compute shapes declare no vertex inputs")]);
+            if (!ReferenceEquals(description.ComputeShader, shape.Bundle.Shaders[0]))
+                throw new ShaderContractException(shape.BundleName, [new ShaderContractViolation(ShaderContractVerifier.Rule_V7_ShaderSet, "ComputeShader", "a different Shader object", "the shape's bundle shader", "the compute shader must be the verified bundle's shader")]);
+            var pipeline = CreateComputePipelineCore(ref description);
+            pipeline.VerifiedShape = shape;
+            pipeline.VerifiedHasResources = shape.HasResources;
+            return pipeline;
+        }
+
+        /// <summary>Backend hook: creates the compute pipeline from a resolved description.</summary>
+        /// <param name="description">The resolved description.</param>
+        /// <returns>The backend pipeline.</returns>
+        protected abstract Pipeline CreateComputePipelineCore(ref ComputePipelineDescription description);
+
+        /// <summary>Every layout must be slot-built, from one shape, and listed in set order 0..N-1 covering all of that shape's sets.</summary>
+        private static ShaderPipelineShape RequireOneShapeForLayouts(ResourceLayout[] layouts, string what)
+        {
+            layouts ??= Array.Empty<ResourceLayout>();
+            var violations = new System.Collections.Generic.List<ShaderContractViolation>();
+            ShaderPipelineShape shape = null;
+            for (int i = 0; i < layouts.Length; i++)
+            {
+                var layout = layouts[i];
+                if (layout is null) { violations.Add(new ShaderContractViolation("LAYOUT", $"ResourceLayouts[{i}]", "null", "a slot-built layout", "pipelines take the shape's layouts")); continue; }
+                if (layout.VerifiedShape is null) { violations.Add(new ShaderContractViolation("LAYOUT", $"ResourceLayouts[{i}]", "raw layout", "new ResourceLayoutDescription(shape.X, ...)", "pipelines take slot-built layouts")); continue; }
+                shape ??= layout.VerifiedShape;
+                if (!ReferenceEquals(layout.VerifiedShape, shape)) violations.Add(new ShaderContractViolation("LAYOUT", $"ResourceLayouts[{i}]", $"layout of {layout.VerifiedShape.GetType().Name}", shape.GetType().Name, "one pipeline binds one shape's layouts"));
+                else if (layout.VerifiedSetIndex != i) violations.Add(new ShaderContractViolation("LAYOUT", $"ResourceLayouts[{i}]", $"set {layout.VerifiedSetIndex}", $"set {i}", "layouts are listed in descriptor-set order"));
+            }
+            if (violations.Count > 0) throw new ShaderContractException(what, violations);
+            if (shape is null) throw new ShaderContractException(what, [new ShaderContractViolation("LAYOUT", "ResourceLayouts", "empty", "the shape's layouts", "a pipeline is created for a verified shape")]);
+            shape.EnsureBound();
+            if (layouts.Length != shape.SetCount)
+                throw new ShaderContractException(shape.BundleName, [new ShaderContractViolation("LAYOUT", "ResourceLayouts", $"{layouts.Length} layout(s)", $"{shape.SetCount} set(s)", "every descriptor set of the shape needs its layout")]);
+            return shape;
+        }
 
         /// <summary>
         ///     Creates a new <see cref="Framebuffer" />.
@@ -516,21 +571,42 @@ namespace Veldrid
         public abstract CommandList CreateCommandList(ref CommandListDescription description);
 
         /// <summary>
-        ///     Creates a new <see cref="ResourceLayout" />.
+        ///     Creates a new <see cref="ResourceLayout" /> from a description built with shape slots
+        ///     (<see cref="ResourceLayoutDescription(ShapeSlot[])"/>). Same call as before; the layout remembers its shape and set index,
+        ///     and the bundle's flat binding map is applied on backends that need it (Metal, D3D11).
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="ResourceLayout" />.</returns>
-        internal ResourceLayout CreateResourceLayout(ResourceLayoutDescription description)
+        public ResourceLayout CreateResourceLayout(ResourceLayoutDescription description)
         {
             return CreateResourceLayout(ref description);
         }
 
         /// <summary>
-        ///     Creates a new <see cref="ResourceLayout" />.
+        ///     Creates a new <see cref="ResourceLayout" /> (see <see cref="CreateResourceLayout(ResourceLayoutDescription)"/>).
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="ResourceLayout" />.</returns>
-        internal abstract ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description);
+        public ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description)
+        {
+            var shape = description.VerifiedShape;
+            if (shape is null)
+                throw new ShaderContractException("resource layout", [new ShaderContractViolation("LAYOUT", "description", "raw positional elements", "new ResourceLayoutDescription(shape.X, shape.Y, ...)", "resource layouts are built from verified shape slots")]);
+            shape.EnsureBound();
+            if (!ReferenceEquals(shape.BoundFactory, this))
+                throw new InvalidOperationException("The shape was bound on a different device.");
+            uint set = description.VerifiedSetIndex;
+            var map = shape.Bundle.FlatBindingMap?.Where(e => e.Set == set).ToArray();
+            return map is { Length: > 0 } ? CreateResourceLayout(ref description, set, map) : CreateResourceLayoutCore(ref description);
+        }
+
+        /// <summary>Veldrid-internal raw layout creation (no shape): used only by backend-owned helpers.</summary>
+        internal ResourceLayout CreateResourceLayoutRaw(ref ResourceLayoutDescription description) => CreateResourceLayoutCore(ref description);
+
+        /// <summary>Backend hook: creates the layout from a resolved description.</summary>
+        /// <param name="description">The resolved description.</param>
+        /// <returns>The backend layout.</returns>
+        protected abstract ResourceLayout CreateResourceLayoutCore(ref ResourceLayoutDescription description);
 
         /// <summary>
         /// Creates a new <see cref="ResourceLayout"/> using explicit binding slot assignments from a precompiled
@@ -551,26 +627,46 @@ namespace Veldrid
             uint setIndex,
             VdShaderBindingEntry[] bindingEntries)
         {
-            // Default implementation ignores binding entries — backends that need them override this.
-            return CreateResourceLayout(ref description);
+            // Default implementation ignores binding entries - backends that need them override this.
+            return CreateResourceLayoutCore(ref description);
         }
 
         /// <summary>
-        ///     Creates a new <see cref="ResourceSet" />.
+        ///     Creates a new <see cref="ResourceSet" /> from a description built with slot bindings
+        ///     (<see cref="ResourceSetDescription(ResourceLayout, ShapeResourceBinding[])"/>). Same call as before; the description now carries
+        ///     the verified shape, set index and offset-selectable arenas, which the created set remembers for
+        ///     <see cref="CommandList.SetGraphicsResourceSet(ResourceSet, UniformArenaElement[])"/>.
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="ResourceSet" />.</returns>
-        internal ResourceSet CreateResourceSet(ResourceSetDescription description)
+        public ResourceSet CreateResourceSet(ResourceSetDescription description)
         {
             return CreateResourceSet(ref description);
         }
 
         /// <summary>
-        ///     Creates a new <see cref="ResourceSet" />.
+        ///     Creates a new <see cref="ResourceSet" /> (see <see cref="CreateResourceSet(ResourceSetDescription)"/>).
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="ResourceSet" />.</returns>
-        internal abstract ResourceSet CreateResourceSet(ref ResourceSetDescription description);
+        public ResourceSet CreateResourceSet(ref ResourceSetDescription description)
+        {
+            ArgumentNullException.ThrowIfNull(description.Layout);
+            var layout = description.Layout;
+            // Public sets come from slot bindings against a slot-built layout; raw positional sets are Veldrid-internal only.
+            if (layout.VerifiedShape is null)
+                throw new ShaderContractException("resource set", [new ShaderContractViolation("BIND", "layout", "raw layout", "a layout built from shape slots (new ResourceLayoutDescription(shape.X, ...))", "resource sets bind verified slots, not positions")]);
+            var rs = CreateResourceSetCore(ref description);
+            rs.VerifiedShape = layout.VerifiedShape;
+            rs.VerifiedSetIndex = layout.VerifiedSetIndex;
+            rs.VerifiedOffsetArenas = description.VerifiedOffsetArenas ?? Array.Empty<IUniformArenaOffsets>();
+            return rs;
+        }
+
+        /// <summary>Backend hook: creates the set from a resolved description.</summary>
+        /// <param name="description">The resolved description.</param>
+        /// <returns>The backend resource set.</returns>
+        protected abstract ResourceSet CreateResourceSetCore(ref ResourceSetDescription description);
 
         /// <summary>
         ///     Creates a new <see cref="Fence" /> in the given state.

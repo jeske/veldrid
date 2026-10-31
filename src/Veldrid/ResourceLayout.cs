@@ -20,8 +20,18 @@ namespace Veldrid
         /// </summary>
         public abstract string Name { get; set; }
 
+        /// <summary>The shape whose slots built this layout (null for Veldrid-internal raw layouts) and its descriptor-set index.</summary>
+        internal ShaderPipelineShape VerifiedShape { get; }
+        internal uint VerifiedSetIndex { get; }
+        /// <summary>Offset-selectable bindings of this layout in binding order (count = dynamic offsets expected at bind time).</summary>
+        internal int VerifiedOffsetSelectableCount { get; }
+
         internal ResourceLayout(ref ResourceLayoutDescription description)
         {
+            VerifiedShape = description.VerifiedShape;
+            VerifiedSetIndex = description.VerifiedSetIndex;
+            foreach (var element in description.Elements ?? Array.Empty<ResourceLayoutElementDescription>())
+                if ((element.Options & ResourceLayoutElementOptions.DynamicBinding) != 0) VerifiedOffsetSelectableCount++;
 #if VALIDATE_USAGE
             Description = description;
 

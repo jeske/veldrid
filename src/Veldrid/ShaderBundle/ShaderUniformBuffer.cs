@@ -5,11 +5,11 @@ namespace Veldrid;
 
 /// <summary>
 ///     ONE typed uniform buffer that several <see cref="UniformBlock{T}"/> slots - on different shapes - bind at once.
-///     Created from a verified block with <see cref="UniformBlock{T}.CreateSharedBuffer"/>; attached to further blocks
-///     of the same verified <typeparamref name="T"/> with <see cref="UniformBlock{T}.Share"/>. Each destination block was
+///     Created from a verified block with <see cref="UniformBlock{T}.CreateSharedBuffer"/>; bound into each set through that set's
+///     block <see cref="UniformBlock{T}.With(ShaderUniformBuffer{T})"/>. Each destination block was
 ///     name/type-verified against <typeparamref name="T"/> at <c>Bind</c>, so sharing adds no unchecked mapping.
 ///     <para>
-///     Writes happen ONLY through <see cref="Update"/> = exactly one <see cref="CommandList.UpdateBuffer(DeviceBuffer, uint, IntPtr, uint)"/>:
+///     Writes happen ONLY through <see cref="CommandList.UpdateBuffer{T}(ShaderUniformBuffer{T}, in T)"/> = exactly one raw UpdateBuffer:
 ///     command-ordered, one upload regardless of how many shapes bind the storage. There is no device-level write path.
 ///     The raw <see cref="DeviceBuffer"/> is never exposed. Allocation (Dynamic or not) is the creator's explicit choice.
 ///     </para>
@@ -31,14 +31,6 @@ public sealed class ShaderUniformBuffer<T> : IDisposable where T : unmanaged
         CreatingBlockName = creatingBlockName;
         // Allocation is the caller's choice; no CPU shadow, no device-level path.
         Buffer = factory.CreateBuffer(new BufferDescription(blockSize, usage));
-    }
-
-    /// <summary>Write the whole block once; every slot sharing this storage observes it in command order.</summary>
-    public void Update(CommandList commands, in T value)
-    {
-        EnsureAlive();
-        ArgumentNullException.ThrowIfNull(commands);
-        commands.UpdateBuffer(Buffer, 0, value);
     }
 
     internal void EnsureAlive()

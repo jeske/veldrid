@@ -28,7 +28,12 @@ namespace Veldrid
         public VertexElementFormat Format { get; } = format;
     }
 
-    // ───────────────────────────────── slots: the ONLY handles renderer code touches ─────────────────────────────────
+    // ───────────────────────────────── slots: typed IDENTIFIERS that replace every uint in the public API ─────────────────────────────────
+    //
+    // BUGFIX_ShaderInterfaceContract_TypedSlotArguments.md: a slot is a verified NAME + set/binding + accepted resource type. It holds
+    // NO bound-resource state and has NO verbs. Consumers keep their CommandList / ResourceFactory calls with the same names; where
+    // an int slot or a raw layout used to be, a slot (or a shape) goes. Binding a resource to a slot is `slot.With(resource)`, consumed
+    // by ResourceFactory.CreateResourceSet(shape, ...). Storage CREATION stays on the slot because that is where the type is checked.
 
     /// <summary>A shader-visible resource slot owned by a shape. Its NAME is the C# field name, which is the GLSL name (D10).</summary>
     public abstract class ShapeSlot
@@ -39,29 +44,15 @@ namespace Veldrid
         public uint Set { get; internal set; }
         /// <summary>Binding within the set, from the bundle.</summary>
         public uint Binding { get; internal set; }
-        /// <summary>The bound resource, or null until <c>Set</c>.</summary>
-        internal IBindableResource Bound { get; set; }
         internal abstract ResourceKind[] AcceptedKinds { get; }
-        internal void MarkChanged()
-        {
-            if (Owner is null) throw new InvalidOperationException("Slot was not created through ShaderPipelineShape.Bind.");
-            Owner.EnsureBound();
-            Owner.InvalidateSet(Set);
-        }
         internal ShaderPipelineShape Owner { get; set; }
         internal bool UniformBindingOffsetSelectable { get; set; }
-        internal uint SelectedUniformBindingOffset { get; set; }
 
-        internal void SetResource(IBindableResource resource)
+        internal void EnsureOwned()
         {
-            ArgumentNullException.ThrowIfNull(resource);
-            RequireLiveResource(resource);
-            MarkChanged();
-            Bound = resource;
+            if (Owner is null) throw new InvalidOperationException($"Slot '{Name}' was not created through ShaderPipelineShape.Bind.");
+            Owner.EnsureBound();
         }
-
-        /// <summary>Liveness of whatever this slot binds; slots with wrapper-owned storage add the wrapper's own disposed state.</summary>
-        internal virtual void RequireLiveBinding() => RequireLiveResource(Bound);
 
         internal static void RequireLiveResource(IBindableResource resource)
         {
@@ -79,161 +70,161 @@ namespace Veldrid
             if (resource is TextureView view && view.Target.IsDisposed)
                 throw new ObjectDisposedException(view.Target.Name ?? "texture view target");
         }
+
+        internal ShapeResourceBinding BindingOf(IBindableResource resource, IUniformArenaOffsets arena = null)
+        {
+            EnsureOwned();
+            ArgumentNullException.ThrowIfNull(resource);
+            RequireLiveResource(resource);
+            return new ShapeResourceBinding(this, resource, arena);
+        }
     }
 
-    /// <summary>A <c>uniform Block { ... }</c>: owns its buffer; written only through typed <see cref="Update"/> / <see cref="UpdateMember{TMember}"/>.</summary>
+    /// <summary>One NAMED resource assignment for <see cref="ResourceFactory.CreateResourceSet(ShaderPipelineShape, ShapeResourceBinding[])"/>: produced only by a slot's <c>With(...)</c>, so the resource type was checked against the slot kind.</summary>
+    public readonly struct ShapeResourceBinding
+    {
+        internal ShapeSlot Slot { get; }
+        internal IBindableResource Resource { get; }
+        /// <summary>Non-null when the slot selects an arena element at bind time (<see cref="CommandList.SetGraphicsResourceSet(ResourceSet, UniformArenaElement[])"/>).</summary>
+        internal IUniformArenaOffsets Arena { get; }
+
+        internal ShapeResourceBinding(ShapeSlot slot, IBindableResource resource, IUniformArenaOffsets arena)
+        {
+            Slot = slot; Resource = resource; Arena = arena;
+        }
+    }
+
+    /// <summary>Byte-offset source for offset-selectable uniform bindings; implemented by <see cref="ShaderUniformArena{T}"/>.</summary>
+    internal interface IUniformArenaOffsets
+    {
+        uint OffsetOf(UniformArenaElement element);
+        void EnsureAlive();
+    }
+
+    /// <summary>A <c>uniform Block { ... }</c>. Storage is created here (explicitly, typed); it is written through <see cref="CommandList.UpdateBuffer{T}(UniformBlock{T}, in T)"/> and bound through <see cref="With()"/> / <see cref="With(ShaderUniformBuffer{T})"/> / <see cref="With(ShaderUniformArena{T})"/>.</summary>
     public sealed class UniformBlock<T> : ShapeSlot, IDisposable where T : unmanaged
     {
-        internal DeviceBuffer Buffer { get; set; }
+        // The block-private allocation from CreateBuffer. Null when the block is fed by shared storage or an arena instead.
+        private DeviceBuffer privateBuffer;
         internal VdShaderUniformBlock Compiled { get; set; }
         internal override ResourceKind[] AcceptedKinds => [ResourceKind.UniformBuffer];
 
-        /// <summary>Create owned storage with explicit native usage. No allocation occurs at shape binding, and no CPU shadow is introduced.</summary>
+        /// <summary>Create this block's PRIVATE buffer with explicit native usage. No allocation occurs at shape binding, and no CPU shadow is introduced.</summary>
         public void CreateBuffer(BufferUsage usage)
         {
-            if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
-            Owner.EnsureBound();
-            if (Buffer != null) throw new InvalidOperationException($"UniformBlock '{Name}' already owns storage.");
-            if (SharedStorage != null) throw new InvalidOperationException($"UniformBlock '{Name}' already binds shared storage; it cannot also own a buffer.");
+            EnsureOwned();
+            if (privateBuffer != null) throw new InvalidOperationException($"UniformBlock '{Name}' already has a private buffer.");
+            if (UniformBindingOffsetSelectable) throw new InvalidOperationException($"UniformBlock '{Name}' declares [UniformBufferBindingTimeOffsetSelectable]; use CreateArena, not whole-block storage.");
             TypedBufferUsageValidation.RequireUniform(usage);
             if (System.Runtime.CompilerServices.Unsafe.SizeOf<T>() != Compiled.SizeBytes)
                 throw new InvalidOperationException($"UniformBlock '{Name}' managed size differs from the verified block size.");
-            var buffer = Owner.BoundFactory.CreateBuffer(new BufferDescription(Compiled.SizeBytes, usage));
-            try { SetResource(buffer); }
-            catch { buffer.Dispose(); throw; }
-            Buffer = buffer;
-            SelectedUniformBindingOffset = 0;
+            privateBuffer = Owner.BoundFactory.CreateBuffer(new BufferDescription(Compiled.SizeBytes, usage));
         }
 
         /// <summary>
-        ///     Create ONE typed uniform buffer from this verified block and bind it here; other blocks verified against the same
-        ///     <typeparamref name="T"/> attach with <see cref="Share"/>. One <see cref="ShaderUniformBuffer{T}.Update"/> feeds every sharer
-        ///     in command order - the upload count does not grow with the number of shapes. Allocation usage is explicit.
+        ///     Create ONE typed uniform buffer from this verified block for use by every block verified against the same <typeparamref name="T"/>
+        ///     (bind it with each block's <see cref="With(ShaderUniformBuffer{T})"/>). One <see cref="CommandList.UpdateBuffer{T}(ShaderUniformBuffer{T}, in T)"/>
+        ///     feeds every set that binds it, in command order. Allocation usage is explicit.
         /// </summary>
         public ShaderUniformBuffer<T> CreateSharedBuffer(BufferUsage usage)
         {
-            if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
-            Owner.EnsureBound();
-            if (Buffer != null || SharedStorage != null) throw new InvalidOperationException($"UniformBlock '{Name}' already binds storage.");
-            if (UniformBindingOffsetSelectable) throw new InvalidOperationException($"UniformBlock '{Name}' declares [UniformBufferBindingTimeOffsetSelectable]; use CreateArena/Select, not shared whole-block storage.");
-            var storage = new ShaderUniformBuffer<T>(Owner.BoundFactory, Name, Compiled.SizeBytes, usage);
-            try { Share(storage); }
-            catch { storage.Dispose(); throw; }
-            return storage;
-        }
-
-        /// <summary>
-        ///     Bind storage created by another block's <see cref="CreateSharedBuffer"/>. Legal because THIS block was independently
-        ///     name/type-verified against <typeparamref name="T"/> at <c>Bind</c>; no unchecked C# &lt;-&gt; shader mapping is introduced.
-        ///     The block does not own the storage and never disposes it.
-        /// </summary>
-        public void Share(ShaderUniformBuffer<T> storage)
-        {
-            ArgumentNullException.ThrowIfNull(storage);
-            if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
-            Owner.EnsureBound();
-            if (Buffer != null) throw new InvalidOperationException($"UniformBlock '{Name}' already owns storage; it cannot also share.");
-            if (SharedStorage != null) throw new InvalidOperationException($"UniformBlock '{Name}' already shares storage created by '{SharedStorage.CreatingBlockName}'. A slot binds exactly one storage.");
-            if (UniformBindingOffsetSelectable) throw new InvalidOperationException($"UniformBlock '{Name}' declares [UniformBufferBindingTimeOffsetSelectable]; use CreateArena/Select, not shared whole-block storage.");
-            if (!ReferenceEquals(storage.Factory, Owner.BoundFactory)) throw new InvalidOperationException("Shared uniform storage device differs from this shape's device.");
-            if (Compiled.SizeBytes != storage.SizeInBytes) throw new InvalidOperationException($"UniformBlock '{Name}' verified size {Compiled.SizeBytes} B differs from shared storage size {storage.SizeInBytes} B.");
-            storage.EnsureAlive();
-            SetResource(storage.Buffer);
-            SharedStorage = storage;
-            SelectedUniformBindingOffset = 0;
-        }
-
-        /// <summary>Non-null when this slot binds a <see cref="ShaderUniformBuffer{T}"/> it does not own.</summary>
-        internal ShaderUniformBuffer<T> SharedStorage { get; private set; }
-
-        internal override void RequireLiveBinding()
-        {
-            // The wrapper knows it was disposed even where the backend defers native destruction while recorded
-            // commands still reference the buffer (Vulkan refcounting leaves DeviceBuffer.IsDisposed false meanwhile).
-            SharedStorage?.EnsureAlive();
-            base.RequireLiveBinding();
+            EnsureOwned();
+            if (UniformBindingOffsetSelectable) throw new InvalidOperationException($"UniformBlock '{Name}' declares [UniformBufferBindingTimeOffsetSelectable]; use CreateArena, not shared whole-block storage.");
+            return new ShaderUniformBuffer<T>(Owner.BoundFactory, Name, Compiled.SizeBytes, usage);
         }
 
         /// <summary>Create aligned typed arena storage with an explicit allocation usage; offset selection is a separate field declaration.</summary>
         public ShaderUniformArena<T> CreateArena(GraphicsDevice device, uint capacity, BufferUsage usage)
         {
-            if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
-            Owner.EnsureBound();
+            EnsureOwned();
             ArgumentNullException.ThrowIfNull(device);
             if (!UniformBindingOffsetSelectable) throw new InvalidOperationException("Declare this field with [UniformBufferBindingTimeOffsetSelectable] before using an arena.");
             if (!ReferenceEquals(device.ResourceFactory, Owner.BoundFactory)) throw new InvalidOperationException("Uniform arena device differs from shape device.");
             return new ShaderUniformArena<T>(device, Name, Compiled.SizeBytes, capacity, usage);
         }
 
-        public void Select(ShaderUniformArena<T> arena, UniformArenaElement element)
+        /// <summary>Bind this block's PRIVATE buffer (from <see cref="CreateBuffer"/>).</summary>
+        public ShapeResourceBinding With()
+        {
+            EnsureOwned();
+            if (privateBuffer is null) throw new InvalidOperationException($"UniformBlock '{Name}' has no private buffer. Call CreateBuffer first, or bind shared storage / an arena explicitly.");
+            return BindingOf(privateBuffer);
+        }
+
+        /// <summary>Bind shared storage created by any block verified against the same <typeparamref name="T"/>. Legal because THIS block was independently name/type-verified at <c>Bind</c>.</summary>
+        public ShapeResourceBinding With(ShaderUniformBuffer<T> storage)
+        {
+            ArgumentNullException.ThrowIfNull(storage);
+            EnsureOwned();
+            if (UniformBindingOffsetSelectable) throw new InvalidOperationException($"UniformBlock '{Name}' declares [UniformBufferBindingTimeOffsetSelectable]; bind an arena, not whole-block storage.");
+            if (!ReferenceEquals(storage.Factory, Owner.BoundFactory)) throw new InvalidOperationException("Shared uniform storage device differs from this shape's device.");
+            if (Compiled.SizeBytes != storage.SizeInBytes) throw new InvalidOperationException($"UniformBlock '{Name}' verified size {Compiled.SizeBytes} B differs from shared storage size {storage.SizeInBytes} B.");
+            storage.EnsureAlive();
+            return BindingOf(storage.Buffer);
+        }
+
+        /// <summary>Bind a one-block window of a typed arena; the element is chosen per draw by <see cref="CommandList.SetGraphicsResourceSet(ResourceSet, UniformArenaElement[])"/>.</summary>
+        public ShapeResourceBinding With(ShaderUniformArena<T> arena)
         {
             ArgumentNullException.ThrowIfNull(arena);
-            if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
-            Owner.EnsureBound();
-            if (!UniformBindingOffsetSelectable) throw new InvalidOperationException("This uniform field does not declare binding-time offset selection.");
-            // One verified T may supply differently named blocks (Silky PaintParams/GradientParams/ImagePatternParams).
-            // Each destination block was independently checked against every T field at shape construction.
-            if (!ReferenceEquals(arena.Factory, Owner.BoundFactory))
-                throw new InvalidOperationException("Uniform arena device does not match this slot.");
-            uint offset = arena.OffsetOf(element);
-            SetResource(new DeviceBufferRange(arena.Buffer, 0, Compiled.SizeBytes));
-            SelectedUniformBindingOffset = offset;
+            EnsureOwned();
+            if (!UniformBindingOffsetSelectable) throw new InvalidOperationException($"UniformBlock '{Name}' does not declare [UniformBufferBindingTimeOffsetSelectable]; it cannot bind an arena.");
+            if (!ReferenceEquals(arena.Factory, Owner.BoundFactory)) throw new InvalidOperationException("Uniform arena device does not match this slot.");
+            arena.EnsureAlive();
+            // One verified T may supply differently named blocks (Silky PaintParams/GradientParams/ImagePatternParams): each destination
+            // block was independently checked against every T field at shape construction.
+            return BindingOf(new DeviceBufferRange(arena.Buffer, 0, Compiled.SizeBytes), arena);
         }
 
-        /// <summary>Write the whole block. <typeparamref name="T"/> was verified field-by-field against the compiled block at <c>Bind</c>.</summary>
-        public void Update(CommandList cl, in T value)
+        /// <summary>
+        ///     The block-private buffer from <see cref="CreateBuffer"/>. Throws if the block has none (it is fed by shared storage or an
+        ///     arena, which are written through their own handles) or if it has been disposed.
+        /// </summary>
+        internal DeviceBuffer PrivateBuffer
         {
-            if (SharedStorage != null) throw new InvalidOperationException($"UniformBlock '{Name}' binds shared storage created by '{SharedStorage.CreatingBlockName}'. Write it once through ShaderUniformBuffer.Update, not per slot.");
-            if (Buffer is null) throw new InvalidOperationException($"UniformBlock '{Name}' has no owned storage. Call CreateBuffer with explicit usage, share a ShaderUniformBuffer, or update its selected arena.");
-            Owner.EnsureBound();
-            if (!ReferenceEquals(Bound, Buffer)) throw new InvalidOperationException("Write selected arena elements through the arena, not Update.");
-            ShapeSlot.RequireLiveResource(Buffer);
-            ArgumentNullException.ThrowIfNull(cl);
-            cl.UpdateBuffer(Buffer, 0, value);
+            get
+            {
+                EnsureOwned();
+                if (privateBuffer is null) throw new InvalidOperationException($"UniformBlock '{Name}' has no private buffer. Call CreateBuffer, or write the shared storage / arena it is bound to.");
+                RequireLiveResource(privateBuffer);
+                return privateBuffer;
+            }
         }
 
-        /// <summary>Write one member, named by EXPRESSION (not a string): <c>block.UpdateMember(cl, b => b.LightMVP, in m)</c>. Offset and size come from the compiled block.</summary>
-        public void UpdateMember<TMember>(CommandList cl, Expression<Func<T, TMember>> member, in TMember value) where TMember : unmanaged
+        /// <summary>Resolve a member named by EXPRESSION (not a string) to its compiled byte offset, checking size and the backend's partial-write support.</summary>
+        internal uint ResolveMemberOffset<TMember>(Expression<Func<T, TMember>> member) where TMember : unmanaged
         {
             if (member is null) throw new ArgumentNullException(nameof(member));
             if (member.Body is not MemberExpression me || me.Member is not FieldInfo field
                 || me.Expression != member.Parameters[0] || field.DeclaringType != typeof(T) || field.IsStatic)
-                throw new ArgumentException("UpdateMember takes a direct field access expression, e.g. b => b.LightMVP", nameof(member));
-            if (SharedStorage != null) throw new InvalidOperationException($"UniformBlock '{Name}' binds shared storage created by '{SharedStorage.CreatingBlockName}'. Write it once through ShaderUniformBuffer.Update, not per slot.");
-            if (Buffer is null || Compiled is null)
+                throw new ArgumentException("Member update takes a direct field access expression, e.g. b => b.LightMVP", nameof(member));
+            if (Compiled is null)
                 throw new InvalidOperationException($"UniformBlock '{Name}' is not bound (shape not created through ShaderPipelineShape.Bind).");
             var compiledMember = Compiled.Members.FirstOrDefault(m => m.Name == field.Name)
-                ?? throw new ShaderContractException(Name, [new ShaderContractViolation(ShaderContractVerifier.Rule_V7c_UniformStructs, $"{Name}.{field.Name}", "C# field", "shader: no such member", "UpdateMember names a field the compiled block does not have")]);
+                ?? throw new ShaderContractException(Name, [new ShaderContractViolation(ShaderContractVerifier.Rule_V7c_UniformStructs, $"{Name}.{field.Name}", "C# field", "shader: no such member", "member update names a field the compiled block does not have")]);
             if (Marshal.SizeOf<TMember>() != compiledMember.SizeBytes)
                 throw new ShaderContractException(Name, [new ShaderContractViolation(ShaderContractVerifier.Rule_V7c_UniformStructs, $"{Name}.{field.Name}", $"value {Marshal.SizeOf<TMember>()} B", $"member {compiledMember.SizeBytes} B", "size mismatch")]);
-            Owner.EnsureBound();
-            if (!ReferenceEquals(Bound, Buffer)) throw new InvalidOperationException("Write selected arena elements through the arena, not UpdateMember.");
-            ShapeSlot.RequireLiveResource(Buffer);
-            // D3D11's current UpdateBuffer routes partial constant-buffer writes through a copy,
-            // not UpdateSubresource. Do not silently widen the write or invent a CPU shadow.
+            var buffer = PrivateBuffer;
+            // D3D11's current UpdateBuffer routes partial constant-buffer writes through a copy, not UpdateSubresource.
+            // Do not silently widen the write or invent a CPU shadow.
             if (Owner.BoundFactory.BackendType == GraphicsBackend.Direct3D11
-                && (compiledMember.OffsetBytes != 0 || compiledMember.SizeBytes != Buffer.SizeInBytes))
-                throw new NotSupportedException($"UniformBlock '{Name}': this D3D11 update path requires the whole constant buffer; UpdateMember cannot issue a partial write. Use Update with a complete typed value.");
-            ArgumentNullException.ThrowIfNull(cl);
-            cl.UpdateBuffer(Buffer, compiledMember.OffsetBytes, value);
+                && (compiledMember.OffsetBytes != 0 || compiledMember.SizeBytes != buffer.SizeInBytes))
+                throw new NotSupportedException($"UniformBlock '{Name}': this D3D11 update path requires the whole constant buffer; a member update cannot issue a partial write. Update the complete typed value.");
+            return compiledMember.OffsetBytes;
         }
 
-        /// <summary>Dispose the OWNED buffer (the shape disposes its blocks). Shared storage belongs to its <see cref="ShaderUniformBuffer{T}"/> and is never disposed here.</summary>
-        public void Dispose() => Buffer?.Dispose();
+        /// <summary>Dispose the OWNED buffer (the shape disposes its blocks). Shared storage and arenas belong to their own handles.</summary>
+        public void Dispose() => privateBuffer?.Dispose();
     }
 
     /// <summary>A <c>uniform texture2D</c> / texture slot.</summary>
     public sealed class TextureSlot : ShapeSlot
     {
         internal override ResourceKind[] AcceptedKinds => [ResourceKind.TextureReadOnly];
-        /// <summary>Bind a view; the set is rebuilt lazily at the next <see cref="ShaderPipelineShape.BindResourceSets"/>.</summary>
-        public void Set(TextureView view) { SetResource(view); }
+        /// <summary>Bind a view.</summary>
+        public ShapeResourceBinding With(TextureView view) => BindingOf(view);
         /// <summary>Bind a texture (its default view).</summary>
-        public void Set(Texture texture) { SetResource(texture); }
-        /// <summary>Evict sets referencing a removed view; does not dispose the view.</summary>
-        public void Forget(TextureView view) { if (Owner is null) throw new InvalidOperationException("Unbound texture slot."); Owner.EvictResource(view); }
-        /// <summary>Evict sets referencing a removed texture or any of its views; does not dispose the texture.</summary>
-        public void Forget(Texture texture) { if (Owner is null) throw new InvalidOperationException("Unbound texture slot."); Owner.EvictResource(texture); }
+        public ShapeResourceBinding With(Texture texture) => BindingOf(texture);
     }
 
     /// <summary>A <c>uniform sampler</c> slot.</summary>
@@ -241,7 +232,7 @@ namespace Veldrid
     {
         internal override ResourceKind[] AcceptedKinds => [ResourceKind.Sampler];
         /// <summary>Bind a sampler.</summary>
-        public void Set(Sampler sampler) { Bound = sampler ?? throw new ArgumentNullException(nameof(sampler)); MarkChanged(); }
+        public ShapeResourceBinding With(Sampler sampler) => BindingOf(sampler);
     }
 
     /// <summary>A storage (SSBO) buffer slot; read-only or read-write per the shader.</summary>
@@ -249,7 +240,7 @@ namespace Veldrid
     {
         internal override ResourceKind[] AcceptedKinds => [ResourceKind.StructuredBufferReadOnly, ResourceKind.StructuredBufferReadWrite];
         /// <summary>Bind a buffer created with structured-buffer usage.</summary>
-        public void Set(DeviceBuffer buffer) { Bound = buffer ?? throw new ArgumentNullException(nameof(buffer)); MarkChanged(); }
+        public ShapeResourceBinding With(DeviceBuffer buffer) => BindingOf(buffer);
     }
 
     /// <summary>A storage image slot.</summary>
@@ -257,14 +248,32 @@ namespace Veldrid
     {
         internal override ResourceKind[] AcceptedKinds => [ResourceKind.TextureReadWrite];
         /// <summary>Bind a storage texture view.</summary>
-        public void Set(TextureView view) { Bound = view ?? throw new ArgumentNullException(nameof(view)); MarkChanged(); }
+        public ShapeResourceBinding With(TextureView view) => BindingOf(view);
     }
 
-    /// <summary>A vertex buffer slot: <typeparamref name="TVertex"/>'s fields ARE the GLSL <c>in</c> names; the layout is generated from the struct.</summary>
-    public sealed class VertexInput<TVertex> where TVertex : unmanaged
+    /// <summary>Non-generic view of a <see cref="VertexInput{TVertex}"/>: what <see cref="ShaderSetDescription"/> takes where a positional vertex layout used to go.</summary>
+    public abstract class VertexInput
     {
         internal ShaderPipelineShape Owner { get; set; }
         internal ResourceFactory Factory { get; set; }
+        /// <summary>The generated layout (for inspection/tests).</summary>
+        public VertexLayoutDescription Layout { get; internal set; }
+        /// <summary>Slot index = field order among the shape's VertexInput fields.</summary>
+        public uint SlotIndex { get; internal set; }
+        /// <summary>The verified vertex struct - the identity that lets a bound vertex buffer survive a pipeline switch.</summary>
+        internal abstract Type VertexType { get; }
+
+        internal void EnsureBound()
+        {
+            if (Owner is null) throw new InvalidOperationException("Vertex input was not created through ShaderPipelineShape.Bind.");
+            Owner.EnsureBound();
+        }
+    }
+
+    /// <summary>A vertex buffer slot: <typeparamref name="TVertex"/>'s fields ARE the GLSL <c>in</c> names; the layout is generated from the struct. Passed to <see cref="CommandList.SetVertexBuffer{TVertex}(VertexInput{TVertex}, ShaderVertexBuffer{TVertex})"/> where the slot index used to go.</summary>
+    public sealed class VertexInput<TVertex> : VertexInput where TVertex : unmanaged
+    {
+        internal override Type VertexType => typeof(TVertex);
 
         /// <summary>Create vertex storage whose upload type matches this verified input.</summary>
         public ShaderVertexBuffer<TVertex> CreateBuffer(uint vertexCapacity, BufferUsage usage)
@@ -276,30 +285,6 @@ namespace Veldrid
                     "managed and marshalled vertex layouts differ")]);
             return new ShaderVertexBuffer<TVertex>(Factory, vertexCapacity, usage);
         }
-
-        /// <summary>Bind by the named field, never by a positional buffer array. Only the exact vertex type is accepted.</summary>
-        public void Bind(CommandList commands, ShaderVertexBuffer<TVertex> buffer)
-        {
-            EnsureBound();
-            ArgumentNullException.ThrowIfNull(commands);
-            ArgumentNullException.ThrowIfNull(buffer);
-            buffer.EnsureAlive();
-            if (!ReferenceEquals(Factory, buffer.Factory)) throw new InvalidOperationException("Vertex buffer belongs to a different device.");
-            commands.GraphicsShapeBindings.RequireOwner(Owner);
-            commands.SetVertexBuffer(SlotIndex, buffer.Buffer);
-            commands.GraphicsShapeBindings.MarkVertex(Owner, SlotIndex);
-        }
-
-        private void EnsureBound()
-        {
-            if (Owner is null) throw new InvalidOperationException("Vertex input was not created through ShaderPipelineShape.Bind.");
-            Owner.EnsureBound();
-        }
-
-        /// <summary>The generated layout (for inspection/tests).</summary>
-        public VertexLayoutDescription Layout { get; internal set; }
-        /// <summary>Slot index = field order among the shape's VertexInput fields.</summary>
-        public uint SlotIndex { get; internal set; }
     }
 
     // ───────────────────────────────── the descriptor: verification INPUT as data ─────────────────────────────────
@@ -314,17 +299,16 @@ namespace Veldrid
     /// <summary>
     /// D10 (AN_Veldrid/_BUGFIX/BUGFIX_ShaderInterfaceContract_NameVerified.md 5.3): a graphics or compute pipeline as a C# TYPE whose FIELD
     /// NAMES are the GLSL names. <see cref="Bind{TShape}"/> is the only constructor: it verifies every field against the compiled bundle in
-    /// both directions and creates the layouts and slots; storage is created explicitly afterwards. Renderer code then touches
-    /// resources only through the typed fields - a misspelt name is a compile error, a renamed GLSL variable fails at Bind.
+    /// both directions and creates the layouts and slots. The shape then carries NO bound-resource state: it is the typed argument that
+    /// replaces raw layouts/shader sets in <see cref="GraphicsPipelineDescription"/> and <see cref="ResourceFactory.CreateResourceSet(ShaderPipelineShape, ShapeResourceBinding[])"/>,
+    /// and its slots replace every slot/binding integer in <see cref="CommandList"/>.
     /// Derive a <c>sealed partial</c> class, mark it <c>[ShaderBundle("Name")]</c>, declare the fields. Nothing else.
     /// </summary>
     public abstract class ShaderPipelineShape : IDisposable
     {
-        private ResourceLayout[] layouts = Array.Empty<ResourceLayout>();
-        private ResourceSet[] sets = Array.Empty<ResourceSet>();
-        private bool[] setDirty = Array.Empty<bool>();
+        private ResourceLayoutDescription[] compiledLayouts = Array.Empty<ResourceLayoutDescription>();
         private readonly List<ShapeSlot> slots = new();
-        private readonly List<(FieldInfo Field, bool PerInstance, VertexLayoutDescription Layout)> vertexInputs = new();
+        private readonly List<(FieldInfo Field, bool PerInstance, VertexLayoutDescription Layout, Type VertexType)> vertexInputs = new();
         private ResourceFactory factory;
         internal ResourceFactory BoundFactory => factory;
         private bool disposed;
@@ -335,6 +319,20 @@ namespace Veldrid
         /// <summary>The bundle name from <see cref="ShaderBundleAttribute"/>.</summary>
         public string BundleName => GetType().GetCustomAttribute<ShaderBundleAttribute>()?.BundleName
             ?? throw new ShaderContractException(GetType().Name, [new ShaderContractViolation(ShaderContractVerifier.Rule_V7_ShaderSet, GetType().Name, "shape class", "no [ShaderBundle(\"...\")]", "a shape must name its bundle")]);
+
+        internal int VertexInputCount => vertexInputs.Count;
+        internal bool HasResources => slots.Count != 0;
+        internal int SetCount => compiledLayouts.Length;
+        internal VertexLayoutDescription[] VertexLayouts => vertexInputs.Select(v => v.Layout).ToArray();
+        /// <summary>The verified vertex struct at a slot index (null if none) - the identity that lets a bound vertex buffer survive a pipeline switch.</summary>
+        internal Type VertexTypeAt(uint slot) => slot < vertexInputs.Count ? vertexInputs[(int)slot].VertexType : null;
+        /// <summary>The bundle's layout for one descriptor set, with offset-selectable options already applied from the field attributes.</summary>
+        internal ResourceLayoutDescription CompiledLayoutFor(uint set)
+        {
+            if (set >= compiledLayouts.Length) throw new ArgumentOutOfRangeException(nameof(set));
+            return compiledLayouts[set];
+        }
+        internal IEnumerable<ShapeSlot> SlotsOfSet(uint set) => slots.Where(s => s.Set == set);
 
         // No overridable descriptor hook: validation must see the actual fields. Generated descriptors (deferred) must preserve this invariant.
         private ShapeDescriptor Describe() => ShapeDescriptorBuilder.FromReflection(GetType());
@@ -382,11 +380,13 @@ namespace Veldrid
         private void Materialize(ShapeDescriptor descriptor, PrecompiledShaderResult bundle, ResourceFactory f)
         {
             Bundle = bundle; factory = f;
-            var compiledLayouts = bundle.ResourceLayouts ?? [];
-            layouts = new ResourceLayout[compiledLayouts.Length];
+            // The bundle's layouts, with offset-selectable options applied from the FIELD attributes. Consumers create ResourceLayout
+            // objects themselves through factory.CreateResourceLayout(new ResourceLayoutDescription(slots...)) - the same call as before.
+            var bundleLayouts = bundle.ResourceLayouts ?? [];
+            compiledLayouts = new ResourceLayoutDescription[bundleLayouts.Length];
             for (uint set = 0; set < compiledLayouts.Length; set++)
             {
-                var description = compiledLayouts[set];
+                var description = bundleLayouts[set];
                 description.Elements = (ResourceLayoutElementDescription[])description.Elements.Clone();
                 for (int b = 0; b < description.Elements.Length; b++)
                 {
@@ -400,10 +400,8 @@ namespace Veldrid
                         description.Elements[b].Options |= ResourceLayoutElementOptions.DynamicBinding;
                     }
                 }
-                var map = bundle.FlatBindingMap?.Where(e => e.Set == set).ToArray();
-                layouts[set] = map is { Length: > 0 } ? f.CreateResourceLayout(ref description, set, map) : f.CreateResourceLayout(ref description);
+                compiledLayouts[set] = description;
             }
-            sets = new ResourceSet[layouts.Length]; setDirty = new bool[layouts.Length]; setCache = Enumerable.Range(0, layouts.Length).Select(_ => new Dictionary<BoundResourcesKey, ResourceSet>()).ToArray();
             for (int set = 0; set < compiledLayouts.Length; set++)
             {
                 var elements = compiledLayouts[set].Elements ?? [];
@@ -429,140 +427,13 @@ namespace Veldrid
             foreach (var vi in descriptor.VertexInputs)
             {
                 var field = GetType().GetField(vi.FieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
-                var input = Activator.CreateInstance(field.FieldType)!;
-                field.FieldType.GetProperty("Layout")!.SetValue(input, vi.Layout);
-                field.FieldType.GetProperty("SlotIndex")!.SetValue(input, slotIndex);
-                field.FieldType.GetProperty("Owner", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(input, this);
-                field.FieldType.GetProperty("Factory", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(input, f);
+                var input = (VertexInput)Activator.CreateInstance(field.FieldType)!;
+                input.Layout = vi.Layout; input.SlotIndex = slotIndex; input.Owner = this; input.Factory = f;
                 field.SetValue(this, input);
                 boundFields.Add((field, input));
-                vertexInputs.Add((field, vi.PerInstance, vi.Layout));
+                vertexInputs.Add((field, vi.PerInstance, vi.Layout, vi.VertexType));
                 slotIndex++;
             }
-            for (int i = 0; i < setDirty.Length; i++) setDirty[i] = true;
-        }
-
-        internal ShapeResourceBindingRevision ResourceBindingRevision { get; private set; }
-        internal void InvalidateSet(uint set)
-        {
-            ResourceBindingRevision = new(checked(ResourceBindingRevision.Value + 1));
-            if (set < setDirty.Length) setDirty[set] = true;
-        }
-
-        /// <summary>Create the graphics pipeline for this shape: shaders, layouts and vertex layouts come FROM the shape; the caller supplies only fixed-function state (and specialization constants, if the GLSL declares any).</summary>
-        public Pipeline CreateGraphicsPipeline(BlendStateDescription blend, DepthStencilStateDescription depthStencil, RasterizerStateDescription rasterizer, PrimitiveTopology topology, OutputDescription outputs, SpecializationConstant[] specializations = null)
-        {
-            EnsureBound();
-            var desc = new GraphicsPipelineDescription
-            {
-                BlendState = blend, DepthStencilState = depthStencil, RasterizerState = rasterizer, PrimitiveTopology = topology,
-                ShaderSet = new ShaderSetDescription(vertexInputs.Select(v => v.Layout).ToArray(), Bundle.Shaders, specializations),
-                ResourceLayouts = layouts, Outputs = outputs,
-            };
-            var pipeline = factory.CreateGraphicsPipeline(ref desc);
-            pipeline.VerifiedShape = this;
-            pipeline.VerifiedVertexInputCount = vertexInputs.Count;
-            pipeline.VerifiedHasResources = slots.Count != 0;
-            return pipeline;
-        }
-
-        /// <summary>Create the compute pipeline for this shape (compute shapes declare no <see cref="VertexInput{TVertex}"/>).</summary>
-        public Pipeline CreateComputePipeline(uint threadGroupSizeX, uint threadGroupSizeY, uint threadGroupSizeZ)
-        {
-            EnsureBound();
-            var desc = new ComputePipelineDescription(Bundle.Shaders[0], layouts, threadGroupSizeX, threadGroupSizeY, threadGroupSizeZ);
-            var pipeline = factory.CreateComputePipeline(ref desc);
-            pipeline.VerifiedShape = this;
-            pipeline.VerifiedHasResources = slots.Count != 0;
-            return pipeline;
-        }
-
-        /// <summary>
-        /// Bind every resource set. Sets are CACHED by the identity of the bound resources, so switching a slot between a handful of
-        /// textures (ImGui per draw command, sprite batching, material switching) creates each combination once and is free afterwards.
-        /// A slot never <c>Set</c> is an exception naming it.
-        /// </summary>
-        public void BindResourceSets(CommandList cl, bool compute = false)
-        {
-            EnsureBound();
-            ArgumentNullException.ThrowIfNull(cl);
-            var bindings = compute ? cl.ComputeShapeBindings : cl.GraphicsShapeBindings;
-            bindings.RequireOwner(this);
-            foreach (var slot in slots) if (slot.Bound != null) slot.RequireLiveBinding();
-            for (int set = 0; set < layouts.Length; set++)
-            {
-                if (setDirty[set] || sets[set] is null)
-                {
-                    var elements = layouts[set].Description.Elements ?? [];
-                    var bound = new IBindableResource[elements.Length];
-                    for (int b = 0; b < elements.Length; b++)
-                    {
-                        if (string.IsNullOrEmpty(elements[b].Name)) continue;
-                        var slot = slots.First(s => s.Set == set && s.Binding == b);
-                        bound[b] = slot.Bound ?? throw new ShaderContractException(BundleName, [new ShaderContractViolation("BIND", slot.Name, "slot never Set()", $"set {set} binding {b} {elements[b].Kind}", "every shader resource must be bound before drawing")]);
-                    }
-                    var key = new BoundResourcesKey(bound);
-                    if (!setCache[set].TryGetValue(key, out var cached))
-                    {
-                        cached = factory.CreateResourceSet(new ResourceSetDescription(layouts[set], bound));
-                        setCache[set][key] = cached;
-                    }
-                    sets[set] = cached;
-                    setDirty[set] = false;
-                }
-                var offsets = slots.Where(s => s.Set == set && s.UniformBindingOffsetSelectable)
-                    .OrderBy(s => s.Binding).Select(s => s.SelectedUniformBindingOffset).ToArray();
-                if (compute) cl.SetComputeResourceSet((uint)set, sets[set], offsets);
-                else cl.SetGraphicsResourceSet((uint)set, sets[set], offsets);
-            }
-            bindings.MarkResources(this);
-        }
-
-        private Dictionary<BoundResourcesKey, ResourceSet>[] setCache = Array.Empty<Dictionary<BoundResourcesKey, ResourceSet>>();
-
-        internal int CachedResourceSetCount => setCache.Sum(cache => cache.Count);
-
-        internal void EvictResource(IBindableResource resource)
-        {
-            EnsureBound();
-            ArgumentNullException.ThrowIfNull(resource);
-            for (int set = 0; set < setCache.Length; set++)
-            {
-                foreach (var entry in setCache[set].Where(e => e.Key.References(resource)).ToArray())
-                {
-                    if (ReferenceEquals(sets[set], entry.Value))
-                    {
-                        sets[set] = null;
-                        setDirty[set] = true;
-                    }
-                    entry.Value.Dispose();
-                    setCache[set].Remove(entry.Key);
-                }
-            }
-            foreach (var slot in slots)
-                if (ReferencesResource(slot.Bound, resource))
-                {
-                    slot.Bound = null;
-                    InvalidateSet(slot.Set);
-                }
-        }
-
-        private static bool ReferencesResource(IBindableResource bound, IBindableResource resource)
-            => ReferenceEquals(bound, resource) || (resource is Texture texture && bound is TextureView view && ReferenceEquals(view.Target, texture));
-
-        /// <summary>Identity of the resources bound to one set (reference equality per element).</summary>
-        private readonly struct BoundResourcesKey(IBindableResource[] bound) : IEquatable<BoundResourcesKey>
-        {
-            private readonly IBindableResource[] bound = bound;
-            internal bool References(IBindableResource resource) => bound.Any(b => ReferencesResource(b, resource));
-            public bool Equals(BoundResourcesKey other)
-            {
-                if (bound.Length != other.bound.Length) return false;
-                for (int i = 0; i < bound.Length; i++) if (!Equals(bound[i], other.bound[i])) return false;
-                return true;
-            }
-            public override bool Equals(object obj) => obj is BoundResourcesKey k && Equals(k);
-            public override int GetHashCode() { var h = new HashCode(); foreach (var b in bound) h.Add(b); return h.ToHashCode(); }
         }
 
         internal void EnsureBound()
@@ -582,13 +453,12 @@ namespace Veldrid
                         "slot handles cannot be replaced or exchanged between shapes")]);
         }
 
-        /// <summary>Dispose owned sets, layouts and uniform buffers (shaders belong to the bundle source).</summary>
+        /// <summary>Dispose layouts and OWNED uniform buffers. Shaders belong to the bundle; resource sets, shared storage and arenas belong to the consumer.</summary>
         public void Dispose()
         {
             if (disposed) return;
             disposed = true;
-            foreach (var cache in setCache) foreach (var s in cache.Values) s.Dispose();
-            foreach (var l in layouts) l?.Dispose();
+            // Layouts, sets, shared storage and arenas are consumer-owned; only the OWNED block buffers are disposed here.
             foreach (var slot in slots) if (slot is IDisposable d) d.Dispose();
         }
     }

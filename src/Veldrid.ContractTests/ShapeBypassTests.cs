@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using Veldrid;
 using Xunit;
@@ -32,12 +33,13 @@ public sealed class ShapeBypassTests
     }
 
     [Fact]
-    public void UnconstructedShapeCannotCreatePipeline()
+    public void UnconstructedShapeSlotsCannotBeUsed()
     {
         var shape = new ImGuiShape();
-        Assert.Throws<InvalidOperationException>(() => shape.CreateGraphicsPipeline(default, default, default, default, default));
+        // Fields are null until Bind installs the verified handles; a layout cannot be described from them.
+        Assert.Throws<ShaderContractException>(() => new ResourceLayoutDescription(shape.Projection, shape.FontSampler));
         shape.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => shape.CreateGraphicsPipeline(default, default, default, default, default));
+        Assert.Throws<ObjectDisposedException>(() => shape.EnsureBound());
     }
 
     [ShaderBundle("Invalid")]
@@ -61,39 +63,46 @@ public sealed class ShapeBypassTests
     {
         var captured = new Values();
         var block = new UniformBlock<Values>();
-        float value = 1;
-        Assert.Throws<ArgumentException>(() => block.UpdateMember(null, x => captured.Value, in value));
+        Assert.Throws<ArgumentException>(() => block.ResolveMemberOffset<float>(x => captured.Value));
     }
 
     [Fact]
     public void MemberSelectorCannotFlattenNestedField()
     {
         var block = new UniformBlock<Nested>();
-        float value = 1;
-        Assert.Throws<ArgumentException>(() => block.UpdateMember(null, x => x.Inner.Value, in value));
+        Assert.Throws<ArgumentException>(() => block.ResolveMemberOffset<float>(x => x.Inner.Value));
     }
 
     [Fact]
     public void UnboundUniformRejectsDirectMemberWrite()
     {
         var block = new UniformBlock<Values>();
-        float value = 1;
-        Assert.Throws<InvalidOperationException>(() => block.UpdateMember(null, x => x.Value, in value));
+        Assert.Throws<InvalidOperationException>(() => block.ResolveMemberOffset<float>(x => x.Value));
     }
 
     [Theory]
     [InlineData("CreateShader")]
-    [InlineData("CreateGraphicsPipeline")]
-    [InlineData("CreateComputePipeline")]
-    [InlineData("CreateResourceSet")]
-    [InlineData("CreateResourceLayout")]
     public void RawFactoryMethodsAreNotPublic(string name)
         => Assert.DoesNotContain(typeof(ResourceFactory).GetMethods(BindingFlags.Public | BindingFlags.Instance), m => m.Name == name);
 
+    /// <summary>The positional descriptions (binding = array index) are not constructible publicly; only the slot-typed constructors are.</summary>
+    [Theory]
+    [InlineData(typeof(ResourceLayoutDescription), typeof(ResourceLayoutElementDescription[]))]
+    [InlineData(typeof(ResourceSetDescription), typeof(IBindableResource[]))]
+    [InlineData(typeof(ShaderSetDescription), typeof(VertexLayoutDescription[]))]
+    public void PositionalDescriptionConstructorsAreNotPublic(Type description, Type positionalArgument)
+        => Assert.DoesNotContain(description.GetConstructors(BindingFlags.Public | BindingFlags.Instance),
+            c => c.GetParameters().Any(p => p.ParameterType == positionalArgument));
+
+    /// <summary>Same method names stay public; no public overload takes a uint slot/set index.</summary>
     [Theory]
     [InlineData("SetVertexBuffer")]
     [InlineData("SetGraphicsResourceSet")]
     [InlineData("SetComputeResourceSet")]
-    public void NumberedBindersAreNotPublic(string name)
-        => Assert.DoesNotContain(typeof(CommandList).GetMethods(BindingFlags.Public | BindingFlags.Instance), m => m.Name == name);
+    public void NumberedBindersAreNotPublicButTypedSameNameFormsAre(string name)
+    {
+        var publicForms = typeof(CommandList).GetMethods(BindingFlags.Public | BindingFlags.Instance).Where(m => m.Name == name).ToArray();
+        Assert.NotEmpty(publicForms);
+        Assert.DoesNotContain(publicForms, m => m.GetParameters().Length > 0 && m.GetParameters()[0].ParameterType == typeof(uint));
+    }
 }

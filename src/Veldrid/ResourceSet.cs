@@ -37,6 +37,13 @@ namespace Veldrid
 
         #endregion
 
+        // Set when created through ResourceFactory.CreateResourceSet(ShaderPipelineShape, ...): the shape whose layout this set
+        // instantiates, its descriptor-set index (replaces the uint in CommandList.SetGraphicsResourceSet), and - for every
+        // [UniformBufferBindingTimeOffsetSelectable] binding in binding order - the arena that turns a UniformArenaElement into a byte offset.
+        internal ShaderPipelineShape VerifiedShape { get; set; }
+        internal uint VerifiedSetIndex { get; set; }
+        internal IUniformArenaOffsets[] VerifiedOffsetArenas { get; set; } = Array.Empty<IUniformArenaOffsets>();
+
 #if VALIDATE_USAGE
         internal ResourceLayout Layout { get; }
         internal IBindableResource[] Resources { get; }

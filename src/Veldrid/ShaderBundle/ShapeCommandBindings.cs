@@ -2,60 +2,79 @@ using System;
 
 namespace Veldrid;
 
-internal readonly record struct ShapeResourceBindingRevision(ulong Value);
-
-/// <summary>Unconditional command-recording contract. Kept separate from debug-only backend validation.</summary>
+/// <summary>
+///     Unconditional command-recording contract (kept separate from debug-only backend validation). It mirrors the backend's REAL
+///     binding rules and invents none: a vertex buffer stays bound across a pipeline switch (as on D3D11/Vulkan/Metal) and is
+///     accepted for the new pipeline iff its verified vertex TYPE matches the new shape's input at that slot; a resource set stays
+///     bound iff it was created from the new pipeline's shape (same instance => same layouts). Only a TYPE mismatch forces a rebind.
+/// </summary>
 internal sealed class ShapeCommandBindings
 {
     private ShaderPipelineShape owner;
-    private bool resourcesReady;
-    private bool[] verticesReady = Array.Empty<bool>();
-    private ShapeResourceBindingRevision boundRevision;
+    // What is actually bound on the command list, independent of which pipeline is selected (this IS the GPU's state model).
+    private Type[] boundVertexTypes = Array.Empty<Type>();
+    private ResourceFactory[] boundVertexFactories = Array.Empty<ResourceFactory>();
+    private ResourceSet[] boundSets = Array.Empty<ResourceSet>();
 
     internal void Reset()
     {
         owner = null;
-        resourcesReady = false;
-        verticesReady = Array.Empty<bool>();
+        boundVertexTypes = Array.Empty<Type>();
+        boundVertexFactories = Array.Empty<ResourceFactory>();
+        boundSets = Array.Empty<ResourceSet>();
     }
 
-    internal void Select(ShaderPipelineShape shape, int vertexCount, bool hasResources)
+    internal void Select(ShaderPipelineShape shape)
     {
         owner = shape ?? throw Failure("pipeline has no verified shape");
-        verticesReady = new bool[vertexCount];
-        resourcesReady = !hasResources;
-        boundRevision = shape.ResourceBindingRevision;
     }
 
     internal void RequireOwner(ShaderPipelineShape shape)
     {
         if (owner is null || !ReferenceEquals(owner, shape))
-            throw Failure("binding shape does not own the selected pipeline; select its pipeline first");
+            throw Failure("binding does not belong to the selected pipeline's shape; select that shape's pipeline first");
     }
 
-    internal void MarkResources(ShaderPipelineShape shape)
+    internal void MarkVertex(VertexInput input, ResourceFactory factory)
     {
-        RequireOwner(shape);
-        resourcesReady = true;
-        boundRevision = shape.ResourceBindingRevision;
+        RequireOwner(input.Owner);
+        uint slot = input.SlotIndex;
+        if (slot >= boundVertexTypes.Length)
+        {
+            Array.Resize(ref boundVertexTypes, (int)slot + 1);
+            Array.Resize(ref boundVertexFactories, (int)slot + 1);
+        }
+        boundVertexTypes[slot] = input.VertexType;
+        boundVertexFactories[slot] = factory;
     }
 
-    internal void MarkVertex(ShaderPipelineShape shape, uint slot)
+    internal void MarkResourceSet(ResourceSet set)
     {
-        RequireOwner(shape);
-        if (slot >= verticesReady.Length) throw Failure("vertex input does not exist in the selected pipeline");
-        verticesReady[slot] = true;
+        RequireOwner(set.VerifiedShape);
+        uint index = set.VerifiedSetIndex;
+        if (index >= boundSets.Length) Array.Resize(ref boundSets, (int)index + 1);
+        boundSets[index] = set;
     }
 
     internal void ValidateDraw()
     {
-        if (owner is null) throw Failure("no verified graphics pipeline selected");
+        if (owner is null) throw Failure("no verified pipeline selected");
         owner.EnsureBound();
-        if (!resourcesReady) throw Failure("resource sets must be rebound after selecting a pipeline");
-        if (boundRevision != owner.ResourceBindingRevision)
-            throw Failure("resource slots changed after binding; call BindResourceSets again before drawing or dispatching");
-        for (int i = 0; i < verticesReady.Length; i++)
-            if (!verticesReady[i]) throw Failure($"vertex input {i} must be rebound through its named slot");
+        for (uint slot = 0; slot < owner.VertexInputCount; slot++)
+        {
+            Type expected = owner.VertexTypeAt(slot);
+            Type bound = slot < boundVertexTypes.Length ? boundVertexTypes[slot] : null;
+            if (bound is null) throw Failure($"vertex input {slot} ({expected?.Name}) has no buffer bound");
+            if (bound != expected) throw Failure($"vertex input {slot} expects {expected?.Name} but a {bound.Name} buffer is bound; bind the matching typed buffer");
+            if (!ReferenceEquals(boundVertexFactories[slot], owner.BoundFactory)) throw Failure($"vertex input {slot} buffer belongs to a different device");
+        }
+        for (uint set = 0; set < owner.SetCount; set++)
+        {
+            ResourceSet bound = set < boundSets.Length ? boundSets[set] : null;
+            if (bound is null) throw Failure($"resource set {set} is not bound for this pipeline");
+            if (!ReferenceEquals(bound.VerifiedShape, owner)) throw Failure($"resource set {set} was created for {bound.VerifiedShape?.GetType().Name}, not the selected pipeline's shape; bind a set of this shape");
+            if (bound.IsDisposed) throw Failure($"resource set {set} is disposed");
+        }
     }
 
     private static ShaderContractException Failure(string detail) => new("command bindings",

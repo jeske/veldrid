@@ -90,7 +90,7 @@ namespace Veldrid
             ArgumentNullException.ThrowIfNull(pipeline);
             if (pipeline.IsDisposed) throw new ObjectDisposedException(nameof(pipeline));
             var bindings = pipeline.IsComputePipeline ? ComputeShapeBindings : GraphicsShapeBindings;
-            bindings.Select(pipeline.VerifiedShape, pipeline.VerifiedVertexInputCount, pipeline.VerifiedHasResources);
+            bindings.Select(pipeline.VerifiedShape);
             if (pipeline.IsComputePipeline)
                 ComputePipeline = pipeline;
             else
@@ -135,6 +135,33 @@ namespace Veldrid
             }
 #endif
             SetVertexBufferCore(index, buffer, offset);
+        }
+        /// <summary>
+        ///     Sets the active vertex buffer for a shape's named vertex input. Same call as before: the slot index is carried by
+        ///     <paramref name="input"/> (a <c>VertexInput&lt;T&gt;</c> field installed by <see cref="ShaderPipelineShape.Bind{TShape}"/>) and the
+        ///     buffer's element type must be the input's verified <typeparamref name="TVertex"/> - a mismatch is a compile error.
+        /// </summary>
+        /// <param name="input">The shape's vertex input field.</param>
+        /// <param name="buffer">Vertex storage created for that input type.</param>
+        public void SetVertexBuffer<TVertex>(VertexInput<TVertex> input, ShaderVertexBuffer<TVertex> buffer) where TVertex : unmanaged
+        {
+            SetVertexBuffer(input, buffer, 0);
+        }
+
+        /// <summary>Sets the active vertex buffer for a shape's named vertex input, reading from a byte offset (see <see cref="SetVertexBuffer{TVertex}(VertexInput{TVertex}, ShaderVertexBuffer{TVertex})"/>).</summary>
+        /// <param name="input">The shape's vertex input field.</param>
+        /// <param name="buffer">Vertex storage created for that input type.</param>
+        /// <param name="offset">The offset from the start of the buffer, in bytes, from which data will start to be read.</param>
+        public void SetVertexBuffer<TVertex>(VertexInput<TVertex> input, ShaderVertexBuffer<TVertex> buffer, uint offset) where TVertex : unmanaged
+        {
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentNullException.ThrowIfNull(buffer);
+            input.EnsureBound();
+            buffer.EnsureAlive();
+            if (!ReferenceEquals(input.Factory, buffer.Factory)) throw new InvalidOperationException("Vertex buffer belongs to a different device.");
+            GraphicsShapeBindings.RequireOwner(input.Owner);
+            SetVertexBuffer(input.SlotIndex, buffer.Buffer, offset);   // SAME CODE the uint form runs
+            GraphicsShapeBindings.MarkVertex(input, buffer.Factory);
         }
 
         /// <summary>
@@ -350,6 +377,57 @@ namespace Veldrid
         ///     <see cref="GraphicsDevice.UniformBufferMinOffsetAlignment" /> or
         ///     <see cref="GraphicsDevice.StructuredBufferMinOffsetAlignment" />, depending on the kind of resource.
         /// </param>
+        /// <summary>
+        ///     Sets the active <see cref="ResourceSet" /> for the compute <see cref="Pipeline" />. Same call as before, without the set
+        ///     index: <paramref name="rs"/> was created from a slot-built layout and carries its set index; <paramref name="elements"/>
+        ///     replace the raw dynamic byte offsets (one per <see cref="UniformBufferBindingTimeOffsetSelectableAttribute"/> binding, in
+        ///     binding order).
+        /// </summary>
+        /// <param name="rs">A <see cref="ResourceSet" /> created from this pipeline's shape.</param>
+        /// <param name="elements">The arena element selected for each offset-selectable binding, in binding order.</param>
+        public unsafe void SetComputeResourceSet(ResourceSet rs, params UniformArenaElement[] elements)
+        {
+            uint slot = ResolveVerifiedSet(rs, elements, ComputeShapeBindings, out uint[] offsets);
+            if (offsets.Length == 0) SetComputeResourceSet(slot, rs, 0, ref Unsafe.AsRef<uint>(null));      // SAME CODE the uint form runs
+            else SetComputeResourceSet(slot, rs, (uint)offsets.Length, ref offsets[0]);
+            ComputeShapeBindings.MarkResourceSet(rs);
+        }
+
+        /// <summary>
+        ///     Sets the active <see cref="ResourceSet" /> for the graphics <see cref="Pipeline" />. Same call as before, without the set
+        ///     index: <paramref name="rs"/> was created from a slot-built layout and carries its set index; <paramref name="elements"/>
+        ///     replace the raw dynamic byte offsets (one per <see cref="UniformBufferBindingTimeOffsetSelectableAttribute"/> binding, in
+        ///     binding order). The typed element can only come from the arena the set binds, so the offset is always in range and aligned.
+        /// </summary>
+        /// <param name="rs">A <see cref="ResourceSet" /> created from this pipeline's shape.</param>
+        /// <param name="elements">The arena element selected for each offset-selectable binding, in binding order.</param>
+        public unsafe void SetGraphicsResourceSet(ResourceSet rs, params UniformArenaElement[] elements)
+        {
+            uint slot = ResolveVerifiedSet(rs, elements, GraphicsShapeBindings, out uint[] offsets);
+            if (offsets.Length == 0) SetGraphicsResourceSet(slot, rs, 0, ref Unsafe.AsRef<uint>(null));
+            else SetGraphicsResourceSet(slot, rs, (uint)offsets.Length, ref offsets[0]);
+            GraphicsShapeBindings.MarkResourceSet(rs);
+        }
+
+        private static uint ResolveVerifiedSet(ResourceSet rs, UniformArenaElement[] elements, ShapeCommandBindings bindings, out uint[] offsets)
+        {
+            ArgumentNullException.ThrowIfNull(rs);
+            elements ??= Array.Empty<UniformArenaElement>();
+            if (rs.VerifiedShape is null)
+                throw new ShaderContractException("command bindings", [new ShaderContractViolation("BIND", "ResourceSet", "raw set", "a set created from shape slot bindings", "only verified sets can be bound")]);
+            bindings.RequireOwner(rs.VerifiedShape);
+            var arenas = rs.VerifiedOffsetArenas;
+            if (elements.Length != arenas.Length)
+                throw new ShaderContractException(rs.VerifiedShape.BundleName, [new ShaderContractViolation("BIND", $"set {rs.VerifiedSetIndex}", $"{elements.Length} element(s)", $"{arenas.Length} offset-selectable binding(s)", "supply one arena element per [UniformBufferBindingTimeOffsetSelectable] binding, in binding order")]);
+            offsets = new uint[elements.Length];
+            for (int i = 0; i < elements.Length; i++)
+            {
+                arenas[i].EnsureAlive();
+                offsets[i] = arenas[i].OffsetOf(elements[i]);
+            }
+            return rs.VerifiedSetIndex;
+        }
+
         internal void SetComputeResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
         {
 #if VALIDATE_USAGE
@@ -816,6 +894,78 @@ namespace Veldrid
             Span<T> source) where T : unmanaged
         {
             UpdateBuffer(buffer, bufferOffsetInBytes, (ReadOnlySpan<T>)source);
+        }
+
+        // ── Typed storage: the same UpdateBuffer call, with the typed storage object where (DeviceBuffer, byte offset) used to go. ──
+        // Each form is exactly one raw UpdateBuffer; the whole-block byte offset disappears because the typed storage IS the block.
+
+        /// <summary>
+        ///     Updates a shape's OWNED uniform block with a whole typed value. <typeparamref name="T"/> was verified field-by-field
+        ///     against the compiled block at <see cref="ShaderPipelineShape.Bind{TShape}"/>.
+        /// </summary>
+        /// <param name="block">The shape's uniform block field (storage from <see cref="UniformBlock{T}.CreateBuffer"/>).</param>
+        /// <param name="value">The value to upload.</param>
+        public void UpdateBuffer<T>(UniformBlock<T> block, in T value) where T : unmanaged
+        {
+            ArgumentNullException.ThrowIfNull(block);
+            // PrivateBuffer throws if the block has no private buffer (shared/arena storage is written through its own handle).
+            UpdateBuffer(block.PrivateBuffer, 0, value);
+        }
+
+        /// <summary>
+        ///     Updates ONE member of a shape's owned uniform block, named by EXPRESSION (not a string):
+        ///     <c>cl.UpdateBuffer(shape.Projection, b =&gt; b.LightMVP, in mvp)</c>. Offset and size come from the compiled block.
+        ///     Backends whose current whole-buffer update path cannot issue a partial write throw instead of widening the write.
+        /// </summary>
+        /// <param name="block">The shape's uniform block field.</param>
+        /// <param name="member">A direct field access on <typeparamref name="T"/>.</param>
+        /// <param name="value">The member value to upload.</param>
+        public void UpdateBuffer<T, TMember>(UniformBlock<T> block, System.Linq.Expressions.Expression<Func<T, TMember>> member, in TMember value)
+            where T : unmanaged where TMember : unmanaged
+        {
+            ArgumentNullException.ThrowIfNull(block);
+            uint offset = block.ResolveMemberOffset(member);
+            // PrivateBuffer throws if the block has no private buffer (shared/arena storage is written through its own handle).
+            UpdateBuffer(block.PrivateBuffer, offset, value);
+        }
+
+        /// <summary>
+        ///     Updates SHARED uniform storage with a whole typed value - one upload, observed by every set that binds it, in command order.
+        /// </summary>
+        /// <param name="storage">Storage from <see cref="UniformBlock{T}.CreateSharedBuffer"/>.</param>
+        /// <param name="value">The value to upload.</param>
+        public void UpdateBuffer<T>(ShaderUniformBuffer<T> storage, in T value) where T : unmanaged
+        {
+            ArgumentNullException.ThrowIfNull(storage);
+            storage.EnsureAlive();
+            UpdateBuffer(storage.Buffer, 0, value);
+        }
+
+        /// <summary>
+        ///     Uploads vertices into typed vertex storage. The offset is measured in VERTICES; the element type is the storage's verified type.
+        /// </summary>
+        /// <param name="buffer">Storage from <see cref="VertexInput{TVertex}.CreateBuffer"/>.</param>
+        /// <param name="firstVertex">Index of the first vertex to overwrite.</param>
+        /// <param name="vertices">The vertices to upload.</param>
+        public unsafe void UpdateBuffer<TVertex>(ShaderVertexBuffer<TVertex> buffer, uint firstVertex, ReadOnlySpan<TVertex> vertices) where TVertex : unmanaged
+        {
+            ArgumentNullException.ThrowIfNull(buffer);
+            buffer.EnsureAlive();
+            if (firstVertex > buffer.Capacity || (uint)vertices.Length > buffer.Capacity - firstVertex)
+                throw new ArgumentOutOfRangeException(nameof(firstVertex));
+            UpdateBuffer(buffer.Buffer, checked(firstVertex * (uint)sizeof(TVertex)), vertices);
+        }
+
+        /// <summary>
+        ///     Uploads a typed uniform arena's staged elements in ONE full-buffer write. Previously recorded draws retain the preceding
+        ///     contents according to command order.
+        /// </summary>
+        /// <param name="arena">Storage from <see cref="UniformBlock{T}.CreateArena"/>.</param>
+        public void UpdateBuffer<T>(ShaderUniformArena<T> arena) where T : unmanaged
+        {
+            ArgumentNullException.ThrowIfNull(arena);
+            arena.EnsureAlive();
+            UpdateBuffer(arena.Buffer, 0, arena.Staging);
         }
 
         /// <summary>

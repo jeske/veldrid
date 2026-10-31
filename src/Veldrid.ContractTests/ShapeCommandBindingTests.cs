@@ -3,6 +3,7 @@ using Xunit;
 
 namespace Veldrid.ContractTests;
 
+/// <summary>Device-free checks of the command-binding contract's ownership rules (GPU behaviour is covered by TypedBindingContractTests).</summary>
 public sealed class ShapeCommandBindingTests
 {
     [Fact]
@@ -14,14 +15,13 @@ public sealed class ShapeCommandBindingTests
     }
 
     [Fact]
-    public void DifferentShapeInstanceCannotBindToSelectedPipeline()
+    public void DifferentShapeInstanceIsNotTheOwner()
     {
         var state = new ShapeCommandBindings();
         var selected = new ImGuiShape();
-        state.Select(selected, 1, true);
+        state.Select(selected);
         state.RequireOwner(selected);
-        Assert.Throws<ShaderContractException>(() => state.MarkResources(new ImGuiShape()));
-        Assert.Throws<ShaderContractException>(() => state.MarkVertex(new ImGuiShape(), 0));
+        Assert.Throws<ShaderContractException>(() => state.RequireOwner(new ImGuiShape()));
     }
 
     [Fact]
@@ -29,20 +29,15 @@ public sealed class ShapeCommandBindingTests
     {
         var state = new ShapeCommandBindings();
         var shape = new ImGuiShape();
-        state.Select(shape, 1, true);
-        state.MarkResources(shape);
-        state.MarkVertex(shape, 0);
+        state.Select(shape);
         state.Reset();
         Assert.Throws<ShaderContractException>(() => state.RequireOwner(shape));
     }
 
     [Fact]
-    public void CannotInventVertexSlotsOrSelectUnverifiedPipeline()
+    public void CannotSelectUnverifiedPipeline()
     {
         var state = new ShapeCommandBindings();
-        var shape = new ImGuiShape();
-        Assert.Throws<ShaderContractException>(() => state.Select(null!, 0, false));
-        state.Select(shape, 1, true);
-        Assert.Throws<ShaderContractException>(() => state.MarkVertex(shape, 1));
+        Assert.Throws<ShaderContractException>(() => state.Select(null!));
     }
 }

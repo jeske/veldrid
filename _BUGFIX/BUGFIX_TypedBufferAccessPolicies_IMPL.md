@@ -204,8 +204,12 @@ would change the binding mode. Per-family buffers would multiply uploads. Both r
 `Share` across factories rejected; `Update` on a sharing slot rejected; `Share` onto a block that already owns storage rejected; disposing the
 storage makes both slots fail `RequireLiveResource`; usage flags preserved (non-Dynamic and Dynamic both allowed via `RequireUniform`).
 
-- [ ] Veldrid: ShaderUniformBuffer.cs, CreateSharedBuffer/Share, guards, XML docs.
-- [ ] Veldrid: tests above; Release build; StableABI accept; ContractTests all pass; commit; publish-local; record version.
+- [x] Veldrid: ShaderUniformBuffer.cs, CreateSharedBuffer/Share, guards, XML docs.
+- [x] Veldrid: tests above; Release build; StableABI accept; ContractTests all pass; commit; publish-local; record version.
+      Result: commit d01a60cc, package 5.261031.164332, ContractTests 70/70 (8 new in SharedUniformStorageTests.cs), 0 errors / 1187 warnings.
+      Finding while testing: Vulkan `VkBuffer.Dispose` only decrements a refcount; `DeviceBuffer.IsDisposed` stays false while a recorded
+      command still references the buffer. Added `ShapeSlot.RequireLiveBinding()` (virtual) so `UniformBlock` consults the wrapper's own disposed
+      state in `BindResourceSets`; `RequireLiveResource` alone is not sufficient liveness evidence on Vulkan. Logs C:/TEMP/veldrid-shared-{abi,build,tests,publish}.log.
 - [ ] Silky: `_viewSizeUniformBuffer` -> `ShaderUniformBuffer<RenderTargetTransformUniform>` (non-Dynamic), `_textGammaUniformBuffer` ->
       `ShaderUniformBuffer<Vector4-equivalent block type>` (Dynamic); every family `Share`s. Existing update call sites become `storage.Update(cl, …)`
       one-for-one. Upload counts unchanged.

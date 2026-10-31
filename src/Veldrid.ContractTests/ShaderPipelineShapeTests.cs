@@ -7,6 +7,7 @@ using Xunit;
 namespace Veldrid.ContractTests;
 
 /// <summary>S7: pipeline shapes verified against bundles at TEST time - no device, no window.</summary>
+[Collection("ShaderUniformBlockRegistry (global state)")]
 public class ShaderPipelineShapeTests
 {
     private static VeldridShaderBundle QuadBundle() => new()
@@ -69,6 +70,30 @@ public class ShaderPipelineShapeTests
         Assert.Equal(2, violations.Count);   // C# field 'Proj' has no member; member 'Matrix' has no field
         Assert.All(violations, v => Assert.Equal(ShaderContractVerifier.Rule_V7c_UniformStructs, v.Rule));
     }
+
+    [Fact]
+    public void V7c_TailPaddingFieldsAreAllowed_PaddingOverAMemberIsNot()
+    {
+        Assert.Empty(ShaderContractVerifier.Verify(new ShaderPipelineShape("Tail", [], [], [typeof(TailPaddedGood)]), TailBundle()));
+        var violations = ShaderContractVerifier.Verify(new ShaderPipelineShape("Tail", [], [], [typeof(PaddingOverlapsMember)]), TailBundle());
+        Assert.Contains(violations, v => v.Name == "Transforms._pad0" && v.Detail.Contains("tail"));
+        Assert.Contains(violations, v => v.Name == "Transforms.Scale");   // Scale is now @ 68, the shader has it @ 64
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    [VdShaderUniformBlock("Tail", "Transforms")]
+    private struct TailPaddedGood { public System.Numerics.Matrix4x4 M; public float Scale; public float _pad0, _pad1, _pad2; }   // 64 + 4 + 12 = 80
+
+    [StructLayout(LayoutKind.Sequential)]
+    [VdShaderUniformBlock("Tail", "Transforms")]
+    private struct PaddingOverlapsMember { public System.Numerics.Matrix4x4 M; public float _pad0; public float Scale; public float _pad1, _pad2; }   // _pad0 sits where Scale belongs
+
+    private static VeldridShaderBundle TailBundle() => new()
+    {
+        ShaderName = "Tail",
+        Interface = new VdShaderInterface { UniformBlocks = [new VdShaderUniformBlock { Name = "Transforms", Set = 0, Binding = 0, SizeBytes = 80, Stages = ShaderStages.Vertex,
+            Members = [new VdShaderUniformMember { Name = "M", Type = "mat4", OffsetBytes = 0, SizeBytes = 64 }, new VdShaderUniformMember { Name = "Scale", Type = "float", OffsetBytes = 64, SizeBytes = 4 }] }] },
+    };
 
     [Fact]
     public void ShapeNamesOneBundle_ResolverReturnsAnother_V7()

@@ -8,6 +8,7 @@ using Xunit;
 namespace Veldrid.ContractTests;
 
 /// <summary>Pipeline-creation half of the shader interface contract (V7a/V7b/V7c), pure over descriptions - no device.</summary>
+[Collection("ShaderUniformBlockRegistry (global state)")]
 public class ShaderContractVerifierTests
 {
     // A ResourceLayout that exists only to carry a description (the real ones need a device).

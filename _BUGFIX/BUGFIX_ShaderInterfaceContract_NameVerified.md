@@ -395,7 +395,7 @@ audit who uses them during migration.
 
 **Goal:** FluidUI (precompiled bundles, Android/AOT) gets the contract as Roslyn build ERRORS and zero reflection at runtime. 5.3's API is
 designed so this is an alternative IMPLEMENTATION of the same contract, not a second contract:
-1. Shapes are `partial`; the generator adds a partial.
+1. Shapes are `partial`; the generator adds a partial. (Roslyn generators can only ADD syntax trees, never edit a declaration, so adding `Describe()` / the descriptor / the hash to the user's class REQUIRES `partial`; diagnostics need nothing. A non-partial `ShaderPipelineShape` subclass is itself a generator ERROR, so it cannot be forgotten. The alternative - a separate generated descriptor type found via an assembly attribute - works and is AOT-safe but is one more runtime lookup and one more place a shape can be missing; rejected.)
 2. The verification input is `ShapeDescriptor` (data). Reflection builds it in 5.3; the generator emits it as a static readonly instance,
    overriding `Describe()`. Slot objects are constructed from descriptor + bundle, never from `FieldInfo`. `Bind` = Verify(Describe(), bundle)
    + create slots, identical for both implementations.

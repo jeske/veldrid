@@ -391,6 +391,21 @@ set created through one shape may be bound through another IF the layouts are id
 O10 - dynamic uniform offsets (`DeviceBufferRange`): `UniformBlock<T>.UpdateAt(cl, index, in T)` + `BindResourceSets(cl, dynamicIndex)`;
 audit who uses them during migration.
 
+**Remaining meaning boundaries (user, 2026-10-31) - decided:**
+- **Which bundle: closed.** `[ShaderBundle("ShadowDepth")]` on the shape class - comment documentation turned into checkable data; `Bind`
+  asserts `bundle.ShaderName` equals it. One shape <-> one shader set.
+- **Shared sets across pipelines (O9): NOT a type.** GBuffer and ShadowDepth bind the same material set. Both shapes declare the same slot
+  fields (retyping is a feature - each shape is a complete statement of its shader), and `BindResourceSets` checks an incoming set's
+  layout against the shape's expected layout BY NAME (names/kinds in order) - exception on mismatch. A `SharedResourceSet<T>` type would
+  detect nothing extra and cannot stop the wrong texture being supplied; diminishing returns, dropped.
+- **Values are not bindings.** `UniformBlock<ShadowTransforms>` makes the SLOT `LightMVP` unambiguous, not the math in it. That is OUR
+  data causing OUR bugs - D0's boundary - and is the only class of visual bug left when every gate is green. What the shape forbids is
+  the OTHER thing: alignment fixed "by happenstance" by rearranging fields until compiler and C# agree.
+- **Slot-numbered CommandList binders: INTERNAL.** `SetGraphicsResourceSet(slot, set)`, `SetComputeResourceSet(slot, set)`,
+  `SetVertexBuffer(slot, buffer)` are bypasses; renderer code binds only through `shape.BindResourceSets(cl)` / `shape.BindVertexBuffers(cl, ...)`.
+  Index buffers and non-shader buffers keep their public API (nothing to name).
+- Storage buffers / images: same pattern as uniforms; dynamic offsets: same names + an index. No new gap.
+
 ### 5.4 S9 - source-generated shapes: the same contract at C# COMPILE time, no runtime reflection (user, 2026-10-31) - DEFERRED; shapes are declared `partial` now so it needs no API change later
 
 **Goal:** FluidUI (precompiled bundles, Android/AOT) gets the contract as Roslyn build ERRORS and zero reflection at runtime. 5.3's API is

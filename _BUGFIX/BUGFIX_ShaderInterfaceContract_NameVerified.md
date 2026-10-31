@@ -245,7 +245,7 @@ Everything above shipped the same day, in the chain order, each repo pushed. Del
 - [ ] SilkyNvg pipeline families (30 bundles, shared layouts -> parameterised shapes); FluidUI `StretchBlitRenderer`.
 - [ ] Then the hardening: per-app `ShaderUniformBlockRegistry.Register`; `CreateFromSpirv` `[Obsolete(error: true)]`; analyzer forbidding `new GraphicsPipelineDescription` outside `ToGraphicsPipelineDescription` (last, once lists are empty).
 
-### 5.2 S8 - PROPOSED 2026-10-31: a GLSL NAME at every binding; the name-free APIs are deleted (D8)
+### 5.2 S8 - SUPERSEDED by 5.3 (D10) the same day - kept for the reasoning; D8/D9 and the GLES finding still hold: a GLSL NAME at every binding; the name-free APIs are deleted (D8)
 
 **Why S7 is not enough (user).** S7 verifies pipelines that declared a shape; V7c verifies structs that were attributed or listed.
 Both are opt-ins, and an opt-in is not "no way". Worse, the check sits at pipeline creation while the bytes reach the GPU through

@@ -245,6 +245,70 @@ Everything above shipped the same day, in the chain order, each repo pushed. Del
 - [ ] SilkyNvg pipeline families (30 bundles, shared layouts -> parameterised shapes); FluidUI `StretchBlitRenderer`.
 - [ ] Then the hardening: per-app `ShaderUniformBlockRegistry.Register`; `CreateFromSpirv` `[Obsolete(error: true)]`; analyzer forbidding `new GraphicsPipelineDescription` outside `ToGraphicsPipelineDescription` (last, once lists are empty).
 
+### 5.2 S8 - PROPOSED 2026-10-31: a GLSL NAME at every binding; the name-free APIs are deleted (D8)
+
+**Why S7 is not enough (user).** S7 verifies pipelines that declared a shape; V7c verifies structs that were attributed or listed.
+Both are opt-ins, and an opt-in is not "no way". Worse, the check sits at pipeline creation while the bytes reach the GPU through
+APIs that never see a name: `CommandList.UpdateBuffer(buffer, offset, value)` writes a `Matrix4x4` at byte 0 of a buffer bound to
+`uniform MVPBuffer { mat4 MVP; }` without ever saying `MVP`; `new ResourceSetDescription(layout, buf, tex, smp)` is positional. Every
+GLSL variable HAS a name; a C# API that binds to it without that name is the defect. We own the fork: the name-free APIs go.
+
+- **D8 A GLSL name is required at every binding point, and the name is checked there.** No API exists by which bytes reach a shader
+  uniform block member, texture, sampler, storage buffer or image slot without the GLSL name being supplied and verified against the
+  compiled bundle. Vertex buffers are covered by vertex ELEMENT names (V7a). Deleting the positional/offset APIs makes a half-migrated
+  tree fail to COMPILE, not render wrong.
+
+**The chain (each link by name, each verified where it is formed):**
+```csharp
+// Link 1 - struct <-> block, at buffer creation. T's fields: NAME == member name, Marshal.OffsetOf == std140 offset, size == size; sizeof(T) == block size.
+public sealed class UniformBlockBuffer<T> : IDisposable where T : unmanaged
+{
+    // created ONLY from a verified bundle result; throws ShaderContractException on any mismatch
+    internal UniformBlockBuffer(PrecompiledShaderResult bundle, string glslBlockName, ResourceFactory factory, BufferUsage extraUsage = 0);
+    public string BlockName { get; }                                   // "Transforms"
+    public VdShaderUniformBlock CompiledBlock { get; }
+    public void Update(CommandList cl, in T wholeBlock);                 // the only whole-block write
+    public void Update<TMember>(CommandList cl, string glslMemberName, in TMember value) where TMember : unmanaged;   // member exists, sizeof(TMember) == member size, written at the COMPILED offset
+    // NO DeviceBuffer exposed, NO offset parameter anywhere: UpdateBuffer(buffer, offset, ...) cannot reach it.
+}
+public static UniformBlockBuffer<T> CreateUniformBlockBuffer<T>(this PrecompiledShaderResult bundle, ResourceFactory factory, string glslBlockName, BufferUsage extraUsage = 0);
+
+// Link 2 - resource <-> layout element, at resource-set creation. Each name must be an element of the layout; each element filled exactly once;
+// a UniformBuffer element accepts ONLY a UniformBlockBuffer whose BlockName == the element name; storage buffers/images likewise by name.
+public ResourceSetDescription(ResourceLayout layout, params (string GlslName, BindableResource Resource)[] bindings);
+// the positional ResourceSetDescription(layout, params BindableResource[]) is DELETED.
+
+// Link 3 - layout element <-> shader resource, at pipeline creation (V7b, exists) + vertex element <-> shader input (V7a, exists)
+// + shaders not from a bundle REFUSED + compute hooked. ShaderUniformStructs on the description is NOT needed: link 1 proves struct<->block.
+```
+- `[VdShaderUniformBlock]`, `ShaderUniformBlockRegistry`, `ShaderPipelineShape.UniformStructs` and the just-added
+  `GraphicsPipelineDescription.ShaderUniformStructs` are REMOVED - the string at link 1 is stronger than any attribute (it cannot be
+  forgotten; there is no untyped path). `ShaderPipelineShape` keeps vertex layouts + layout descriptions (S7 still verifies those at test time).
+- `CommandList.UpdateBuffer` keeps working for vertex/index/staging buffers; a `DeviceBuffer` created with `BufferUsage.UniformBuffer`
+  directly (not through link 1) is refused by `ResourceSetDescription` at link 2, so it can never be bound to a shader.
+- Storage buffers / storage images: same pattern - `StorageBlockBuffer<T>` / named slot binding; typed where the GLSL declares a struct.
+- Textures and samplers: bound by element name at link 2; kind is checked against the layout element (TextureReadOnly vs Sampler).
+
+**Consequence (intended):** every `UpdateBuffer`-of-a-uniform and every `ResourceSetDescription` in RenderKit, Monsters, SpaceGame,
+SilkyNvg, FluidUI, TileMapKit, ArcaneSiege and TOMF must change. All of it is caught by the COMPILER because the old overloads no longer
+exist; nothing can be half-migrated and still start. Order: AN_Veldrid (links 1-3 + tests) -> publish -> SilkyNvg -> FluidUI (D1b gate)
+-> Monsters/SpaceGame -> ArcaneSiege/TOMF.
+
+**S8 checklist** - [ ]
+- [ ] AN_Veldrid: `UniformBlockBuffer<T>`, `CreateUniformBlockBuffer`, named `ResourceSetDescription` (positional deleted), link-2 verification
+      (names, kinds, block-name match, exactly-once), link-3: refuse non-bundle shaders, `CreateComputePipeline` hook (abstract -> Core), delete
+      `[VdShaderUniformBlock]` / `ShaderUniformBlockRegistry` / `UniformStructs`; ContractTests for each link incl. member-offset write; publish.
+- [ ] AN_VeldridSpirv: nothing structural (bundle interface already carries members); bump floor; publish.
+- [ ] SilkyNvg: migrate pipeline families + uniform writes; sample D3D11 + Vulkan; publish.
+- [ ] FluidUI: `StretchBlitRenderer`; gtest / vk-gtest; publish.
+- [ ] Monsters/RenderKit/SpaceGame: every renderer; `Matrix4x4_ColumnMajor` writes become `Update(cl, in struct)`; RenderKit tests.
+- [ ] ArcaneSiege/TileMapKit/TOMF: `TileRenderer_ChunkInstanced`, `TileBatch`, `SpriteBatch`, parallax, debug, `TomfBillboardRenderer`; all six gates 0 px.
+- [ ] Spec: D8 promoted from PROPOSED; D0's detector list gains "binding without a name (impossible by API)".
+
+**Open for the user:** O7 - member-level `Update(cl, "Name", in value)` vs whole-struct only? (Proposal: both; member-level is how today's
+single-matrix writes migrate with the least churn and the most safety.) O8 - do push-constant-style per-draw updates need a batching
+helper so member-level writes do not multiply `UpdateBuffer` calls? (Measure after migration.)
+
 ## 6. Open
 
 - O1. `preserve_interface` in the pinned SPIRV-Tools (`ext/known_good.json`) and header availability to `libveldrid-spirv` (decides 4.1 option 1 vs 2). First task of S2.

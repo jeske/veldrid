@@ -23,6 +23,16 @@ immune; D3D11 is the only backend that links by packed register, so it is where 
 
 ## 2. Decisions
 
+- **D0 THE PARTITION (user, 2026-10-31) - the invariant every rule below serves.** Any defect in the shader compiler, in our
+  SPIRV-Cross / Veldrid.SPIRV toolchain, or in Veldrid's pipeline plumbing that would MISALIGN data - between CPU and GPU (vertex
+  elements, resource slots, uniform members) or between shader stages (varyings) - MUST surface as a hard-fail exception we DETECT:
+  at compile time (D3 + V4/V5/V6), at test time (S7 shapes), or at pipeline creation (V7). Never as a visual. When every gate is
+  green, the only possible source of visual incorrectness is the GLSL itself and the VALUES we put into correctly-aligned slots.
+  "It renders wrong" must mean "the shader is wrong" - never "the compiler moved something", never "the layout was off by one".
+  Corollary: a detector must exist for every alignment the toolchain can disturb. The list today: vertex input location/format/name
+  (V4, V7a); varying location/type/flat per stage and across stages (V5a, V5b); uniform block member offset/size/name (V6, V7c);
+  resource set/binding/kind/name (PreserveBindings, V7b); bundle format itself (version gate). Anything added to this list later is a
+  gap found, not a feature.
 - **D1 ONE code path, precompiled == runtime (user).** Runtime-compiling a shader and caching it IS vdshader-precompiling it: the same
   compile, the same verification, the same `.vdshader` bytes, the same loader. The only variables are WHEN it runs and WHERE the bundle
   sits (committed `Shaders/Compiled/` + embedded resource, or a disk cache). One class does both (4.5 `ShaderBundlePipeline`); every build

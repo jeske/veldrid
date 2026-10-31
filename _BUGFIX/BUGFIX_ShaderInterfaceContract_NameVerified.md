@@ -1,6 +1,15 @@
 # BUGFIX: Shader interface contract - every boundary verified BY NAME, declared interface never eliminated
 
-**Status:** S1-S6 SHIPPED 2026-10-31 across AN_Veldrid / AN_VeldridSpirv / AN_SilkyNvg / AN_FluidUI / AN_Monsters / AN_ArcaneSiege (see 5.1 as-built); S7 (pipeline shapes everywhere) OPEN.  
+**Status:** S8 mandatory typed-shape API and consumer migration IN PROGRESS (2026-10-31). S1-S6 below are historical milestones, not a claim that all verification is complete.
+
+**NEXT SESSION: read [BUGFIX_ShaderInterfaceContract_IMPL_Tracking.md](BUGFIX_ShaderInterfaceContract_IMPL_Tracking.md).**
+It contains exact package floors, code checkpoints, passing tests, the 91-error Silky migration worklist, and verification gaps.
+Latest Veldrid package: 5.261031.143705; 41 Release tests passed. Silky has all 30 shapes and 34 passing shape/readback tests plus
+14 arena-core tests, but its full renderer DOES NOT BUILD yet. Older six 0-pixel game gates predate S8 and must be rerun after migration.
+Final design is section 5.3 D10; section 5.2's string-based bindings and section 5.1's opt-in registry are superseded.
+S9 generator is deferred; do not follow historical wording scheduling it before FluidUI. Current Describe is non-overridable to prevent forged descriptors.
+User goal D0 remains mandatory; it is NOT a statement that the implementation has already proved every backend mapping safe.
+
 **Owners:** `AN_VeldridSpirv` (compiler + reflection + verifier), `AN_Veldrid` (bundle format, pipeline-creation verification).  
 **Consumers fixed by it:** every Veldrid user - RenderKit/Monsters/SpaceGame, FluidUI/SilkyNvg/PixelStudio, ArcaneSiege/TOMF.  
 **Supersedes:** `BUGFIX_spirv-cross-hlsl-varying-packing.md` (its "Option B" becomes an enforced rule); `_BUGFIX/10_SPIRV_PreserveBindings.md`
@@ -15,11 +24,11 @@ keeps only the RenderKit-side consumer migration and points here.
 | Oct 5 -> 26 | RenderKit `ShadowDepthInstanced` | dead `Normal`/`Color` vertex inputs eliminated; per-instance attributes mis-read; no shadows for 3 weeks | bundle records layouts/bindings only |
 | **Oct 31** | ArcaneSiege `ChunkInstanced` vertex-lit (D3D11) | vert gained varyings 3..5, light moved to 6; frag declared 0,1,2,6; **declaring 3..5 unused in the frag changed nothing** (optimizer strips unread inputs); fxc packed `o1 = {hasOverlay, tileUV.xy, parity}` (VS) vs `o1 = {hasOverlay, light.xyz}` (PS); every tile tinted `(u, v, rowParity)` | both stages said `TEXCOORD6` - correct BY NUMBER; sibling frags (unlit: never reads 6; GBuffer: declares+reads all) rendered fine |
 
-Mechanism (verified Oct 31 with debug-vs-optimised HLSL dumps of the same pair): elimination happens at **GLSL -> SPIR-V** - shaderc
-`shaderc_optimization_level_performance` = spirv-opt `RegisterPerformancePasses(preserve_interface = false)`; ADCE removes an input variable
-that is never read. SPIRV-Cross and fxc remove nothing that reaches them. Then fxc packs each stage's struct independently in declaration
-order; different sets -> different packing -> wrong data under a correct semantic name. Vulkan/Metal/GL link by explicit location and are
-immune; D3D11 is the only backend that links by packed register, so it is where every hit surfaced.
+Evidence from Oct 31: optimised HLSL omitted declared-but-unread fragment inputs; debug compilation retained them. Preserving the
+interface through spirv-opt and declaring the full pair restored the ArcaneSiege oracle to 0 pixels different. This supports the
+interface-elimination diagnosis; final DXBC signatures were not reflected in this session. Earlier claims here that fxc cannot remove
+anything, or that other backends are immune to alignment bugs, were too strong. Post-SPIR-V backend mapping checks remain open.
+The pinned optimizer has RegisterPerformancePasses() without a preserve-interface argument; our native wrapper supplies the pass list with interface-preserving ADCE.
 
 ## 2. Decisions
 
@@ -50,7 +59,8 @@ immune; D3D11 is the only backend that links by packed register, so it is where 
 - **D3 Declared interface is never eliminated.** `CompileGlslToSpirv` preserves interface variables through optimisation (see 4.1). Declared ==
   compiled by construction; V4/V5a (below) is the regression guard that proves it stays so.
 - **D4 Vert-out == frag-in, exactly.** Identical varying sets by (name, location, scalar type, vecsize, flat). This makes the D3D11 packing
-  class IMPOSSIBLE (identical structs pack identically) rather than merely detected. Authoring consequence: a fragment shader declares every
+  input contract explicit; it is not by itself proof of the final DXBC/MSL layout. Final-artifact mapping verification remains open.
+  Authoring consequence: a fragment shader declares every
   vertex output even when unused; with D3 the declaration survives, and the error names what is missing.
 - **D5 The bundle carries its interface.** `.vdshader` gains an `interface` section (4.3); bundles without it are rejected (format version bump).
 - **D6 Pipeline creation verifies, in Veldrid.** `ResourceFactory.CreateGraphicsPipeline` / `CreateComputePipeline`, for any `Shader` created

@@ -39,6 +39,10 @@ namespace Veldrid
         /// <returns>A new <see cref="Pipeline" /> which, when bound to a CommandList, is used to dispatch draw commands.</returns>
         public Pipeline CreateGraphicsPipeline(ref GraphicsPipelineDescription description)
         {
+            // Shader interface contract V7 (AN_Veldrid/_BUGFIX/BUGFIX_ShaderInterfaceContract_NameVerified.md): if the shaders came from a
+            // .vdshader bundle, the vertex layouts, resource layouts and registered uniform structs must match the compiled interface by
+            // NAME. Throws ShaderContractException before any native call. Protects every Veldrid consumer, on every backend.
+            ShaderContractVerifier.ThrowIfViolated(ref description);
 #if VALIDATE_USAGE
             if (!description.RasterizerState.DepthClipEnabled && !Features.DepthClipDisable)
             {
@@ -445,11 +449,18 @@ namespace Veldrid
             var fsDesc = new ShaderDescription(ShaderStages.Fragment, fragmentBytes, fragmentEntry);
 
 #pragma warning disable CS0618 // CreateShader is [Obsolete] for external callers; internal use here is correct
-            return new PrecompiledShaderResult(
-                new[] { CreateShader(ref vsDesc), CreateShader(ref fsDesc) },
-                bundle.GetResourceLayouts(),
-                bundle.FlatBindingMap);
+            var shaders = new[] { CreateShader(ref vsDesc), CreateShader(ref fsDesc) };
 #pragma warning restore CS0618
+            var result = new PrecompiledShaderResult(
+                shaders,
+                bundle.GetResourceLayouts(),
+                bundle.FlatBindingMap,
+                bundle.Interface,
+                bundle.ShaderName);
+            // Every shader remembers its bundle so CreateGraphicsPipeline can verify the pipeline description against the
+            // compiled interface by NAME (ShaderContractVerifier, V7). This is the only place shaders become verifiable.
+            foreach (Shader shader in shaders) ShaderInterfaceRegistry.Register(shader, result);
+            return result;
         }
 
         /// <summary>

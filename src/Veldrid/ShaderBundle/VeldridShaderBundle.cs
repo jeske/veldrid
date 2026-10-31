@@ -25,9 +25,12 @@ namespace Veldrid
         [JsonPropertyName("purpose")]
         public string Purpose { get; set; } = PurposeText;
 
-        /// <summary>Format version number.</summary>
+        /// <summary>The format this library writes and requires: 2 = carries <see cref="Interface"/> (2026-10-31). Older bundles are rejected on load.</summary>
+        public const int CurrentFormatVersion = 2;
+
+        /// <summary>Format version number (see <see cref="CurrentFormatVersion"/>).</summary>
         [JsonPropertyName("version")]
-        public int Version { get; set; } = 1;
+        public int Version { get; set; } = CurrentFormatVersion;
 
         /// <summary>The shader variant name (e.g., "Terrain", "NvgFill", "SolidFill").</summary>
         [JsonPropertyName("shaderName")]
@@ -72,6 +75,14 @@ namespace Veldrid
         public VdShaderBindingEntry[] FlatBindingMap { get; set; }
 
         /// <summary>
+        /// The compiled interface by NAME (vertex inputs, varyings, uniform blocks with std140 members) - what pipeline creation verifies
+        /// the application against (V7). Required (format version 2).
+        /// </summary>
+        [JsonPropertyName("interface")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public VdShaderInterface Interface { get; set; }
+
+        /// <summary>
         /// Per-backend shader data. Keys are backend names: "Vulkan", "Direct3D11", "Metal", "OpenGL", "OpenGLES".
         /// </summary>
         [JsonPropertyName("backends")]
@@ -87,14 +98,35 @@ namespace Veldrid
         public void SerializeToFile(string path)
             => File.WriteAllText(path, Serialize());
 
-        /// <summary>Deserialize a shader bundle from JSON.</summary>
+        /// <summary>
+        /// Deserialize a shader bundle from JSON. A bundle older than <see cref="CurrentFormatVersion"/> or without an
+        /// <see cref="Interface"/> is REJECTED: nothing can verify it (V7), so nothing may load it. Recompile with the current Veldrid.SPIRV.
+        /// </summary>
         public static VeldridShaderBundle Deserialize(string json)
-            => JsonSerializer.Deserialize(json, VdShaderBundleJsonContext.Default.VeldridShaderBundle)
+        {
+            var bundle = JsonSerializer.Deserialize(json, VdShaderBundleJsonContext.Default.VeldridShaderBundle)
                 ?? throw new VeldridException("Failed to deserialize .vdshader file: null result");
+            bundle.RequireCurrentFormat();
+            return bundle;
+        }
+
+        /// <summary>Throw unless this bundle is format <see cref="CurrentFormatVersion"/> with an interface (see <see cref="Deserialize"/>).</summary>
+        public void RequireCurrentFormat()
+        {
+            if (Version < CurrentFormatVersion || Interface is null)
+                throw new VeldridException(
+                    $".vdshader bundle '{ShaderName ?? "?"}' is format version {Version}{(Interface is null ? " without an interface section" : "")}; " +
+                    $"version {CurrentFormatVersion} with 'interface' is required so the pipeline contract can be verified by name. " +
+                    "Recompile it with the current Veldrid.SPIRV (ShaderBundlePipeline / CompileShaders). " +
+                    "See AN_Veldrid/_BUGFIX/BUGFIX_ShaderInterfaceContract_NameVerified.md.");
+        }
 
         /// <summary>Deserialize a shader bundle from a file.</summary>
         public static VeldridShaderBundle DeserializeFromFile(string path)
-            => Deserialize(File.ReadAllText(path));
+        {
+            try { return Deserialize(File.ReadAllText(path)); }
+            catch (VeldridException ex) { throw new VeldridException($"{ex.Message} (file: {path})", ex); }
+        }
 
         // ─── Runtime API ────────────────────────────────────────────────────────
 

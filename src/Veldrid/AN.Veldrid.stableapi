@@ -1,5 +1,12 @@
 __stableApiVersion: 2
+const.ShaderContractVerifier.Rule_V7_ShaderSet: string "V7"
+const.ShaderContractVerifier.Rule_V7a_VertexInputs: string "V7a"
+const.ShaderContractVerifier.Rule_V7b_ResourceLayouts: string "V7b"
+const.ShaderContractVerifier.Rule_V7c_UniformStructs: string "V7c"
+const.VeldridShaderBundle.CurrentFormatVersion: int 2
+default.PrecompiledShaderResult..ctor.bundleName: object null
 default.PrecompiledShaderResult..ctor.flatBindingMap: object null
+default.PrecompiledShaderResult..ctor.shaderInterface: object null
 default.ResourceFactory.CreateFromBundle.basePath: object null
 default.ResourceFactory.CreateFromBundle.basePath: object null
 default.ResourceFactory.CreateFromBundle.fileResolver: object null
@@ -752,7 +759,7 @@ method.OutputDescription.Equals: bool(OutputDescription other)
 method.OutputDescription.GetHashCode: int()
 method.Pipeline.Dispose: void()
 method.PixelFormatProperties.IsSampleCountSupported: bool(TextureSampleCount count)
-method.PrecompiledShaderResult..ctor: void(Shader[] shaders, ResourceLayoutDescription[] resourceLayouts, VdShaderBindingEntry[] flatBindingMap)
+method.PrecompiledShaderResult..ctor: void(Shader[] shaders, ResourceLayoutDescription[] resourceLayouts, VdShaderBindingEntry[] flatBindingMap, VdShaderInterface shaderInterface, string bundleName)
 method.PrecompiledShaderResult.CreateResourceLayouts: ResourceLayout[](ResourceFactory factory)
 method.RasterizerStateDescription..ctor: void(FaceCullMode cullMode, PolygonFillMode fillMode, FrontFace frontFace, bool depthClipEnabled, bool scissorTestEnabled)
 method.RasterizerStateDescription.Equals: bool(RasterizerStateDescription other)
@@ -822,14 +829,31 @@ method.SamplerDescription..ctor: void(SamplerAddressMode addressModeU, SamplerAd
 method.SamplerDescription.Equals: bool(SamplerDescription other)
 method.SamplerDescription.GetHashCode: int()
 method.Shader.Dispose: void()
+method.ShaderContractException..ctor: void(string bundleName, IReadOnlyList`1<ShaderContractViolation> violations)
+method.ShaderContractVerifier.FormatsCompatible: bool(VertexElementFormat pipeline, VertexElementFormat glsl)
+method.ShaderContractVerifier.ThrowIfViolated: void(ref GraphicsPipelineDescription description)
+method.ShaderContractVerifier.Verify: List`1<ShaderContractViolation>(ref GraphicsPipelineDescription description, PrecompiledShaderResult bundle)
+method.ShaderContractViolation..ctor: void(string Rule, string Name, string SideA, string SideB, string Detail)
+method.ShaderContractViolation.Deconstruct: void(ref string Rule, ref string Name, ref string SideA, ref string SideB, ref string Detail)
+method.ShaderContractViolation.Equals: bool(ShaderContractViolation other)
+method.ShaderContractViolation.Equals: bool(object obj)
+method.ShaderContractViolation.GetHashCode: int()
+method.ShaderContractViolation.ToString: string()
+method.ShaderContractViolation.op_Equality: bool(ShaderContractViolation left, ShaderContractViolation right)
+method.ShaderContractViolation.op_Inequality: bool(ShaderContractViolation left, ShaderContractViolation right)
 method.ShaderDescription..ctor: void(ShaderStages stage, byte[] shaderBytes, string entryPoint)
 method.ShaderDescription..ctor: void(ShaderStages stage, byte[] shaderBytes, string entryPoint, bool debug)
 method.ShaderDescription.Equals: bool(ShaderDescription other)
 method.ShaderDescription.GetHashCode: int()
+method.ShaderInterfaceRegistry.TryGetBundle: PrecompiledShaderResult(Shader shader)
 method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts, Shader[] shaders)
 method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts, Shader[] shaders, SpecializationConstant[] specializations)
 method.ShaderSetDescription.Equals: bool(ShaderSetDescription other)
 method.ShaderSetDescription.GetHashCode: int()
+method.ShaderUniformBlockRegistry.Clear: void()
+method.ShaderUniformBlockRegistry.For: IReadOnlyList`1<ValueTuple`2<Type, string>>(string bundleName)
+method.ShaderUniformBlockRegistry.Register: void(Assembly assembly)
+method.ShaderUniformBlockRegistry.Register: void(Type structType, string bundleName, string glslBlockName)
 method.SpecializationConstant..ctor: void(uint id, ShaderConstantType type, ulong data)
 method.SpecializationConstant..ctor: void(uint id, bool value)
 method.SpecializationConstant..ctor: void(uint id, double value)
@@ -879,8 +903,14 @@ method.TextureViewDescription.Equals: bool(TextureViewDescription other)
 method.TextureViewDescription.GetHashCode: int()
 method.VdShaderBackendData..ctor: void()
 method.VdShaderBindingEntry..ctor: void()
+method.VdShaderInterface..ctor: void()
 method.VdShaderResourceElement..ctor: void()
 method.VdShaderResourceLayout..ctor: void()
+method.VdShaderUniformBlock..ctor: void()
+method.VdShaderUniformBlockAttribute..ctor: void(string bundleName, string glslBlockName)
+method.VdShaderUniformMember..ctor: void()
+method.VdShaderVarying..ctor: void()
+method.VdShaderVertexInput..ctor: void()
 method.VeldridDeviceLostException..ctor: void(GpuDeviceLostReason lostReason, int nativeReasonCode, string message)
 method.VeldridDeviceLostException..ctor: void(GpuDeviceLostReason lostReason, int nativeReasonCode, string message, Exception innerException)
 method.VeldridException..ctor: void()
@@ -893,6 +923,7 @@ method.VeldridShaderBundle.DeserializeFromFile: VeldridShaderBundle(string path)
 method.VeldridShaderBundle.GetBackendKey: string(GraphicsBackend backend)
 method.VeldridShaderBundle.GetResourceLayouts: ResourceLayoutDescription[]()
 method.VeldridShaderBundle.GetVertexFragmentShaderData: ValueTuple`4<byte[], byte[], string, string>(GraphicsBackend backend, Func`2<string, byte[]> fileResolver, string basePath)
+method.VeldridShaderBundle.RequireCurrentFormat: void()
 method.VeldridShaderBundle.Serialize: string()
 method.VeldridShaderBundle.SerializeToFile: void(string path)
 method.VertexElementDescription..ctor: void(string name, VertexElementFormat format, VertexElementSemantic semantic)
@@ -1018,7 +1049,9 @@ property.OpenGLPlatformInfo.SwapBuffers: Action { get; }
 property.Pipeline.IsComputePipeline: bool { get; }
 property.Pipeline.IsDisposed: bool { get; }
 property.Pipeline.Name: string { get; set; }
+property.PrecompiledShaderResult.BundleName: string { get; }
 property.PrecompiledShaderResult.FlatBindingMap: VdShaderBindingEntry[] { get; }
+property.PrecompiledShaderResult.Interface: VdShaderInterface { get; }
 property.PrecompiledShaderResult.ResourceLayouts: ResourceLayoutDescription[] { get; }
 property.PrecompiledShaderResult.Shaders: Shader[] { get; }
 property.ResourceFactory.BackendType: GraphicsBackend { get; }
@@ -1037,6 +1070,13 @@ property.Shader.EntryPoint: string { get; }
 property.Shader.IsDisposed: bool { get; }
 property.Shader.Name: string { get; set; }
 property.Shader.Stage: ShaderStages { get; }
+property.ShaderContractException.BundleName: string { get; }
+property.ShaderContractException.Violations: IReadOnlyList`1<ShaderContractViolation> { get; }
+property.ShaderContractViolation.Detail: string { get; set; }
+property.ShaderContractViolation.Name: string { get; set; }
+property.ShaderContractViolation.Rule: string { get; set; }
+property.ShaderContractViolation.SideA: string { get; set; }
+property.ShaderContractViolation.SideB: string { get; set; }
 property.StagingBufferPoolTelemetry.CreatedTotalBytes: long { get; }
 property.StagingBufferPoolTelemetry.CreatedTotalCount: long { get; }
 property.StagingBufferPoolTelemetry.EvictedTotalBytes: long { get; }
@@ -1084,10 +1124,33 @@ property.VdShaderBindingEntry.Kind: ResourceKind { get; set; }
 property.VdShaderBindingEntry.Name: string { get; set; }
 property.VdShaderBindingEntry.Set: uint { get; set; }
 property.VdShaderBindingEntry.Stages: ShaderStages { get; set; }
+property.VdShaderInterface.FragmentInputs: VdShaderVarying[] { get; set; }
+property.VdShaderInterface.UniformBlocks: VdShaderUniformBlock[] { get; set; }
+property.VdShaderInterface.VertexInputs: VdShaderVertexInput[] { get; set; }
+property.VdShaderInterface.VertexOutputs: VdShaderVarying[] { get; set; }
 property.VdShaderResourceElement.Kind: ResourceKind { get; set; }
 property.VdShaderResourceElement.Name: string { get; set; }
 property.VdShaderResourceElement.Stages: ShaderStages { get; set; }
 property.VdShaderResourceLayout.Elements: VdShaderResourceElement[] { get; set; }
+property.VdShaderUniformBlock.Binding: uint { get; set; }
+property.VdShaderUniformBlock.Members: VdShaderUniformMember[] { get; set; }
+property.VdShaderUniformBlock.Name: string { get; set; }
+property.VdShaderUniformBlock.Set: uint { get; set; }
+property.VdShaderUniformBlock.SizeBytes: uint { get; set; }
+property.VdShaderUniformBlock.Stages: ShaderStages { get; set; }
+property.VdShaderUniformBlockAttribute.BundleName: string { get; }
+property.VdShaderUniformBlockAttribute.GlslBlockName: string { get; }
+property.VdShaderUniformMember.Name: string { get; set; }
+property.VdShaderUniformMember.OffsetBytes: uint { get; set; }
+property.VdShaderUniformMember.SizeBytes: uint { get; set; }
+property.VdShaderUniformMember.Type: string { get; set; }
+property.VdShaderVarying.Flat: bool { get; set; }
+property.VdShaderVarying.Location: uint { get; set; }
+property.VdShaderVarying.Name: string { get; set; }
+property.VdShaderVarying.Type: string { get; set; }
+property.VdShaderVertexInput.Format: VertexElementFormat { get; set; }
+property.VdShaderVertexInput.Location: uint { get; set; }
+property.VdShaderVertexInput.Name: string { get; set; }
 property.VeldridDeviceLostException.LostReason: GpuDeviceLostReason { get; }
 property.VeldridDeviceLostException.NativeReasonCode: int { get; }
 property.VeldridShaderBundle.Backends: Dictionary`2<string, VdShaderBackendData> { get; set; }
@@ -1095,6 +1158,7 @@ property.VeldridShaderBundle.ComputeSource: string { get; set; }
 property.VeldridShaderBundle.FlatBindingMap: VdShaderBindingEntry[] { get; set; }
 property.VeldridShaderBundle.FragmentSource: string { get; set; }
 property.VeldridShaderBundle.InputHash: string { get; set; }
+property.VeldridShaderBundle.Interface: VdShaderInterface { get; set; }
 property.VeldridShaderBundle.Purpose: string { get; set; }
 property.VeldridShaderBundle.ResourceLayoutDescriptions: VdShaderResourceLayout[] { get; set; }
 property.VeldridShaderBundle.ShaderName: string { get; set; }
@@ -1330,6 +1394,14 @@ struct.SamplerDescription.field6.MinimumLod: uint
 struct.SamplerDescription.field7.MaximumLod: uint
 struct.SamplerDescription.field8.LodBias: int
 struct.SamplerDescription.field9.BorderColor: SamplerBorderColor
+struct.ShaderContractViolation._layout: Sequential
+struct.ShaderContractViolation._pack: 0
+struct.ShaderContractViolation._size: 0
+struct.ShaderContractViolation.field0.<Rule>k__BackingField: string
+struct.ShaderContractViolation.field1.<Name>k__BackingField: string
+struct.ShaderContractViolation.field2.<SideA>k__BackingField: string
+struct.ShaderContractViolation.field3.<SideB>k__BackingField: string
+struct.ShaderContractViolation.field4.<Detail>k__BackingField: string
 struct.ShaderDescription._layout: Sequential
 struct.ShaderDescription._pack: 0
 struct.ShaderDescription._size: 0
@@ -1492,9 +1564,14 @@ type.SamplerDescription: struct
 type.SamplerFilter: enum
 type.Shader: abstract class
 type.ShaderConstantType: enum
+type.ShaderContractException: sealed class
+type.ShaderContractVerifier: static class
+type.ShaderContractViolation: struct
 type.ShaderDescription: struct
+type.ShaderInterfaceRegistry: static class
 type.ShaderSetDescription: struct
 type.ShaderStages: enum
+type.ShaderUniformBlockRegistry: static class
 type.SpecializationConstant: struct
 type.StagingBufferPoolTelemetry: static class
 type.StencilBehaviorDescription: struct
@@ -1512,8 +1589,14 @@ type.TextureView: abstract class
 type.TextureViewDescription: struct
 type.VdShaderBackendData: sealed class
 type.VdShaderBindingEntry: sealed class
+type.VdShaderInterface: sealed class
 type.VdShaderResourceElement: sealed class
 type.VdShaderResourceLayout: sealed class
+type.VdShaderUniformBlock: sealed class
+type.VdShaderUniformBlockAttribute: sealed class
+type.VdShaderUniformMember: sealed class
+type.VdShaderVarying: sealed class
+type.VdShaderVertexInput: sealed class
 type.VeldridDeviceLostException: class
 type.VeldridException: class
 type.VeldridShaderBundle: sealed class

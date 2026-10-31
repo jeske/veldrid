@@ -34,19 +34,34 @@ namespace Veldrid
         public VdShaderBindingEntry[] FlatBindingMap { get; }
 
         /// <summary>
+        /// The bundle's compiled interface by NAME (vertex inputs, varyings, uniform blocks). <see cref="ShaderContractVerifier"/> checks
+        /// every graphics pipeline built from <see cref="Shaders"/> against it (V7). Null only for results not created from a bundle.
+        /// </summary>
+        public VdShaderInterface Interface { get; }
+
+        /// <summary>The bundle's shaderName - the key <see cref="VdShaderUniformBlockAttribute"/> structs are registered under.</summary>
+        public string BundleName { get; }
+
+        /// <summary>
         /// Creates a new <see cref="PrecompiledShaderResult"/>.
         /// </summary>
         /// <param name="shaders">The compiled shader objects.</param>
         /// <param name="resourceLayouts">The resource layout descriptions from the bundle.</param>
         /// <param name="flatBindingMap">The flat binding map from the cross-compiler (may be null).</param>
+        /// <param name="shaderInterface">The bundle's compiled interface (null = not verifiable).</param>
+        /// <param name="bundleName">The bundle's shaderName.</param>
         public PrecompiledShaderResult(
             Shader[] shaders,
             ResourceLayoutDescription[] resourceLayouts,
-            VdShaderBindingEntry[] flatBindingMap = null)
+            VdShaderBindingEntry[] flatBindingMap = null,
+            VdShaderInterface shaderInterface = null,
+            string bundleName = null)
         {
             Shaders = shaders;
             ResourceLayouts = resourceLayouts;
             FlatBindingMap = flatBindingMap;
+            Interface = shaderInterface;
+            BundleName = bundleName;
         }
 
         /// <summary>

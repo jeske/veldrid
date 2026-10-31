@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\AN.Veldrid.Build.props" />
+
+  <!-- Pure (no GPU) tests of the shader interface contract's pipeline-creation half (V7) and the .vdshader format gate.
+       Spec: _BUGFIX/BUGFIX_ShaderInterfaceContract_NameVerified.md -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Veldrid.ContractTests</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Veldrid\Veldrid.csproj" />
+  </ItemGroup>
+
+</Project>

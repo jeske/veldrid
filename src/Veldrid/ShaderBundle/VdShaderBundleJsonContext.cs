@@ -18,6 +18,15 @@ namespace Veldrid
     [JsonSerializable(typeof(VdShaderBindingEntry))]
     [JsonSerializable(typeof(VdShaderResourceLayout[]))]
     [JsonSerializable(typeof(VdShaderBindingEntry[]))]
+    [JsonSerializable(typeof(VdShaderInterface))]
+    [JsonSerializable(typeof(VdShaderVertexInput))]
+    [JsonSerializable(typeof(VdShaderVertexInput[]))]
+    [JsonSerializable(typeof(VdShaderVarying))]
+    [JsonSerializable(typeof(VdShaderVarying[]))]
+    [JsonSerializable(typeof(VdShaderUniformBlock))]
+    [JsonSerializable(typeof(VdShaderUniformBlock[]))]
+    [JsonSerializable(typeof(VdShaderUniformMember))]
+    [JsonSerializable(typeof(VdShaderUniformMember[]))]
     [JsonSerializable(typeof(Dictionary<string, VdShaderBackendData>))]
     internal partial class VdShaderBundleJsonContext : JsonSerializerContext
     {

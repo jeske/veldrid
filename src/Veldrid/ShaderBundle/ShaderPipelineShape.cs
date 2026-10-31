@@ -49,6 +49,8 @@ namespace Veldrid
             Owner.InvalidateSet(Set);
         }
         internal ShaderPipelineShape Owner { get; set; }
+        internal bool UsesDynamicUniform { get; set; }
+        internal uint DynamicUniformOffset { get; set; }
 
         internal void SetResource(IBindableResource resource)
         {
@@ -66,6 +68,7 @@ namespace Veldrid
                 TextureView v => v.IsDisposed,
                 Sampler s => s.IsDisposed,
                 DeviceBuffer b => b.IsDisposed,
+                DeviceBufferRange range => range.Buffer.IsDisposed,
                 _ => false,
             };
             if (isDisposed)
@@ -82,11 +85,36 @@ namespace Veldrid
         internal VdShaderUniformBlock Compiled { get; set; }
         internal override ResourceKind[] AcceptedKinds => [ResourceKind.UniformBuffer];
 
+        public ShaderUniformArena<T> CreateArena(GraphicsDevice device, uint capacity)
+        {
+            if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
+            Owner.EnsureBound();
+            if (!UsesDynamicUniform) throw new InvalidOperationException("Declare this field with [DynamicUniform] before using an arena.");
+            if (!ReferenceEquals(device.ResourceFactory, Owner.BoundFactory)) throw new InvalidOperationException("Uniform arena device differs from shape device.");
+            return new ShaderUniformArena<T>(device, Name, Compiled.SizeBytes, capacity);
+        }
+
+        public void Select(ShaderUniformArena<T> arena, UniformArenaElement element)
+        {
+            ArgumentNullException.ThrowIfNull(arena);
+            if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
+            Owner.EnsureBound();
+            if (!UsesDynamicUniform) throw new InvalidOperationException("This field is not a dynamic uniform block.");
+            // One verified T may supply differently named blocks (Silky PaintParams/GradientParams/ImagePatternParams).
+            // Each destination block was independently checked against every T field at shape construction.
+            if (!ReferenceEquals(arena.Factory, Owner.BoundFactory))
+                throw new InvalidOperationException("Uniform arena device does not match this slot.");
+            uint offset = arena.OffsetOf(element);
+            SetResource(new DeviceBufferRange(arena.Buffer, 0, Compiled.SizeBytes));
+            DynamicUniformOffset = offset;
+        }
+
         /// <summary>Write the whole block. <typeparamref name="T"/> was verified field-by-field against the compiled block at <c>Bind</c>.</summary>
         public void Update(CommandList cl, in T value)
         {
             if (Buffer is null) throw new InvalidOperationException($"UniformBlock '{Name}' is not bound (shape not created through ShaderPipelineShape.Bind).");
             Owner.EnsureBound();
+            if (!ReferenceEquals(Bound, Buffer)) throw new InvalidOperationException("Write selected arena elements through the arena, not Update.");
             cl.UpdateBuffer(Buffer, 0, value);
         }
 
@@ -104,6 +132,7 @@ namespace Veldrid
             if (Marshal.SizeOf<TMember>() != compiledMember.SizeBytes)
                 throw new ShaderContractException(Name, [new ShaderContractViolation(ShaderContractVerifier.Rule_V7c_UniformStructs, $"{Name}.{field.Name}", $"value {Marshal.SizeOf<TMember>()} B", $"member {compiledMember.SizeBytes} B", "size mismatch")]);
             Owner.EnsureBound();
+            if (!ReferenceEquals(Bound, Buffer)) throw new InvalidOperationException("Write selected arena elements through the arena, not UpdateMember.");
             cl.UpdateBuffer(Buffer, compiledMember.OffsetBytes, value);
         }
 
@@ -215,6 +244,7 @@ namespace Veldrid
         private readonly List<ShapeSlot> slots = new();
         private readonly List<(FieldInfo Field, bool PerInstance, VertexLayoutDescription Layout)> vertexInputs = new();
         private ResourceFactory factory;
+        internal ResourceFactory BoundFactory => factory;
         private bool disposed;
         private readonly List<(FieldInfo Field, object Handle)> boundFields = new();
 
@@ -271,7 +301,26 @@ namespace Veldrid
         {
             Bundle = bundle; factory = f;
             var compiledLayouts = bundle.ResourceLayouts ?? [];
-            layouts = bundle.CreateResourceLayouts(f);
+            layouts = new ResourceLayout[compiledLayouts.Length];
+            for (uint set = 0; set < compiledLayouts.Length; set++)
+            {
+                var description = compiledLayouts[set];
+                description.Elements = (ResourceLayoutElementDescription[])description.Elements.Clone();
+                for (int b = 0; b < description.Elements.Length; b++)
+                {
+                    var element = description.Elements[b];
+                    if (string.IsNullOrEmpty(element.Name)) continue;
+                    var field = GetType().GetField(element.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
+                    if (field.IsDefined(typeof(DynamicUniformAttribute)))
+                    {
+                        if (element.Kind != ResourceKind.UniformBuffer)
+                            throw new ShaderContractException(BundleName, [new ShaderContractViolation("DYNAMIC", element.Name, "DynamicUniform", element.Kind.ToString(), "only uniform blocks may use a dynamic uniform range")]);
+                        description.Elements[b].Options |= ResourceLayoutElementOptions.DynamicBinding;
+                    }
+                }
+                var map = bundle.FlatBindingMap?.Where(e => e.Set == set).ToArray();
+                layouts[set] = map is { Length: > 0 } ? f.CreateResourceLayout(ref description, set, map) : f.CreateResourceLayout(ref description);
+            }
             sets = new ResourceSet[layouts.Length]; setDirty = new bool[layouts.Length]; setCache = Enumerable.Range(0, layouts.Length).Select(_ => new Dictionary<BoundResourcesKey, ResourceSet>()).ToArray();
             for (int set = 0; set < compiledLayouts.Length; set++)
             {
@@ -283,6 +332,7 @@ namespace Veldrid
                     var field = GetType().GetField(slotDesc.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
                     var slot = (ShapeSlot)Activator.CreateInstance(slotDesc.SlotType)!;
                     slot.Name = slotDesc.Name; slot.Set = (uint)set; slot.Binding = (uint)binding; slot.Owner = this;
+                    slot.UsesDynamicUniform = field.IsDefined(typeof(DynamicUniformAttribute));
                     if (slotDesc.StructType != null)
                     {
                         var block = bundle.Interface.UniformBlocks.First(b => b.Name == slotDesc.Name);
@@ -381,7 +431,10 @@ namespace Veldrid
                     sets[set] = cached;
                     setDirty[set] = false;
                 }
-                if (compute) cl.SetComputeResourceSet((uint)set, sets[set]); else cl.SetGraphicsResourceSet((uint)set, sets[set]);
+                var offsets = slots.Where(s => s.Set == set && s.UsesDynamicUniform)
+                    .OrderBy(s => s.Binding).Select(s => s.DynamicUniformOffset).ToArray();
+                if (compute) cl.SetComputeResourceSet((uint)set, sets[set], offsets);
+                else cl.SetGraphicsResourceSet((uint)set, sets[set], offsets);
             }
             bindings.MarkResources(this);
         }

@@ -633,6 +633,7 @@ method.DeviceBuffer.Dispose: void()
 method.DeviceBufferRange..ctor: void(DeviceBuffer buffer, uint offset, uint sizeInBytes)
 method.DeviceBufferRange.Equals: bool(DeviceBufferRange other)
 method.DeviceBufferRange.GetHashCode: int()
+method.DynamicUniformAttribute..ctor: void()
 method.Fence.Dispose: void()
 method.Fence.Reset: void()
 method.FormatSizeHelpers.GetSizeInBytes: uint(PixelFormat format)
@@ -851,6 +852,9 @@ method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts,
 method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts, Shader[] shaders, SpecializationConstant[] specializations)
 method.ShaderSetDescription.Equals: bool(ShaderSetDescription other)
 method.ShaderSetDescription.GetHashCode: int()
+method.ShaderUniformArena`1.Dispose: void()
+method.ShaderUniformArena`1.Stage: void(UniformArenaElement element, ref !0 value)
+method.ShaderUniformArena`1.Upload: void(CommandList commands)
 method.ShaderVertexBuffer`1.Dispose: void()
 method.ShaderVertexBuffer`1.Update: void(CommandList commands, ReadOnlySpan`1<!0> vertices, uint firstVertex)
 method.ShapeDescriptor..ctor: void(string BundleName, ShapeSlotDescriptor[] Slots, ShapeVertexInputDescriptor[] VertexInputs)
@@ -938,8 +942,18 @@ method.TextureViewDescription..ctor: void(Texture target, PixelFormat format, ui
 method.TextureViewDescription..ctor: void(Texture target, uint baseMipLevel, uint mipLevels, uint baseArrayLayer, uint arrayLayers)
 method.TextureViewDescription.Equals: bool(TextureViewDescription other)
 method.TextureViewDescription.GetHashCode: int()
+method.UniformArenaElement..ctor: void(uint Value)
+method.UniformArenaElement.Deconstruct: void(ref uint Value)
+method.UniformArenaElement.Equals: bool(UniformArenaElement other)
+method.UniformArenaElement.Equals: bool(object obj)
+method.UniformArenaElement.GetHashCode: int()
+method.UniformArenaElement.ToString: string()
+method.UniformArenaElement.op_Equality: bool(UniformArenaElement left, UniformArenaElement right)
+method.UniformArenaElement.op_Inequality: bool(UniformArenaElement left, UniformArenaElement right)
 method.UniformBlock`1..ctor: void()
+method.UniformBlock`1.CreateArena: ShaderUniformArena`1<!0>(GraphicsDevice device, uint capacity)
 method.UniformBlock`1.Dispose: void()
+method.UniformBlock`1.Select: void(ShaderUniformArena`1<!0> arena, UniformArenaElement element)
 method.UniformBlock`1.Update: void(CommandList cl, ref !0 value)
 method.UniformBlock`1.UpdateMember: void(CommandList cl, Expression`1<Func`2<!0, !!0>> member, ref !!0 value)
 method.VdShaderBackendData..ctor: void()
@@ -1124,6 +1138,9 @@ property.ShaderContractViolation.SideA: string { get; set; }
 property.ShaderContractViolation.SideB: string { get; set; }
 property.ShaderPipelineShape.Bundle: PrecompiledShaderResult { get; }
 property.ShaderPipelineShape.BundleName: string { get; }
+property.ShaderUniformArena`1.Capacity: uint { get; }
+property.ShaderUniformArena`1.SizeInBytes: uint { get; }
+property.ShaderUniformArena`1.StrideBytes: uint { get; }
 property.ShaderVertexBuffer`1.Capacity: uint { get; }
 property.ShapeDescriptor.BundleName: string { get; set; }
 property.ShapeDescriptor.Slots: ShapeSlotDescriptor[] { get; set; }
@@ -1169,6 +1186,7 @@ property.TextureView.IsDisposed: bool { get; }
 property.TextureView.MipLevels: uint { get; }
 property.TextureView.Name: string { get; set; }
 property.TextureView.Target: Texture { get; }
+property.UniformArenaElement.Value: uint { get; set; }
 property.VdShaderBackendData.ComputeEntryPoint: string { get; set; }
 property.VdShaderBackendData.ComputeShaderData: string { get; set; }
 property.VdShaderBackendData.ComputeShaderFile: string { get; set; }
@@ -1524,6 +1542,10 @@ struct.TextureViewDescription.field2.MipLevels: uint
 struct.TextureViewDescription.field3.BaseArrayLayer: uint
 struct.TextureViewDescription.field4.ArrayLayers: uint
 struct.TextureViewDescription.field5.Format: Nullable`1<PixelFormat>
+struct.UniformArenaElement._layout: Sequential
+struct.UniformArenaElement._pack: 0
+struct.UniformArenaElement._size: 0
+struct.UniformArenaElement.field0.<Value>k__BackingField: uint
 struct.VertexElementDescription._layout: Sequential
 struct.VertexElementDescription._pack: 0
 struct.VertexElementDescription._size: 0
@@ -1571,6 +1593,7 @@ type.D3D11DeviceOptions: struct
 type.DepthStencilStateDescription: struct
 type.DeviceBuffer: abstract class
 type.DeviceBufferRange: struct
+type.DynamicUniformAttribute: sealed class
 type.FaceCullMode: enum
 type.Fence: abstract class
 type.FormatSizeHelpers: static class
@@ -1638,6 +1661,7 @@ type.ShaderInterfaceRegistry: static class
 type.ShaderPipelineShape: abstract class
 type.ShaderSetDescription: struct
 type.ShaderStages: enum
+type.ShaderUniformArena`1: sealed class
 type.ShaderVertexBuffer`1: sealed class
 type.ShapeDescriptor: sealed class
 type.ShapeDescriptorBuilder: static class
@@ -1662,6 +1686,7 @@ type.TextureType: enum
 type.TextureUsage: enum
 type.TextureView: abstract class
 type.TextureViewDescription: struct
+type.UniformArenaElement: struct
 type.UniformBlock`1: sealed class
 type.VdShaderBackendData: sealed class
 type.VdShaderBindingEntry: sealed class

@@ -201,6 +201,11 @@ namespace Veldrid
         /// </param>
         internal void SetGraphicsResourceSet(uint slot, ResourceSet rs, uint[] dynamicOffsets)
         {
+            if (dynamicOffsets.Length == 0)
+            {
+                SetGraphicsResourceSet(slot, rs);
+                return;
+            }
             SetGraphicsResourceSet(slot, rs, (uint)dynamicOffsets.Length, ref dynamicOffsets[0]);
         }
 
@@ -319,6 +324,11 @@ namespace Veldrid
         /// </param>
         internal void SetComputeResourceSet(uint slot, ResourceSet rs, uint[] dynamicOffsets)
         {
+            if (dynamicOffsets.Length == 0)
+            {
+                SetComputeResourceSet(slot, rs);
+                return;
+            }
             SetComputeResourceSet(slot, rs, (uint)dynamicOffsets.Length, ref dynamicOffsets[0]);
         }
 

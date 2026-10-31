@@ -818,12 +818,12 @@ namespace Veldrid
         ///     which new data will be uploaded.
         /// </param>
         /// <param name="source">The value to upload.</param>
-        public unsafe void UpdateBuffer<T>(
+        public unsafe void UpdateBufferOutsideCommandList<T>(
             DeviceBuffer buffer,
             uint bufferOffsetInBytes,
             T source) where T : unmanaged
         {
-            UpdateBuffer(buffer, bufferOffsetInBytes, (IntPtr)(&source), (uint)sizeof(T));
+            UpdateBufferOutsideCommandList(buffer, bufferOffsetInBytes, (IntPtr)(&source), (uint)sizeof(T));
         }
 
         /// <summary>
@@ -837,12 +837,12 @@ namespace Veldrid
         ///     which new data will be uploaded.
         /// </param>
         /// <param name="source">A reference to the single value to upload.</param>
-        public unsafe void UpdateBuffer<T>(
+        public unsafe void UpdateBufferOutsideCommandList<T>(
             DeviceBuffer buffer,
             uint bufferOffsetInBytes,
             ref T source) where T : unmanaged
         {
-            fixed (T* ptr = &source) UpdateBuffer(buffer, bufferOffsetInBytes, (IntPtr)ptr, (uint)sizeof(T));
+            fixed (T* ptr = &source) UpdateBufferOutsideCommandList(buffer, bufferOffsetInBytes, (IntPtr)ptr, (uint)sizeof(T));
         }
 
         /// <summary>
@@ -857,13 +857,13 @@ namespace Veldrid
         /// </param>
         /// <param name="source">A reference to the first of a series of values to upload.</param>
         /// <param name="sizeInBytes">The total size of the uploaded data, in bytes.</param>
-        public unsafe void UpdateBuffer<T>(
+        public unsafe void UpdateBufferOutsideCommandList<T>(
             DeviceBuffer buffer,
             uint bufferOffsetInBytes,
             ref T source,
             uint sizeInBytes) where T : unmanaged
         {
-            fixed (T* ptr = &source) UpdateBuffer(buffer, bufferOffsetInBytes, (IntPtr)ptr, sizeInBytes);
+            fixed (T* ptr = &source) UpdateBufferOutsideCommandList(buffer, bufferOffsetInBytes, (IntPtr)ptr, sizeInBytes);
         }
 
         /// <summary>
@@ -877,12 +877,12 @@ namespace Veldrid
         ///     which new data will be uploaded.
         /// </param>
         /// <param name="source">An array containing the data to upload.</param>
-        public void UpdateBuffer<T>(
+        public void UpdateBufferOutsideCommandList<T>(
             DeviceBuffer buffer,
             uint bufferOffsetInBytes,
             T[] source) where T : unmanaged
         {
-            UpdateBuffer(buffer, bufferOffsetInBytes, (ReadOnlySpan<T>)source);
+            UpdateBufferOutsideCommandList(buffer, bufferOffsetInBytes, (ReadOnlySpan<T>)source);
         }
 
         /// <summary>
@@ -896,12 +896,12 @@ namespace Veldrid
         ///     which new data will be uploaded.
         /// </param>
         /// <param name="source">A readonly span containing the data to upload.</param>
-        public unsafe void UpdateBuffer<T>(
+        public unsafe void UpdateBufferOutsideCommandList<T>(
             DeviceBuffer buffer,
             uint bufferOffsetInBytes,
             ReadOnlySpan<T> source) where T : unmanaged
         {
-            fixed (void* pin = &MemoryMarshal.GetReference(source)) UpdateBuffer(buffer, bufferOffsetInBytes, (IntPtr)pin, (uint)(sizeof(T) * source.Length));
+            fixed (void* pin = &MemoryMarshal.GetReference(source)) UpdateBufferOutsideCommandList(buffer, bufferOffsetInBytes, (IntPtr)pin, (uint)(sizeof(T) * source.Length));
         }
 
         /// <summary>
@@ -915,16 +915,22 @@ namespace Veldrid
         ///     which new data will be uploaded.
         /// </param>
         /// <param name="source">A span containing the data to upload.</param>
-        public void UpdateBuffer<T>(
+        public void UpdateBufferOutsideCommandList<T>(
             DeviceBuffer buffer,
             uint bufferOffsetInBytes,
             Span<T> source) where T : unmanaged
         {
-            UpdateBuffer(buffer, bufferOffsetInBytes, (ReadOnlySpan<T>)source);
+            UpdateBufferOutsideCommandList(buffer, bufferOffsetInBytes, (ReadOnlySpan<T>)source);
         }
 
         /// <summary>
-        ///     Updates a <see cref="DeviceBuffer" /> region with new data.
+        ///     Updates a buffer outside the caller's command list; this is NOT recorded at a position in that list.
+        ///     The caller must synchronize access with recorded and in-flight GPU work. Return does not imply GPU completion.
+        ///     Use CommandList.UpdateBuffer for updates that must be ordered between commands.
+        ///     Allocation/access restrictions and the implementation of this operation are backend-dependent.
+        ///     Requires the buffer to have been created with <see cref="BufferDescription.AllowUpdateBufferOutsideCommandList" />;
+        ///     otherwise a <see cref="VeldridException" /> is thrown unconditionally (all seven public overloads funnel through here).
+        ///     That flag is the caller's acknowledgement of the ordering hazard, not a memory-class or allocation property.
         /// </summary>
         /// <param name="buffer">The resource to update.</param>
         /// <param name="bufferOffsetInBytes">
@@ -933,16 +939,23 @@ namespace Veldrid
         /// </param>
         /// <param name="source">A pointer to the start of the data to upload.</param>
         /// <param name="sizeInBytes">The total size of the uploaded data, in bytes.</param>
-        public void UpdateBuffer(
+        public void UpdateBufferOutsideCommandList(
             DeviceBuffer buffer,
             uint bufferOffsetInBytes,
             IntPtr source,
             uint sizeInBytes)
         {
+            if (!buffer.AllowUpdateBufferOutsideCommandList)
+            {
+                throw new VeldridException(
+                    $"{nameof(BufferDescription)}.{nameof(BufferDescription.AllowUpdateBufferOutsideCommandList)} must be set on buffer '{buffer.Name}' (Usage={buffer.Usage}, {buffer.SizeInBytes} B) in order to use {nameof(GraphicsDevice)}.{nameof(UpdateBufferOutsideCommandList)}(). " +
+                    $"This write is NOT ordered relative to recorded commands; use {nameof(CommandList)}.{nameof(CommandList.UpdateBuffer)} for writes that must be sequenced within a command list.");
+            }
+
             if (bufferOffsetInBytes + sizeInBytes > buffer.SizeInBytes)
             {
                 throw new VeldridException(
-                    $"The data size given to UpdateBuffer is too large. The given buffer can only hold {buffer.SizeInBytes} total bytes. The requested update would require {bufferOffsetInBytes + sizeInBytes} bytes.");
+                    $"The data size given to UpdateBufferOutsideCommandList is too large. The given buffer can only hold {buffer.SizeInBytes} total bytes. The requested update would require {bufferOffsetInBytes + sizeInBytes} bytes.");
             }
 
             if (sizeInBytes == 0)

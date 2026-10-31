@@ -1045,7 +1045,7 @@ namespace Veldrid.D3D11
             availableStagingBuffers.Clear();
 
             var staging = gd.ResourceFactory.CreateBuffer(
-                new BufferDescription(sizeInBytes, BufferUsage.Staging));
+                new BufferDescription(sizeInBytes, BufferUsage.Staging, structureByteStride: 0, rawBuffer: false, allowUpdateBufferOutsideCommandList: true /* backend-owned pool: fill -> record copy -> recycle after completion */));
             StagingBufferPoolTelemetry.NoteCreated(sizeInBytes);
 
             return Util.AssertSubtype<DeviceBuffer, D3D11Buffer>(staging);
@@ -1250,7 +1250,7 @@ namespace Veldrid.D3D11
             else
             {
                 var staging = getFreeStagingBuffer(sizeInBytes);
-                gd.UpdateBuffer(staging, 0, source, sizeInBytes);
+                gd.UpdateBufferOutsideCommandList(staging, 0, source, sizeInBytes);
                 CopyBuffer(staging, 0, buffer, bufferOffsetInBytes, sizeInBytes);
                 submittedStagingBuffers.Add(staging);
             }

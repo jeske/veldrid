@@ -54,8 +54,16 @@ field.ShaderPipelineShapeTests.WrongKindShape.Projection: UniformBlock`1<Project
 field.ShaderPipelineShapeTests.WrongKindShape.Vertices: VertexInput`1<QuadVertex>
 field.ShapeBypassTests.Nested.Inner: Values
 field.ShapeBypassTests.Values.Value: float
+field.UniformArenaRenderTests.ArenaShape.FontSampler: SamplerSlot
+field.UniformArenaRenderTests.ArenaShape.FontTexture: TextureSlot
+field.UniformArenaRenderTests.ArenaShape.Projection: UniformBlock`1<ImGuiProjection>
+field.UniformArenaRenderTests.ArenaShape.Vertices: VertexInput`1<ImGuiVertex>
 method.CommandContractGpuTests..ctor: void()
 method.CommandContractGpuTests.D3D11_DrawAndDispatchWithoutVerifiedPipelineThrowBeforeNativeCommands: void()
+method.ExplicitUniformStorageTests..ctor: void()
+method.ExplicitUniformStorageTests.D3D11PartialUniformUpdateIsRejectedWithoutWidening: void()
+method.ExplicitUniformStorageTests.NonDynamicUpdatesBetweenDrawsRetainCommandOrder: void(GraphicsBackend backend, bool memberUpdates)
+method.ExplicitUniformStorageTests.StorageMustBeExplicitAndUsageIsPreserved: void(GraphicsBackend backend)
 method.ImGuiBundleContractTests..ctor: void()
 method.ImGuiBundleContractTests.CommittedImGuiBundleMatchesActualShape: void()
 method.ImGuiShape..ctor: void()
@@ -103,6 +111,15 @@ method.TypedVertexBindingTests..ctor: void()
 method.TypedVertexBindingTests.BindAcceptsOnlyTheSlotsExactVertexType: void()
 method.TypedVertexBindingTests.TypedBufferHasNoPublicRawBufferOrConstructor: void()
 method.TypedVertexBindingTests.UnboundInputCannotCreateOrBindBuffers: void()
+method.UniformArenaRenderTests..ctor: void()
+method.UniformArenaRenderTests.ArenaShape..ctor: void()
+method.UniformArenaRenderTests.TwoElementsOneUploadSelectDifferentUniformValues: void(GraphicsBackend backend)
+method.UpdateBufferOutsideCommandListPermissionTests..ctor: void()
+method.UpdateBufferOutsideCommandListPermissionTests.CommandListUpdateNeverNeedsThePermission: void(GraphicsBackend backend)
+method.UpdateBufferOutsideCommandListPermissionTests.DescriptionCarriesTheFlagInEqualityAndHash: void()
+method.UpdateBufferOutsideCommandListPermissionTests.DeviceLevelUpdateWithPermissionLandsBytes: void(GraphicsBackend backend, BufferUsage usage)
+method.UpdateBufferOutsideCommandListPermissionTests.DeviceLevelUpdateWithoutPermissionThrowsAndNamesTheRemedy: void(GraphicsBackend backend, BufferUsage usage)
+method.UpdateBufferOutsideCommandListPermissionTests.TypedShapeStorageIsSequencedByDesignAndNeverGrantsThePermission: void(GraphicsBackend backend)
 struct.ImGuiProjection._layout: Sequential
 struct.ImGuiProjection._pack: 0
 struct.ImGuiProjection._size: 0
@@ -154,6 +171,7 @@ struct.ShapeBypassTests.Values._pack: 0
 struct.ShapeBypassTests.Values._size: 0
 struct.ShapeBypassTests.Values.field0.Value: float
 type.CommandContractGpuTests: sealed class
+type.ExplicitUniformStorageTests: sealed class
 type.ImGuiBundleContractTests: sealed class
 type.ImGuiProjection: struct
 type.ImGuiShape: sealed class
@@ -178,3 +196,6 @@ type.ShapeBypassTests.Values: struct
 type.ShapeBypassTests: sealed class
 type.ShapeCommandBindingTests: sealed class
 type.TypedVertexBindingTests: sealed class
+type.UniformArenaRenderTests.ArenaShape: sealed class
+type.UniformArenaRenderTests: sealed class
+type.UpdateBufferOutsideCommandListPermissionTests: sealed class

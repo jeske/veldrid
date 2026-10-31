@@ -4,7 +4,7 @@ namespace Veldrid
 {
     /// <summary>
     ///     Process-wide counters for the CPU-visible STAGING BUFFER pools that back <see cref="CommandList.UpdateBuffer(DeviceBuffer, uint, System.IntPtr, uint)" />
-    ///     and <see cref="GraphicsDevice.UpdateBuffer(DeviceBuffer, uint, System.IntPtr, uint)" /> when a direct Map/UpdateSubresource path is not
+    ///     and <see cref="GraphicsDevice.UpdateBufferOutsideCommandList(DeviceBuffer, uint, System.IntPtr, uint)" /> when a direct Map/UpdateSubresource path is not
     ///     available (D3D11: partial update of a Dynamic buffer; Vulkan: every UpdateBuffer through a command list; Metal: likewise).
     ///     Every pool site (D3D11CommandList, D3D11GraphicsDevice, VkCommandList, VkGraphicsDevice, MTLCommandList) reports here.
     ///     <para>

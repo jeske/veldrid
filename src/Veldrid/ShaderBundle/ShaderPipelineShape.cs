@@ -49,8 +49,8 @@ namespace Veldrid
             Owner.InvalidateSet(Set);
         }
         internal ShaderPipelineShape Owner { get; set; }
-        internal bool UsesDynamicUniform { get; set; }
-        internal uint DynamicUniformOffset { get; set; }
+        internal bool UniformBindingOffsetSelectable { get; set; }
+        internal uint SelectedUniformBindingOffset { get; set; }
 
         internal void SetResource(IBindableResource resource)
         {
@@ -85,13 +85,31 @@ namespace Veldrid
         internal VdShaderUniformBlock Compiled { get; set; }
         internal override ResourceKind[] AcceptedKinds => [ResourceKind.UniformBuffer];
 
-        public ShaderUniformArena<T> CreateArena(GraphicsDevice device, uint capacity)
+        /// <summary>Create owned storage with explicit native usage. No allocation occurs at shape binding, and no CPU shadow is introduced.</summary>
+        public void CreateBuffer(BufferUsage usage)
         {
             if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
             Owner.EnsureBound();
-            if (!UsesDynamicUniform) throw new InvalidOperationException("Declare this field with [DynamicUniform] before using an arena.");
+            if (Buffer != null) throw new InvalidOperationException($"UniformBlock '{Name}' already owns storage.");
+            TypedBufferUsageValidation.RequireUniform(usage);
+            if (System.Runtime.CompilerServices.Unsafe.SizeOf<T>() != Compiled.SizeBytes)
+                throw new InvalidOperationException($"UniformBlock '{Name}' managed size differs from the verified block size.");
+            var buffer = Owner.BoundFactory.CreateBuffer(new BufferDescription(Compiled.SizeBytes, usage));
+            try { SetResource(buffer); }
+            catch { buffer.Dispose(); throw; }
+            Buffer = buffer;
+            SelectedUniformBindingOffset = 0;
+        }
+
+        /// <summary>Create aligned typed arena storage with an explicit allocation usage; offset selection is a separate field declaration.</summary>
+        public ShaderUniformArena<T> CreateArena(GraphicsDevice device, uint capacity, BufferUsage usage)
+        {
+            if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
+            Owner.EnsureBound();
+            ArgumentNullException.ThrowIfNull(device);
+            if (!UniformBindingOffsetSelectable) throw new InvalidOperationException("Declare this field with [UniformBufferBindingTimeOffsetSelectable] before using an arena.");
             if (!ReferenceEquals(device.ResourceFactory, Owner.BoundFactory)) throw new InvalidOperationException("Uniform arena device differs from shape device.");
-            return new ShaderUniformArena<T>(device, Name, Compiled.SizeBytes, capacity);
+            return new ShaderUniformArena<T>(device, Name, Compiled.SizeBytes, capacity, usage);
         }
 
         public void Select(ShaderUniformArena<T> arena, UniformArenaElement element)
@@ -99,22 +117,24 @@ namespace Veldrid
             ArgumentNullException.ThrowIfNull(arena);
             if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
             Owner.EnsureBound();
-            if (!UsesDynamicUniform) throw new InvalidOperationException("This field is not a dynamic uniform block.");
+            if (!UniformBindingOffsetSelectable) throw new InvalidOperationException("This uniform field does not declare binding-time offset selection.");
             // One verified T may supply differently named blocks (Silky PaintParams/GradientParams/ImagePatternParams).
             // Each destination block was independently checked against every T field at shape construction.
             if (!ReferenceEquals(arena.Factory, Owner.BoundFactory))
                 throw new InvalidOperationException("Uniform arena device does not match this slot.");
             uint offset = arena.OffsetOf(element);
             SetResource(new DeviceBufferRange(arena.Buffer, 0, Compiled.SizeBytes));
-            DynamicUniformOffset = offset;
+            SelectedUniformBindingOffset = offset;
         }
 
         /// <summary>Write the whole block. <typeparamref name="T"/> was verified field-by-field against the compiled block at <c>Bind</c>.</summary>
         public void Update(CommandList cl, in T value)
         {
-            if (Buffer is null) throw new InvalidOperationException($"UniformBlock '{Name}' is not bound (shape not created through ShaderPipelineShape.Bind).");
+            if (Buffer is null) throw new InvalidOperationException($"UniformBlock '{Name}' has no owned storage. Call CreateBuffer with explicit usage, or update its selected arena.");
             Owner.EnsureBound();
             if (!ReferenceEquals(Bound, Buffer)) throw new InvalidOperationException("Write selected arena elements through the arena, not Update.");
+            ShapeSlot.RequireLiveResource(Buffer);
+            ArgumentNullException.ThrowIfNull(cl);
             cl.UpdateBuffer(Buffer, 0, value);
         }
 
@@ -133,6 +153,13 @@ namespace Veldrid
                 throw new ShaderContractException(Name, [new ShaderContractViolation(ShaderContractVerifier.Rule_V7c_UniformStructs, $"{Name}.{field.Name}", $"value {Marshal.SizeOf<TMember>()} B", $"member {compiledMember.SizeBytes} B", "size mismatch")]);
             Owner.EnsureBound();
             if (!ReferenceEquals(Bound, Buffer)) throw new InvalidOperationException("Write selected arena elements through the arena, not UpdateMember.");
+            ShapeSlot.RequireLiveResource(Buffer);
+            // D3D11's current UpdateBuffer routes partial constant-buffer writes through a copy,
+            // not UpdateSubresource. Do not silently widen the write or invent a CPU shadow.
+            if (Owner.BoundFactory.BackendType == GraphicsBackend.Direct3D11
+                && (compiledMember.OffsetBytes != 0 || compiledMember.SizeBytes != Buffer.SizeInBytes))
+                throw new NotSupportedException($"UniformBlock '{Name}': this D3D11 update path requires the whole constant buffer; UpdateMember cannot issue a partial write. Use Update with a complete typed value.");
+            ArgumentNullException.ThrowIfNull(cl);
             cl.UpdateBuffer(Buffer, compiledMember.OffsetBytes, value);
         }
 
@@ -185,14 +212,14 @@ namespace Veldrid
         internal ResourceFactory Factory { get; set; }
 
         /// <summary>Create vertex storage whose upload type matches this verified input.</summary>
-        public ShaderVertexBuffer<TVertex> CreateBuffer(uint vertexCapacity)
+        public ShaderVertexBuffer<TVertex> CreateBuffer(uint vertexCapacity, BufferUsage usage)
         {
             EnsureBound();
             if (Layout.Stride != System.Runtime.CompilerServices.Unsafe.SizeOf<TVertex>())
                 throw new ShaderContractException(typeof(TVertex).Name, [new ShaderContractViolation("STRIDE", typeof(TVertex).Name,
                     $"managed size {System.Runtime.CompilerServices.Unsafe.SizeOf<TVertex>()}", $"verified stride {Layout.Stride}",
                     "managed and marshalled vertex layouts differ")]);
-            return new ShaderVertexBuffer<TVertex>(Factory, vertexCapacity);
+            return new ShaderVertexBuffer<TVertex>(Factory, vertexCapacity, usage);
         }
 
         /// <summary>Bind by the named field, never by a positional buffer array. Only the exact vertex type is accepted.</summary>
@@ -232,7 +259,7 @@ namespace Veldrid
     /// <summary>
     /// D10 (AN_Veldrid/_BUGFIX/BUGFIX_ShaderInterfaceContract_NameVerified.md 5.3): a graphics or compute pipeline as a C# TYPE whose FIELD
     /// NAMES are the GLSL names. <see cref="Bind{TShape}"/> is the only constructor: it verifies every field against the compiled bundle in
-    /// both directions and creates the layouts, buffers and slots; the instance that results is the proof. Renderer code then touches
+    /// both directions and creates the layouts and slots; storage is created explicitly afterwards. Renderer code then touches
     /// resources only through the typed fields - a misspelt name is a compile error, a renamed GLSL variable fails at Bind.
     /// Derive a <c>sealed partial</c> class, mark it <c>[ShaderBundle("Name")]</c>, declare the fields. Nothing else.
     /// </summary>
@@ -257,7 +284,7 @@ namespace Veldrid
         // No overridable descriptor hook: validation must see the actual fields. Generated descriptors (deferred) must preserve this invariant.
         private ShapeDescriptor Describe() => ShapeDescriptorBuilder.FromReflection(GetType());
 
-        /// <summary>THE constructor. Verifies the shape against the bundle (throws <see cref="ShaderContractException"/>) and creates layouts, uniform buffers and slots.</summary>
+        /// <summary>Verifies the shape and creates layouts and typed slots. Buffer storage requires explicit creation through the verified fields.</summary>
         public static TShape Bind<TShape>(PrecompiledShaderResult bundle, ResourceFactory factory) where TShape : ShaderPipelineShape, new()
         {
             if (bundle is null) throw new ArgumentNullException(nameof(bundle));
@@ -311,10 +338,10 @@ namespace Veldrid
                     var element = description.Elements[b];
                     if (string.IsNullOrEmpty(element.Name)) continue;
                     var field = GetType().GetField(element.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
-                    if (field.IsDefined(typeof(DynamicUniformAttribute)))
+                    if (field.IsDefined(typeof(UniformBufferBindingTimeOffsetSelectableAttribute)))
                     {
                         if (element.Kind != ResourceKind.UniformBuffer)
-                            throw new ShaderContractException(BundleName, [new ShaderContractViolation("DYNAMIC", element.Name, "DynamicUniform", element.Kind.ToString(), "only uniform blocks may use a dynamic uniform range")]);
+                            throw new ShaderContractException(BundleName, [new ShaderContractViolation("OFFSET_BINDING", element.Name, "UniformBufferBindingTimeOffsetSelectable", element.Kind.ToString(), "only uniform blocks may select a binding-time offset")]);
                         description.Elements[b].Options |= ResourceLayoutElementOptions.DynamicBinding;
                     }
                 }
@@ -332,14 +359,11 @@ namespace Veldrid
                     var field = GetType().GetField(slotDesc.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
                     var slot = (ShapeSlot)Activator.CreateInstance(slotDesc.SlotType)!;
                     slot.Name = slotDesc.Name; slot.Set = (uint)set; slot.Binding = (uint)binding; slot.Owner = this;
-                    slot.UsesDynamicUniform = field.IsDefined(typeof(DynamicUniformAttribute));
+                    slot.UniformBindingOffsetSelectable = field.IsDefined(typeof(UniformBufferBindingTimeOffsetSelectableAttribute));
                     if (slotDesc.StructType != null)
                     {
                         var block = bundle.Interface.UniformBlocks.First(b => b.Name == slotDesc.Name);
-                        var buffer = f.CreateBuffer(new BufferDescription(block.SizeBytes, BufferUsage.UniformBuffer | BufferUsage.Dynamic));
-                        slotDesc.SlotType.GetProperty("Buffer", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(slot, buffer);
                         slotDesc.SlotType.GetProperty("Compiled", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(slot, block);
-                        slot.Bound = buffer;
                     }
                     field.SetValue(this, slot);
                     boundFields.Add((field, slot));
@@ -431,8 +455,8 @@ namespace Veldrid
                     sets[set] = cached;
                     setDirty[set] = false;
                 }
-                var offsets = slots.Where(s => s.Set == set && s.UsesDynamicUniform)
-                    .OrderBy(s => s.Binding).Select(s => s.DynamicUniformOffset).ToArray();
+                var offsets = slots.Where(s => s.Set == set && s.UniformBindingOffsetSelectable)
+                    .OrderBy(s => s.Binding).Select(s => s.SelectedUniformBindingOffset).ToArray();
                 if (compute) cl.SetComputeResourceSet((uint)set, sets[set], offsets);
                 else cl.SetGraphicsResourceSet((uint)set, sets[set], offsets);
             }

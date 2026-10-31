@@ -24,12 +24,13 @@ public sealed class ImGuiShapeRenderTests
         try
         {
             using var shape = ShaderPipelineShape.Bind<ImGuiShape>(bundle, factory);
+            shape.Projection.CreateBuffer(BufferUsage.UniformBuffer);
             using var color = factory.CreateTexture(TextureDescription.Texture2D(16, 16, 1, 1, PixelFormat.R8G8B8A8UNorm, TextureUsage.RenderTarget));
             using var staging = factory.CreateTexture(TextureDescription.Texture2D(16, 16, 1, 1, PixelFormat.R8G8B8A8UNorm, TextureUsage.Staging));
             using var white = factory.CreateTexture(TextureDescription.Texture2D(1, 1, 1, 1, PixelFormat.R8G8B8A8UNorm, TextureUsage.Sampled));
             device.UpdateTexture(white, new byte[] { 255, 255, 255, 255 }, 0, 0, 0, 1, 1, 1, 0, 0);
             using var framebuffer = factory.CreateFramebuffer(new FramebufferDescription(null, color));
-            using var vertices = shape.Vertices.CreateBuffer(3);
+            using var vertices = shape.Vertices.CreateBuffer(3, BufferUsage.VertexBuffer | BufferUsage.Dynamic);
             using var pipeline = shape.CreateGraphicsPipeline(BlendStateDescription.SingleOverrideBlend,
                 new DepthStencilStateDescription(false, false, ComparisonKind.Always), RasterizerStateDescription.CULL_NONE,
                 PrimitiveTopology.TriangleList, framebuffer.OutputDescription);

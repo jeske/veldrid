@@ -1238,7 +1238,7 @@ namespace Veldrid.Vk
 
             uint newBufferSize = Math.Max(min_staging_buffer_size, size);
             var newBuffer = (VkBuffer)ResourceFactory.CreateBuffer(
-                new BufferDescription(newBufferSize, BufferUsage.Staging));
+                new BufferDescription(newBufferSize, BufferUsage.Staging, structureByteStride: 0, rawBuffer: false, allowUpdateBufferOutsideCommandList: true /* backend-owned pool: fill -> record copy -> recycle after completion */));
             StagingBufferPoolTelemetry.NoteCreated(newBufferSize);
             return newBuffer;
         }

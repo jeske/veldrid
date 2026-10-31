@@ -339,7 +339,10 @@ namespace Veldrid
 
             if ((usage & BufferUsage.UniformBuffer) != 0 && description.SizeInBytes % 16 != 0) throw new VeldridException("Uniform buffer size must be a multiple of 16 bytes.");
 #endif
-            return CreateBufferCore(ref description);
+            DeviceBuffer buffer = CreateBufferCore(ref description);
+            // Veldrid-level write-ordering acknowledgement, not a native property: stamped here so no backend carries it.
+            buffer.AllowUpdateBufferOutsideCommandList = description.AllowUpdateBufferOutsideCommandList;
+            return buffer;
         }
 
         /// <summary>

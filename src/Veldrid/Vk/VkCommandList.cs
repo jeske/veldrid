@@ -234,7 +234,7 @@ namespace Veldrid.Vk
         private protected override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
         {
             VkBuffer stagingBuffer = getStagingBuffer(sizeInBytes);
-            gd.UpdateBuffer(stagingBuffer, 0, source, sizeInBytes);
+            gd.UpdateBufferOutsideCommandList(stagingBuffer, 0, source, sizeInBytes);
             CopyBuffer(stagingBuffer, 0, buffer, bufferOffsetInBytes, sizeInBytes);
         }
 
@@ -1038,7 +1038,7 @@ namespace Veldrid.Vk
                     foreach (var buffer in availableStagingBuffers) { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }
                     availableStagingBuffers.Clear();
 
-                    ret = (VkBuffer)gd.ResourceFactory.CreateBuffer(new BufferDescription(size, BufferUsage.Staging));
+                    ret = (VkBuffer)gd.ResourceFactory.CreateBuffer(new BufferDescription(size, BufferUsage.Staging, structureByteStride: 0, rawBuffer: false, allowUpdateBufferOutsideCommandList: true /* backend-owned pool: fill -> record copy -> recycle after completion */));
                     ret.Name = $"Staging Buffer (CommandList {name})";
                     StagingBufferPoolTelemetry.NoteCreated(size);
                 }

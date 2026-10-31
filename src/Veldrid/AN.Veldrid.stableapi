@@ -340,6 +340,7 @@ field.BlendStateDescription.SingleAdditiveBlend: static readonly BlendStateDescr
 field.BlendStateDescription.SingleAlphaBlend: static readonly BlendStateDescription
 field.BlendStateDescription.SingleDisabled: static readonly BlendStateDescription
 field.BlendStateDescription.SingleOverrideBlend: static readonly BlendStateDescription
+field.BufferDescription.AllowUpdateBufferOutsideCommandList: bool
 field.BufferDescription.RawBuffer: bool
 field.BufferDescription.SizeInBytes: uint
 field.BufferDescription.StructureByteStride: uint
@@ -576,6 +577,7 @@ method.BlendStateDescription.GetHashCode: int()
 method.BufferDescription..ctor: void(uint sizeInBytes, BufferUsage usage)
 method.BufferDescription..ctor: void(uint sizeInBytes, BufferUsage usage, uint structureByteStride)
 method.BufferDescription..ctor: void(uint sizeInBytes, BufferUsage usage, uint structureByteStride, bool rawBuffer)
+method.BufferDescription..ctor: void(uint sizeInBytes, BufferUsage usage, uint structureByteStride, bool rawBuffer, bool allowUpdateBufferOutsideCommandList)
 method.BufferDescription.Equals: bool(BufferDescription other)
 method.BufferDescription.GetHashCode: int()
 method.CommandList.Begin: void()
@@ -633,7 +635,6 @@ method.DeviceBuffer.Dispose: void()
 method.DeviceBufferRange..ctor: void(DeviceBuffer buffer, uint offset, uint sizeInBytes)
 method.DeviceBufferRange.Equals: bool(DeviceBufferRange other)
 method.DeviceBufferRange.GetHashCode: int()
-method.DynamicUniformAttribute..ctor: void()
 method.Fence.Dispose: void()
 method.Fence.Reset: void()
 method.FormatSizeHelpers.GetSizeInBytes: uint(PixelFormat format)
@@ -713,13 +714,13 @@ method.GraphicsDevice.TryQueryVideoMemoryUsage: bool(ref GraphicsDevice_VideoMem
 method.GraphicsDevice.Unmap: void(IMappableResource resource)
 method.GraphicsDevice.Unmap: void(IMappableResource resource, uint subresource)
 method.GraphicsDevice.UpdateActiveDisplay: void(int x, int y, int w, int h)
-method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, !!0 source)
-method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, !!0[] source)
-method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
-method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ReadOnlySpan`1<!!0> source)
-method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, Span`1<!!0> source)
-method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ref !!0 source)
-method.GraphicsDevice.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ref !!0 source, uint sizeInBytes)
+method.GraphicsDevice.UpdateBufferOutsideCommandList: void(DeviceBuffer buffer, uint bufferOffsetInBytes, !!0 source)
+method.GraphicsDevice.UpdateBufferOutsideCommandList: void(DeviceBuffer buffer, uint bufferOffsetInBytes, !!0[] source)
+method.GraphicsDevice.UpdateBufferOutsideCommandList: void(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
+method.GraphicsDevice.UpdateBufferOutsideCommandList: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ReadOnlySpan`1<!!0> source)
+method.GraphicsDevice.UpdateBufferOutsideCommandList: void(DeviceBuffer buffer, uint bufferOffsetInBytes, Span`1<!!0> source)
+method.GraphicsDevice.UpdateBufferOutsideCommandList: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ref !!0 source)
+method.GraphicsDevice.UpdateBufferOutsideCommandList: void(DeviceBuffer buffer, uint bufferOffsetInBytes, ref !!0 source, uint sizeInBytes)
 method.GraphicsDevice.UpdateTexture: void(Texture texture, !!0[] source, uint x, uint y, uint z, uint width, uint height, uint depth, uint mipLevel, uint arrayLayer)
 method.GraphicsDevice.UpdateTexture: void(Texture texture, IntPtr source, uint sizeInBytes, uint x, uint y, uint z, uint width, uint height, uint depth, uint mipLevel, uint arrayLayer)
 method.GraphicsDevice.UpdateTexture: void(Texture texture, ReadOnlySpan`1<!!0> source, uint x, uint y, uint z, uint width, uint height, uint depth, uint mipLevel, uint arrayLayer)
@@ -951,11 +952,13 @@ method.UniformArenaElement.ToString: string()
 method.UniformArenaElement.op_Equality: bool(UniformArenaElement left, UniformArenaElement right)
 method.UniformArenaElement.op_Inequality: bool(UniformArenaElement left, UniformArenaElement right)
 method.UniformBlock`1..ctor: void()
-method.UniformBlock`1.CreateArena: ShaderUniformArena`1<!0>(GraphicsDevice device, uint capacity)
+method.UniformBlock`1.CreateArena: ShaderUniformArena`1<!0>(GraphicsDevice device, uint capacity, BufferUsage usage)
+method.UniformBlock`1.CreateBuffer: void(BufferUsage usage)
 method.UniformBlock`1.Dispose: void()
 method.UniformBlock`1.Select: void(ShaderUniformArena`1<!0> arena, UniformArenaElement element)
 method.UniformBlock`1.Update: void(CommandList cl, ref !0 value)
 method.UniformBlock`1.UpdateMember: void(CommandList cl, Expression`1<Func`2<!0, !!0>> member, ref !!0 value)
+method.UniformBufferBindingTimeOffsetSelectableAttribute..ctor: void()
 method.VdShaderBackendData..ctor: void()
 method.VdShaderBindingEntry..ctor: void()
 method.VdShaderInterface..ctor: void()
@@ -988,7 +991,7 @@ method.VertexElementDescription.GetHashCode: int()
 method.VertexFormatAttribute..ctor: void(VertexElementFormat format)
 method.VertexInput`1..ctor: void()
 method.VertexInput`1.Bind: void(CommandList commands, ShaderVertexBuffer`1<!0> buffer)
-method.VertexInput`1.CreateBuffer: ShaderVertexBuffer`1<!0>(uint vertexCapacity)
+method.VertexInput`1.CreateBuffer: ShaderVertexBuffer`1<!0>(uint vertexCapacity, BufferUsage usage)
 method.VertexLayoutDescription..ctor: void(VertexElementDescription[] elements)
 method.VertexLayoutDescription..ctor: void(uint stride, VertexElementDescription[] elements)
 method.VertexLayoutDescription..ctor: void(uint stride, uint instanceStepRate, VertexElementDescription[] elements)
@@ -1023,6 +1026,7 @@ property.BackendInfoVulkan.PhysicalDevice: IntPtr { get; }
 property.CommandList.CurrentFramebuffer: Framebuffer { get; }
 property.CommandList.IsDisposed: bool { get; }
 property.CommandList.Name: string { get; set; }
+property.DeviceBuffer.AllowUpdateBufferOutsideCommandList: bool { get; }
 property.DeviceBuffer.IsDisposed: bool { get; }
 property.DeviceBuffer.Name: string { get; set; }
 property.DeviceBuffer.SizeInBytes: uint { get; }
@@ -1274,6 +1278,7 @@ struct.BufferDescription.field0.SizeInBytes: uint
 struct.BufferDescription.field1.Usage: BufferUsage
 struct.BufferDescription.field2.StructureByteStride: uint
 struct.BufferDescription.field3.RawBuffer: bool
+struct.BufferDescription.field4.AllowUpdateBufferOutsideCommandList: bool
 struct.CommandListDescription._layout: Sequential
 struct.CommandListDescription._pack: 0
 struct.CommandListDescription._size: 1
@@ -1593,7 +1598,6 @@ type.D3D11DeviceOptions: struct
 type.DepthStencilStateDescription: struct
 type.DeviceBuffer: abstract class
 type.DeviceBufferRange: struct
-type.DynamicUniformAttribute: sealed class
 type.FaceCullMode: enum
 type.Fence: abstract class
 type.FormatSizeHelpers: static class
@@ -1688,6 +1692,7 @@ type.TextureView: abstract class
 type.TextureViewDescription: struct
 type.UniformArenaElement: struct
 type.UniformBlock`1: sealed class
+type.UniformBufferBindingTimeOffsetSelectableAttribute: sealed class
 type.VdShaderBackendData: sealed class
 type.VdShaderBindingEntry: sealed class
 type.VdShaderInterface: sealed class

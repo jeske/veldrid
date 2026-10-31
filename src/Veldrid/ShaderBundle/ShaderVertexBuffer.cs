@@ -11,13 +11,14 @@ public sealed class ShaderVertexBuffer<TVertex> : IDisposable where TVertex : un
     public uint Capacity { get; }
     private bool disposed;
 
-    internal ShaderVertexBuffer(ResourceFactory factory, uint capacity)
+    internal ShaderVertexBuffer(ResourceFactory factory, uint capacity, BufferUsage usage)
     {
+        TypedBufferUsageValidation.RequireVertex(usage);
         if (capacity == 0) throw new ArgumentOutOfRangeException(nameof(capacity));
         Factory = factory;
         Capacity = capacity;
         uint size = checked(capacity * (uint)Unsafe.SizeOf<TVertex>());
-        Buffer = factory.CreateBuffer(new BufferDescription(size, BufferUsage.VertexBuffer | BufferUsage.Dynamic));
+        Buffer = factory.CreateBuffer(new BufferDescription(size, usage));
     }
 
     /// <summary>Upload elements, not anonymously typed bytes. The offset is measured in vertices.</summary>

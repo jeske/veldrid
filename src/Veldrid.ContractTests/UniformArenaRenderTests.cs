@@ -13,7 +13,7 @@ public sealed class UniformArenaRenderTests
     public sealed partial class ArenaShape : ShaderPipelineShape
     {
         public VertexInput<ImGuiVertex> Vertices;
-        [DynamicUniform] public UniformBlock<ImGuiProjection> Projection;
+        [UniformBufferBindingTimeOffsetSelectable] public UniformBlock<ImGuiProjection> Projection;
         public TextureSlot FontTexture;
         public SamplerSlot FontSampler;
     }
@@ -31,7 +31,7 @@ public sealed class UniformArenaRenderTests
         try
         {
             using var shape = ShaderPipelineShape.Bind<ArenaShape>(bundle, factory);
-            using var arena = shape.Projection.CreateArena(device, 2);
+            using var arena = shape.Projection.CreateArena(device, 2, BufferUsage.UniformBuffer);
             Assert.Equal(0u, arena.StrideBytes % device.UniformBufferMinOffsetAlignment);
             Assert.Throws<ArgumentOutOfRangeException>(() => shape.Projection.Select(arena, new UniformArenaElement(2)));
             arena.Stage(new UniformArenaElement(0), new ImGuiProjection { projection = Matrix4x4.Identity, UseLegacyColorSpaceHandling = 1 });
@@ -41,7 +41,7 @@ public sealed class UniformArenaRenderTests
             using var white = factory.CreateTexture(TextureDescription.Texture2D(1, 1, 1, 1, PixelFormat.R8G8B8A8UNorm, TextureUsage.Sampled));
             device.UpdateTexture(white, new byte[] { 255, 255, 255, 255 }, 0, 0, 0, 1, 1, 1, 0, 0);
             using var target = factory.CreateFramebuffer(new FramebufferDescription(null, color));
-            using var vertices = shape.Vertices.CreateBuffer(3);
+            using var vertices = shape.Vertices.CreateBuffer(3, BufferUsage.VertexBuffer | BufferUsage.Dynamic);
             var raster = RasterizerStateDescription.CULL_NONE; raster.ScissorTestEnabled = true;
             using var pipeline = shape.CreateGraphicsPipeline(BlendStateDescription.SingleOverrideBlend, new DepthStencilStateDescription(false, false, ComparisonKind.Always), raster, PrimitiveTopology.TriangleList, target.OutputDescription);
             shape.FontTexture.Set(white); shape.FontSampler.Set(device.PointSampler);

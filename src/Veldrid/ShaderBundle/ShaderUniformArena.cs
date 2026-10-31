@@ -7,9 +7,9 @@ namespace Veldrid;
 /// <summary>An element number in a typed uniform arena, never a byte offset.</summary>
 public readonly record struct UniformArenaElement(uint Value);
 
-/// <summary>Marks a UniformBlock field whose bound range can select an element of typed arena storage.</summary>
+/// <summary>Declares binding-time uniform-buffer offset selection. Does not specify storage mode, CPU access, or update mechanism.</summary>
 [AttributeUsage(AttributeTargets.Field)]
-public sealed class DynamicUniformAttribute : Attribute { }
+public sealed class UniformBufferBindingTimeOffsetSelectableAttribute : Attribute { }
 
 /// <summary>Fixed-capacity, aligned uniform storage. Stage typed values, upload once, select elements through named UniformBlock fields.</summary>
 public sealed class ShaderUniformArena<T> : IDisposable where T : unmanaged
@@ -23,8 +23,9 @@ public sealed class ShaderUniformArena<T> : IDisposable where T : unmanaged
     private readonly byte[] staging;
     private bool disposed;
 
-    internal ShaderUniformArena(GraphicsDevice device, string blockName, uint blockSize, uint capacity)
+    internal ShaderUniformArena(GraphicsDevice device, string blockName, uint blockSize, uint capacity, BufferUsage usage)
     {
+        TypedBufferUsageValidation.RequireUniform(usage);
         if (capacity == 0) throw new ArgumentOutOfRangeException(nameof(capacity));
         if (Unsafe.SizeOf<T>() != blockSize) throw new ArgumentException("Uniform arena element size differs from verified block size.");
         Factory = device.ResourceFactory;
@@ -33,8 +34,8 @@ public sealed class ShaderUniformArena<T> : IDisposable where T : unmanaged
         StrideBytes = ComputeStride(blockSize, device.UniformBufferMinOffsetAlignment);
         uint size = checked(StrideBytes * capacity);
         staging = new byte[checked((int)size)];
-        // Full-buffer, sequenced uploads. Do not use WRITE_DISCARD per draw.
-        Buffer = Factory.CreateBuffer(new BufferDescription(size, BufferUsage.UniformBuffer));
+        // Allocation is the caller's choice; staging remains this explicitly requested arena's batching helper.
+        Buffer = Factory.CreateBuffer(new BufferDescription(size, usage));
     }
 
     internal static uint ComputeStride(uint blockSize, uint alignment)

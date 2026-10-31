@@ -1,10 +1,25 @@
 # Shader interface contract - implementation tracking and handoff
 
-Updated 2026-10-31 15:05. **READ THIS FIRST in the next session.**
+Updated 2026-10-31 16:02 (explicit allocation and device-update rename checkpoint). **READ THIS FIRST in the next session.**
 Design/rationale: `BUGFIX_ShaderInterfaceContract_NameVerified.md` in this directory.
 This tracking file is the authority for current status; historical checked boxes and green gates in the design do NOT mean S8 is complete.
 
 ## Immediate next task
+
+**New prerequisite from typed-buffer review:** see [Typed buffer access policies](BUGFIX_TypedBufferAccessPolicies_IMPL.md) and [initial backend matrix / decisions](BUGFIX_TypedBufferAccessPolicies_Matrix.md).
+User approved separating binding-offset selection from storage/update policy and the name `[UniformBufferBindingTimeOffsetSelectable]`.
+That allocation defect is fixed in the unpublished working tree: Bind creates verified handles/layouts, not uniform storage. UniformBlock.CreateBuffer(usage), VertexInput.CreateBuffer(capacity, usage), and UniformBlock.CreateArena(device, capacity, usage) require explicit choices. No mandatory CPU shadow/staging and no hidden widened member uploads. ImGui is migrated; Silky still references the previous package.
+
+### Latest checkpoint (2026-10-31 16:30): AllowUpdateBufferOutsideCommandList permission DONE; Silky migration NEXT
+- `BufferDescription.AllowUpdateBufferOutsideCommandList` (default false, 5-arg ctor overload, in Equals/Hash) -> stamped onto concrete
+  `DeviceBuffer.AllowUpdateBufferOutsideCommandList { get; internal set; }` by `ResourceFactory.CreateBuffer`. NO backend buffer edits.
+  Root `GraphicsDevice.UpdateBufferOutsideCommandList(DeviceBuffer, uint, IntPtr, uint)` throws `VeldridException` unconditionally when absent.
+  Five internal staging-pool creation sites opt in explicitly. Typed ShaderBundle storage and ImGui are CommandList-only; no change, no flag.
+  Flag is a non-exclusive PERMISSION (exclusivity rejected - see BUGFIX_TypedBufferAccessPolicies_IMPL.md C.1). Visibility stays public (option A; C deferred).
+- Fresh Release build: exit 0, 0 errors, 1186 warnings. ContractTests: exit 0, **62 passed** (47 + 15 new in UpdateBufferOutsideCommandListPermissionTests.cs), 0 failed/skipped.
+  Logs: C:/TEMP/veldrid-permission-{abi,build,tests}.log. StableABI: 4 expected deltas accepted, then rebuilt/tested without the flag. Metal/OpenGL compile-only.
+- Renamed all SEVEN public GraphicsDevice.UpdateBuffer overloads to GraphicsDevice.UpdateBufferOutsideCommandList. No old-name compatibility alias. Internal backend staging call sites migrated. CommandList.UpdateBuffer unchanged; backend UpdateBufferCore hooks unchanged.
+- Spec 450 found and moved across repos: AN_FluidUI/_BUGFIX/450_GPUBuffer_Safety.md -> AN_Veldrid/_BUGFIX/450_GpuBuffer_UpdatePath_Compatibility.md. Both broad phases DEFERRED at user request. VALIDATE_USAGE is always enabled and covers Map restrictions, but the proposed GPU-private device-update guard is not present. Rename/permission is separate narrow work.
 
 Finish the **AN_SilkyNvg Veldrid renderer migration** to mandatory typed shapes. The last renderer build has **91 errors** from remaining raw layout/resource-set/binding calls. Do not resume TOMF gameplay or publish Silky as working yet.
 
@@ -29,6 +44,8 @@ There is no process/test running that needs to be kept alive. No critical reason
 
 Code commits below are before the handoff documentation commits; use git log for the final checkpoint IDs.
 
+**Current session changes are NOT committed or published.** The table describes package/checkpoint history, not the current Veldrid source API. Veldrid has source/test/ABI/docs changes; FluidUI has the moved spec deletion and project-structure link; ArcaneSiege has new _EXTERNAL_APIS/BufferPolicies reference snapshots. Silky is unchanged this session.
+
 | Repo | Code checkpoint | Current consumer dependency floor / state |
 |---|---|---|
 | AN_Veldrid | 8b402229 S8 checkpoint; 7d3d49b1 typed arenas | Published runtime **5.261031.143705**, including ImGui package. Release tests 41 passed. |
@@ -48,7 +65,7 @@ Key files under `src/Veldrid/ShaderBundle/`:
 - ShaderPipelineShape.cs: named slot types, reflection descriptor, Bind/Verify, typed pipeline creation, cached resource sets, eviction.
 - ShaderContract.cs: shape/struct/resource/vertex checks. Old S7 attribute/registry implementation was removed.
 - ShaderVertexBuffer.cs: typed vertex uploads; no public raw DeviceBuffer. Named VertexInput<T>.Bind instead of positional buffer arrays.
-- ShaderUniformArena.cs: UniformArenaElement (element index, not byte offset), [DynamicUniform], typed staging/upload, device-aligned stride.
+- ShaderUniformArena.cs: UniformArenaElement (element index, not byte offset), [UniformBufferBindingTimeOffsetSelectable] (renamed from DynamicUniform in unpublished working tree), typed staging/upload, device-aligned stride.
 - ShapeCommandBindings.cs: unconditional draw/dispatch checks, owner identity, pipeline-selection invalidation, resource revision.
 - Pipeline.cs carries internal verified-shape ownership. CommandList validates graphics draws and direct/indirect compute dispatch in Release too.
 
@@ -59,8 +76,8 @@ Important behaviour:
 - Pipelines currently belong to an exact shape INSTANCE. Select the pipeline before binding its vertex slots or sets. Switching pipelines requires rebinding.
 - Changing a resource slot requires BindResourceSets again before draw/dispatch (revision checked).
 - TextureSlot.Forget(view/texture) evicts cached sets; ImGui uses it for image removal and font rebuild. Already recorded references survived eviction in D3D11/Vulkan tests.
-- Dynamic arena: create from a verified [DynamicUniform] UniformBlock<T>, Stage typed values, Upload once, Select by UniformArenaElement. One arena of T can feed differently named blocks if each destination verified that same T (Silky PaintParams/GradientParams/ImagePatternParams).
-- Arena uses non-Dynamic UniformBuffer and one full-buffer sequenced upload. Dynamic descriptor window is one compiled block, NOT the whole multi-MB arena. Array overloads handle zero dynamic offsets.
+- Offset-selectable arena: create from a verified [UniformBufferBindingTimeOffsetSelectable] UniformBlock<T>, with explicit usage; Stage typed values, Upload once, Select by UniformArenaElement. One arena of T can feed differently named blocks if each destination verified that same T (Silky PaintParams/GradientParams/ImagePatternParams).
+- Arena callers select non-Dynamic UniformBuffer and one full-buffer sequenced upload. Descriptor window is one compiled block, NOT the whole multi-MB arena. Array overloads handle zero dynamic offsets. The attribute declares binding offsets, not memory/update policy.
 - Shape loading/pipeline generation still has limitations; see the audit list below. No all-bugs-closed claim is justified yet.
 
 ### ImGui
@@ -103,11 +120,11 @@ Remaining errors (last build: 91, net9.0):
 Suggested next execution order:
 - [ ] A. Replace resource-set caches with typed family slot selection; do not reintroduce an anonymous positional binding adapter.
 - [ ] B. Replace BindPaintResourceSet/BindPaintIndifferentResourceSet with named block selection + shape.BindResourceSets. Respect segment residency before selecting a paint.
-- [ ] C. Fan out view/text-gamma values to appropriate named family uniform blocks; preserve sequenced mid-command-list view changes during layer capture.
+- [ ] C. Preserve shared view/text-gamma storage and existing upload counts through named typed bindings; do not fan out duplicate GPU uploads per family. Ordinary typed storage sharing is still an API gap to resolve/discuss, not a reason to butcher Silky.
 - [ ] D. Replace raw vertex buffers/binds with ShaderVertexBuffer<NvgVertex>/ShaderVertexBuffer<SweeperGlyphVertex>; correct pipeline-before-bind order.
 - [ ] E. Finish filters/layers/clip-mask/blend/sweeper texture selection and eviction; delete unused raw layout and ResourceSet fields/helpers.
 - [ ] F. Renderer builds; run full unit suites and bounded graphical golds D3D11/Vulkan, including tiny arena capacity rollover, filters, layers, text and memory gates.
-- [ ] G. Commit/publish Silky only after its renderer and relevant graphical tests pass.
+- [ ] G. EVERY tests/graphical test must pass on D3D11 and Vulkan, not only selected tests. Pre-existing failures still count; do not weaken gates or regenerate golds to obtain green. Report exact commands/counts/skips/blockers and PAUSE for user review before Silky publication or downstream migration.
 
 Critical correction: **Sweeper uses RGBA32UInt curve textures (`utexture2D`), NOT SSBOs.** Storage-buffer verification is a Veldrid gap but NOT a Silky prerequisite. This was wrongly described earlier in chat/docs; do not spend the next session implementing SSBOs to unblock Silky.
 
@@ -115,7 +132,7 @@ Critical correction: **Sweeper uses RGBA32UInt curve textures (`utexture2D`), NO
 
 - Preserve paint dedupe, slot 0 default, segment rollover, one upload per segment. Current conversion adds CPU staging copies; measure performance before accepting it as final.
 - Three paint block names share one verified T; this is valid shared DATA, not a need for a SharedResourceSet<T> abstraction.
-- View uniforms are changed mid-command-list for bounds-sized captures. Existing Silky deliberately uses non-Dynamic UBOs there; current shape-owned ordinary uniforms use Dynamic buffers. Verify/fix ordering semantics, not just sizes.
+- View uniforms change mid-command-list for bounds-sized captures. Existing Silky deliberately uses non-Dynamic UBOs. Veldrid working tree now supports explicit non-Dynamic creation; Silky has not consumed it. Its one shared view buffer must not become one allocation/upload per shape merely to fit the API.
 - Family pipeline variants reuse the SAME shape instance. Never select one shape's sets while another shape's pipeline is active.
 - ShaderShapes and PaintArena tests LINK production declaration/arena source without compiling the renderer; they can pass while the renderer remains broken. This is intentional incremental testing, not full integration success.
 
@@ -127,7 +144,7 @@ Run from indicated repo root; redirect complete logs to a file and retain exit c
 # AN_Veldrid
 dotnet build Veldrid.sln -c Release
 dotnet test src/Veldrid.ContractTests/Veldrid.ContractTests.csproj -c Release
-# Last result: 41 passed, includes D3D11/Vulkan offscreen tests and typed arena selection.
+# Latest working-tree result: 47 passed, 0 failed/skipped; includes D3D11/Vulkan ordered uniform updates and Vulkan named-member updates.
 
 # AN_SilkyNvg
 dotnet test tests/unit/SilkyNvg.Tests.ShaderShapes/SilkyNvg.Tests.ShaderShapes.csproj -c Release
@@ -143,6 +160,10 @@ Logs on this machine: `C:\TEMP\silky-pipeline-shapes-build.log`, `silky-paint-re
 
 ## After Silky: downstream chain and acceptance
 
+- [ ] **H0 (applies to EVERY consumer below).** Purge wrongful `GraphicsDevice.UpdateBuffer` -> now `UpdateBufferOutsideCommandList` use. The ONLY legal
+      use: (a) nothing pending references the buffer AND (b) nothing uses it until a WaitForIdle after the write. Everything else -> `CommandList.UpdateBuffer`.
+      Delete (do not reword) rationalising comments ("fine because per frame" etc.). Inventory and rule: `BUGFIX_TypedBufferAccessPolicies_IMPL.md` C.1.
+      Counts at 2026-10-31: Silky 0, FluidUI 2, Monsters 13 (1 legal: StaticDeviceBufferUpload), ArcaneSiege 21 (0 legal).
 - [ ] H. AN_FluidUI (highest-priority consumer): bump Silky/Veldrid/SPIRV as needed; migrate StretchBlit to typed shape; precompile/check bundles; bounded D3D11/Vulkan capture tests; publish.
 - [ ] I. AN_Monsters/RenderKit: replace old S7 data-record shapes, attributes/registry and raw APIs. Keep SpaceGame building; validate `src/Monsters` gameplay with captures, not just splash. Existing LightPointStencil struct test failure predates S8.
 - [ ] J. AN_ArcaneSiege: migrate shared TileMapKit, ArcaneSiege and TOMF renderers; explicit dependency floors; ordinary unit tests.
@@ -167,8 +188,8 @@ The older six 0-pixel gates were against Veldrid 5.261031.122406 / SPIRV 5.26103
 
 ## Deferred
 
-S9 source generation; AN_VeldridUtils extraction; TOMF specs 48/49 gameplay (range abstraction, explicit skill targeting, FOV/AI). The handoff is shader migration, not gameplay.
+S9 source generation; AN_VeldridUtils extraction; TOMF specs 48/49 gameplay; broad GPU memory-class/type-space compatibility work in 450_GpuBuffer_UpdatePath_Compatibility.md. Only the separately approved device-level method rename and permission flag are in scope now. The handoff is shader migration, not gameplay.
 
 ## Start-of-next-session prompt
 
-Read this tracking file, then AN_SilkyNvg/plans/typed_shader_shape_migration_IMPL.md. Continue Silky's 91-error typed-shape migration without reopening raw APIs. Preserve its paint arena upload model; sweeper is texture-backed, not SSBO-backed. Start with the full renderer build and the two targeted test commands above. Finish Silky before updating FluidUI, then Monsters and both ArcaneSiege targets. Source generation and utilities extraction remain deferred.
+Read this tracking file and BUGFIX_TypedBufferAccessPolicies_IMPL.md, then AN_SilkyNvg/plans/typed_shader_shape_migration_IMPL.md. Veldrid has UNCOMMITTED, UNPUBLISHED explicit-allocation and UpdateBufferOutsideCommandList changes; build and 47 ContractTests pass. Next add the approved default-off storage permission for that device-level method (including deliberate internal staging opt-ins), without implementing deferred spec 450. Then advance the Veldrid dependency and continue Silky's typed-shape migration. Preserve shared view-buffer uploads and paint-arena batching; stop and discuss API mismatches instead of working around them. EVERY tests/graphical test must pass on D3D11 and Vulkan. Report results and pause before publishing Silky or migrating downstream. Do not resume gameplay.

@@ -32,7 +32,7 @@ public sealed class TypedVertexBindingTests
     public void UnboundInputCannotCreateOrBindBuffers()
     {
         var input = new VertexInput<ImGuiVertex>();
-        Assert.Throws<InvalidOperationException>(() => input.CreateBuffer(1));
+        Assert.Throws<InvalidOperationException>(() => input.CreateBuffer(1, BufferUsage.VertexBuffer));
         Assert.Throws<InvalidOperationException>(() => input.Bind(null!, null!));
     }
 }

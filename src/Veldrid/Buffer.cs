@@ -20,6 +20,14 @@ namespace Veldrid
         public abstract BufferUsage Usage { get; }
 
         /// <summary>
+        ///     Whether this buffer was created with <see cref="BufferDescription.AllowUpdateBufferOutsideCommandList" />,
+        ///     i.e. whether <see cref="GraphicsDevice.UpdateBufferOutsideCommandList(DeviceBuffer, uint, IntPtr, uint)" />
+        ///     is permitted on it. Fixed at creation. See that field for the ordering semantics being acknowledged.
+        ///     Stamped by <see cref="ResourceFactory.CreateBuffer(ref BufferDescription)" />; backends never see this flag.
+        /// </summary>
+        public bool AllowUpdateBufferOutsideCommandList { get; internal set; }
+
+        /// <summary>
         ///     A bool indicating whether this instance has been disposed.
         /// </summary>
         public abstract bool IsDisposed { get; }

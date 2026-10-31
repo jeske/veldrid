@@ -95,7 +95,8 @@ namespace Veldrid
             // The ONE shader path: embedded .vdshader -> CreateFromBundle -> shape (verified by name) -> pipeline from the shape.
             _bundle = factory.CreateFromBundle(GetEmbeddedResourceText(BundleResourceName));
             _shape = ShaderPipelineShape.Bind<ImGuiShape>(_bundle, factory);
-            _vertexBuffer = _shape.Vertices.CreateBuffer(500);
+            _shape.Projection.CreateBuffer(BufferUsage.UniformBuffer);
+            _vertexBuffer = _shape.Vertices.CreateBuffer(500, BufferUsage.VertexBuffer | BufferUsage.Dynamic);
             _shape.FontSampler.Set(gd.PointSampler);
 
             _pipeline = _shape.CreateGraphicsPipeline(
@@ -271,7 +272,7 @@ namespace Veldrid
             if (totalVertices > _vertexBuffer.Capacity)
             {
                 _vertexBuffer.Dispose();
-                _vertexBuffer = _shape.Vertices.CreateBuffer(checked(totalVertices + totalVertices / 2));
+                _vertexBuffer = _shape.Vertices.CreateBuffer(checked(totalVertices + totalVertices / 2), BufferUsage.VertexBuffer | BufferUsage.Dynamic);
             }
 
             uint totalIBSize = (uint)(draw_data.TotalIdxCount * sizeof(ushort));

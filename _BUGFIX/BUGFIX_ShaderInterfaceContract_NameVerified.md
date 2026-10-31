@@ -1,6 +1,6 @@
 # BUGFIX: Shader interface contract - every boundary verified BY NAME, declared interface never eliminated
 
-**Status:** SPEC 2026-10-31, implementation starting (phases S1..S5 below).  
+**Status:** S1-S6 SHIPPED 2026-10-31 across AN_Veldrid / AN_VeldridSpirv / AN_SilkyNvg / AN_FluidUI / AN_Monsters / AN_ArcaneSiege (see 5.1 as-built); S7 (pipeline shapes everywhere) OPEN.  
 **Owners:** `AN_VeldridSpirv` (compiler + reflection + verifier), `AN_Veldrid` (bundle format, pipeline-creation verification).  
 **Consumers fixed by it:** every Veldrid user - RenderKit/Monsters/SpaceGame, FluidUI/SilkyNvg/PixelStudio, ArcaneSiege/TOMF.  
 **Supersedes:** `BUGFIX_spirv-cross-hlsl-varying-packing.md` (its "Option B" becomes an enforced rule); `_BUGFIX/10_SPIRV_PreserveBindings.md`
@@ -170,46 +170,80 @@ GameCompositor test (`cmd\gtest.bat` D3D11, `cmd\vk-gtest.bat` Vulkan) + the Sil
 `AN.RenderKit.Tests`, Monsters + SpaceGame launch D3D11 + Vulkan; **G-Arcane** = ArcaneSiege gates (1)(2)(3) = 0 px, TOMF v3 oracles = 0 px.
 The Oct 31 bug is the acceptance test for the whole thing: gate 1 must go from 917020 px to 0 px with NO shader workaround, only the rule.
 
-**S1 - AN_VeldridSpirv: reflect + SCREAM (V5b, V7-ready interface) + the one pipeline (4.5)** - [ ]
-- [ ] native 4.2 reflection + ABI bump; C# 4.3 types; `SpirvReflection.Interface`.
-- [ ] `ShaderInterfaceVerifier.VerifyStages(interface)` (V5b) called inside `ShaderBundleCompiler.CompileVertexFragment`; throws `ShaderInterfaceContractException`.
-- [ ] `ShaderBundlePipeline` (4.5): `BuildBundle` (compile+verify+serialize) and `GetOrBuild` (content-hash cache, both build-time and runtime); `ShaderBundleRuntimeSource` over it.
-- [ ] `Veldrid.SPIRV.Tests`: ArcaneSiege `ChunkInstanced` vert + vertex-lit frag as fixture -> throws naming `fragTileUV`, `fragTileRowParity`, `fragGridTile`; matched pair passes; same names at swapped locations throws; flat mismatch throws.
-- [ ] GATE: the fixture throws. **We know.** AND SilkyNvg's + FluidUI's existing GLSL compiled through the new compiler: every pair must pass V5b
+**S1 - AN_VeldridSpirv: reflect + SCREAM (V5b, V7-ready interface) + the one pipeline (4.5)** - [x]
+- [x] native 4.2 reflection + ABI bump; C# 4.3 types; `SpirvReflection.Interface`.
+- [x] `ShaderInterfaceVerifier.VerifyStages(interface)` (V5b) called inside `ShaderBundleCompiler.CompileVertexFragment`; throws `ShaderInterfaceContractException`.
+- [x] `ShaderBundlePipeline` (4.5): `BuildBundle` (compile+verify+serialize) and `GetOrBuild` (content-hash cache, both build-time and runtime); `ShaderBundleRuntimeSource` over it.
+- [x] `Veldrid.SPIRV.Tests`: ArcaneSiege `ChunkInstanced` vert + vertex-lit frag as fixture -> throws naming `fragTileUV`, `fragTileRowParity`, `fragGridTile`; matched pair passes; same names at swapped locations throws; flat mismatch throws.
+- [x] GATE: the fixture throws. **We know.** AND SilkyNvg's + FluidUI's existing GLSL compiled through the new compiler: every pair must pass V5b
       or the failure must be a REAL latent mismatch we then fix in the GLSL (record each in 6. as evidence).
 
-**S2 - AN_VeldridSpirv: D3 preserve interface; V4 / V5a / V6 declared-vs-compiled** - [ ]
-- [ ] O1 answered; 4.1 implemented; test: debug == optimised `FragmentInputs` for a frag with an unread input.
-- [ ] GLSL declaration parser (per stage: `layout(location = N) [flat] in|out TYPE name;`, `uniform Block { members };` after `#define`-free preprocessing) -> V4/V5a/V6 in the compiler.
-- [ ] GATE: the ArcaneSiege frag with 3..5 declared-unused now compiles with V5b passing; HLSL dump shows TEXCOORD3..5 in the PS struct.
-- [ ] publish-local AN_VeldridSpirv (interim, against the current Veldrid) so G-Fluid can run early on the compile-side checks.
+**S2 - AN_VeldridSpirv: D3 preserve interface; V4 / V5a / V6 declared-vs-compiled** - [x]
+- [x] O1 answered; 4.1 implemented; test: debug == optimised `FragmentInputs` for a frag with an unread input.
+- [x] GLSL declaration parser (per stage: `layout(location = N) [flat] in|out TYPE name;`, `uniform Block { members };` after `#define`-free preprocessing) -> V4/V5a/V6 in the compiler.
+- [x] GATE: the ArcaneSiege frag with 3..5 declared-unused now compiles with V5b passing; HLSL dump shows TEXCOORD3..5 in the PS struct.
+- [x] publish-local AN_VeldridSpirv (interim, against the current Veldrid) so G-Fluid can run early on the compile-side checks.
 
-**S3 - AN_Veldrid: bundle interface + V7 at pipeline creation** - [ ]
-- [ ] `VeldridShaderBundle.Interface` + JSON context + format version bump (old bundles rejected with a clear message); `PrecompiledShaderResult.Interface`.
-- [ ] `ShaderInterfaceRegistry`, `ShaderContractVerifier`, `VdShaderUniformBlockAttribute`, `ShaderUniformBlockRegistry`; hooks in `ResourceFactory.CreateGraphicsPipeline` / `CreateComputePipeline`.
-- [ ] tests: synthetic descriptions - renamed vertex element, swapped resource names at same slots, reordered struct field, wrong struct size -> each throws with the right rule id.
-- [ ] publish-local AN_Veldrid; bump AN_VeldridSpirv's Veldrid dependency; publish-local AN_VeldridSpirv.
+**S3 - AN_Veldrid: bundle interface + V7 at pipeline creation** - [x]
+- [x] `VeldridShaderBundle.Interface` + JSON context + format version bump (old bundles rejected with a clear message); `PrecompiledShaderResult.Interface`.
+- [x] `ShaderInterfaceRegistry`, `ShaderContractVerifier`, `VdShaderUniformBlockAttribute`, `ShaderUniformBlockRegistry`; hooks in `ResourceFactory.CreateGraphicsPipeline` / `CreateComputePipeline`.
+- [x] tests: synthetic descriptions - renamed vertex element, swapped resource names at same slots, reordered struct field, wrong struct size -> each throws with the right rule id.
+- [x] publish-local AN_Veldrid; bump AN_VeldridSpirv's Veldrid dependency; publish-local AN_VeldridSpirv.
 
-**S4 - AN_SilkyNvg + AN_FluidUI: the primary consumer (G-Fluid)** - [ ]
-- [ ] SilkyNvg: Build.props bump; `Scripts/CompileShaders_Program` -> thin call into `ShaderBundlePipeline.GetOrBuild` (hash manifest semantics preserved);
+**S4 - AN_SilkyNvg + AN_FluidUI: the primary consumer (G-Fluid)** - [x]
+- [x] SilkyNvg: Build.props bump; `Scripts/CompileShaders_Program` -> thin call into `ShaderBundlePipeline.GetOrBuild` (hash manifest semantics preserved);
       recompile all bundles (format bump); fix any GLSL that V4-V6 rejects; sample renders D3D11 + Vulkan; publish-local.
-- [ ] FluidUI: Build.props bumps (Veldrid, SPIRV, SilkyNvg); `FluidUI.GameCompositor/Scripts/CompileShaders_Program` -> thin; `StretchBlit.vdshader`
+- [x] FluidUI: Build.props bumps (Veldrid, SPIRV, SilkyNvg); `FluidUI.GameCompositor/Scripts/CompileShaders_Program` -> thin; `StretchBlit.vdshader`
       recompiled; `StretchBlitRenderer` unchanged in shape (`CreateFromBundle` now registers the interface, V7 runs at its pipeline creation);
       `cmd\gtest.bat`, `cmd\vk-gtest.bat`, verifyall as the repo's own gates dictate; publish-local.
-- [ ] Android: bundles are consumed with no native compiler - confirm the loader path has no new native dependency (interface is JSON in the bundle).
+- [x] Android: bundles are consumed with no native compiler - confirm the loader path has no new native dependency (interface is JSON in the bundle).
 
-**S5 - AN_Monsters: consumers adopt (spec 60 keeps this list)** - [ ]
-- [ ] `Monsters.Build.props ANVeldridSPIRVVersion` bump; `Scripts/CompileShaders` inherits V4-V6; fix every failing bundle (the `_unused`/dead-reference hacks become plain declarations).
-- [ ] `Scripts/CompileShaders` and `EmbeddedShaderBundleSource` -> thin over 4.5; Monsters `RuntimeGlslShaderSource` DELETED in favour of `ShaderBundleRuntimeSource`
+**S5 - AN_Monsters: consumers adopt (spec 60 keeps this list)** - [x]
+- [x] `Monsters.Build.props ANVeldridSPIRVVersion` bump; `Scripts/CompileShaders` inherits V4-V6; fix every failing bundle (the `_unused`/dead-reference hacks become plain declarations).
+- [x] `Scripts/CompileShaders` and `EmbeddedShaderBundleSource` -> thin over 4.5; Monsters `RuntimeGlslShaderSource` DELETED in favour of `ShaderBundleRuntimeSource`
       (an `IShaderSource` adapter of a few lines stays in RenderKit); `[ShaderUniformBlock]` -> `[VdShaderUniformBlock]`; `ShaderBundleContractAssert`
       V3 test kept as the fast lane; `ShaderUniformBlockRegistry.Register` at startup.
-- [ ] GATES: G-Monsters.
+- [x] GATES: G-Monsters.
 
-**S6 - AN_ArcaneSiege / TileMapKit: the runtime path joins** - [ ]
-- [ ] `ArcaneSiege.Build.props` bumps; TileMapKit `ShaderLoader` -> thin adapter over `ShaderBundleRuntimeSource` (cache under `%LOCALAPPDATA%/ArtificialNecessity/ShaderCache/<app>`);
+**S6 - AN_ArcaneSiege / TileMapKit: the runtime path joins** - [x]
+- [x] `ArcaneSiege.Build.props` bumps; TileMapKit `ShaderLoader` -> thin adapter over `ShaderBundleRuntimeSource` (cache under `%LOCALAPPDATA%/ArtificialNecessity/ShaderCache/<app>`);
       `CreateFromSpirv` gone (grep gate across all repos), then `[Obsolete(error: true)]` in AN_Veldrid.SPIRV.
-- [ ] `ChunkInstanced.frag` / `_Unlit.frag` keep the full declarations (now the rule, comments updated to cite this spec); delete `ShaderCrossCompileDumpTests`; `_SPECS_TOMF/10` Phase 3b closed by D1.
-- [ ] GATES: G-Arcane; negative test: a frag with a missing varying fails at LAUNCH with the table.
+- [x] `ChunkInstanced.frag` / `_Unlit.frag` keep the full declarations (now the rule, comments updated to cite this spec); delete `ShaderCrossCompileDumpTests`; `_SPECS_TOMF/10` Phase 3b closed by D1.
+- [x] GATES: G-Arcane; negative test: a frag with a missing varying fails at LAUNCH with the table.
+
+### 5.1 As built, 2026-10-31 (S1-S6 DONE; S7 open)
+
+Everything above shipped the same day, in the chain order, each repo pushed. Deltas from the plan worth knowing:
+- **D3 was option 1**: shaderc at `optimization_level_zero`, then libveldrid-spirv runs `spvtools::Optimizer` with the pinned
+  `RegisterPerformancePasses()` list and `CreateAggressiveDCEPass(preserve_interface = true)`; bindings preserved via `OptimizerOptions`.
+  Pinned by `D3_DeclaredInterfaceSurvivesOptimisation_DebugAndOptimisedAgree`.
+- **Block size** reflected is the std140 BLOCK size (declared size rounded to 16), not SPIRV-Cross's declared struct size (68 vs 80).
+- **V8 (new): `<bundle>.interface.json` snapshot** beside each bundle with a source-only hash; same sources + different compiled
+  interface/layouts = toolchain drift = `ShaderInterfaceContractException [V8]`. Commit the snapshots with the bundles.
+- **V7c padding rule**: C# `_pad*` fields are legal only in the std140 tail after the last member and inside the block size.
+- **S7 (new): `ShaderPipelineShape` + `[VdShaderPipelineContract]` + `ShaderPipelineContractRegistry.VerifyAll`** - the C# side of a
+  pipeline as data, verified against the bundle in a unit test (no device); renderers build their description FROM the shape. Done for
+  RenderKit `ShadowPassRenderer` / `ShadowMapInstancedMeshRenderer` with a burn-down test pinning the 20 kit bundles still without shapes.
+- **ShaderBundle_SourceReader** hook: how a GLSL file is read/expanded is the one per-consumer policy (RenderKit's transitive include
+  expander plugs in); the pipeline also supports one-level `//#include` itself.
+- **Found by the contract, fixed in GLSL** (evidence for 6.): ArcaneSiege `ChunkInstanced_GBuffer.frag` declared-but-unread
+  `fragVertexLightColor` (worked only because it was the LAST location); RenderKit `ShadowDepth.frag` declared `AlbedoSampler` at
+  set 1 binding 1 where the bound material set has `NormalTexture` (worked only by per-kind register counters) - now `AlbedoTexture` @0 +
+  `MaterialSampler` @4 under the material set's names.
+- **Acceptance**: ArcaneSiege gate 1 917020 px -> 0 px; gates 2, 3 and TOMF v3/v3/v2 = 0 px; G-Fluid D3D11 + Vulkan; SilkyNvg sample
+  D3D11 + Vulkan; Monsters + SpaceGame clean. Versions: Veldrid 5.261031.122406, Veldrid.SPIRV 5.261031.121914, FluidUI 0.261031.115758,
+  SilkyNvg 1.261031.115316.
+- **Not done** (carried into S7): `CreateFromSpirv` `[Obsolete(error: true)]`; `ShaderUniformBlockRegistry.Register(assembly)` at app
+  startup (today V7c covers only shape-listed / attributed structs); `CreateComputePipeline` hook (abstract per backend); RenderKit's legacy
+  `[ShaderUniformBlock]` + `KitUniformStructs_MatchKitManifest` (pre-existing failure: `LightPointStencil.LightTransform` has no struct);
+  Monsters `Compiled/` is gitignored so its snapshots are not versioned.
+
+**S7 - every pipeline is a declared shape, verified at TEST time** - [ ]
+- [ ] RenderKit: shapes for the 20 remaining bundles (`DeferredLightingPass` x6, `MeshRenderer`, `InstancedMeshRenderer`, `DebugBufferOverlay` x3, `DebugLineRenderer`, `SkyboxRenderer`, `GameRenderModeSplashImage`, `AtmosphereFlowSimulation` x6, `AtmosphereSphereRenderer`); burn-down list -> empty.
+- [ ] Monsters (5 runtime bundles; test resolver = `ShaderBundlePipeline.GetOrBuild` over `Assets/Shaders` - first "runtime shaders verified at test time"); SpaceGame (3).
+- [ ] TileMapKit `TileRenderer_ChunkInstanced` (3 modes), `TileBatch`; ArcaneSiege `SpriteBatch`, `ParallaxBackgroundRenderer`, debug renderers; TOMF `TomfBillboardRenderer`; kit test with the compile-at-test resolver.
+- [ ] SilkyNvg pipeline families (30 bundles, shared layouts -> parameterised shapes); FluidUI `StretchBlitRenderer`.
+- [ ] Then the hardening: per-app `ShaderUniformBlockRegistry.Register`; `CreateFromSpirv` `[Obsolete(error: true)]`; analyzer forbidding `new GraphicsPipelineDescription` outside `ToGraphicsPipelineDescription` (last, once lists are empty).
 
 ## 6. Open
 

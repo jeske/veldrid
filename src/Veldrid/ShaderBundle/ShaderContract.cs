@@ -153,10 +153,39 @@ namespace Veldrid
         /// <summary>All V7 violations of <paramref name="description"/> against <paramref name="bundle"/>. Pure.</summary>
         public static List<ShaderContractViolation> Verify(ref GraphicsPipelineDescription description, PrecompiledShaderResult bundle)
         {
+            var layoutDescriptions = (description.ResourceLayouts ?? []).Select(l => l?.Description ?? default).ToArray();
+            return VerifyCore(description.ShaderSet.VertexLayouts, layoutDescriptions, bundle.BundleName, Array.Empty<Type>(), bundle.Interface, bundle.ResourceLayouts);
+        }
+
+        /// <summary>
+        /// S7: verify a <see cref="ShaderPipelineShape"/> (pure data) against a compiled bundle - NO device. This is what the per-assembly", "        /// test runs for every [VdShaderPipelineContract] shape; the same core the runtime check uses. The shape's UniformStructs are checked
+        /// in addition to any structs registered globally for the bundle.
+        /// </summary>
+        public static List<ShaderContractViolation> Verify(ShaderPipelineShape shape, VeldridShaderBundle bundle)
+        {
+            if (shape is null) throw new ArgumentNullException(nameof(shape));
+            if (bundle is null) throw new ArgumentNullException(nameof(bundle));
+            if (bundle.Interface is null)
+                return [new ShaderContractViolation(Rule_V7_ShaderSet, bundle.ShaderName ?? shape.BundleName, "bundle without interface", "", "recompile the bundle with the current Veldrid.SPIRV (format version 2)")];
+            if (!string.Equals(bundle.ShaderName, shape.BundleName, StringComparison.Ordinal))
+                return [new ShaderContractViolation(Rule_V7_ShaderSet, shape.BundleName, $"shape for '{shape.BundleName}'", $"bundle '{bundle.ShaderName}'", "the resolver returned a different bundle than the shape names")];
+            return VerifyCore(shape.VertexLayouts, shape.ResourceLayouts, shape.BundleName, shape.UniformStructs, bundle.Interface, bundle.GetResourceLayouts());
+        }
+
+        private static List<ShaderContractViolation> VerifyCore(VertexLayoutDescription[] vertexLayouts, ResourceLayoutDescription[] resourceLayouts, string bundleName, Type[] explicitStructs, VdShaderInterface itf, ResourceLayoutDescription[] compiledLayouts)
+        {
             var violations = new List<ShaderContractViolation>();
-            VerifyVertexInputs(description.ShaderSet.VertexLayouts, bundle.Interface.VertexInputs, violations);
-            VerifyResourceLayouts(description.ResourceLayouts, bundle.ResourceLayouts, violations);
-            VerifyUniformStructs(bundle.BundleName, bundle.Interface.UniformBlocks, violations);
+            VerifyVertexInputs(vertexLayouts, itf.VertexInputs, violations);
+            VerifyResourceLayouts(resourceLayouts, compiledLayouts, violations);
+            var structs = new List<(Type StructType, string GlslBlockName)>(ShaderUniformBlockRegistry.For(bundleName ?? ""));
+            foreach (Type t in explicitStructs ?? [])
+                foreach (var attr in t.GetCustomAttributes<VdShaderUniformBlockAttribute>(false))
+                    if (string.Equals(attr.BundleName, bundleName, StringComparison.Ordinal) && !structs.Any(s => s.StructType == t && s.GlslBlockName == attr.GlslBlockName))
+                        structs.Add((t, attr.GlslBlockName));
+            foreach (Type t in explicitStructs ?? [])
+                if (!t.GetCustomAttributes<VdShaderUniformBlockAttribute>(false).Any(a => string.Equals(a.BundleName, bundleName, StringComparison.Ordinal)))
+                    violations.Add(new ShaderContractViolation(Rule_V7c_UniformStructs, t.Name, $"shape UniformStructs: {t.Name}", $"no [VdShaderUniformBlock(\"{bundleName}\", ...)] on it", "a struct listed on a shape must be attributed to that shape's bundle"));
+            VerifyUniformStructs(bundleName, itf.UniformBlocks, structs, violations);
             return violations;
         }
 
@@ -207,14 +236,14 @@ namespace Veldrid
             _ => false,
         };
 
-        // V7b: ResourceLayouts[set].Description.Elements[binding] must be the compiled resource at (set, binding) BY NAME, same kind.
-        private static void VerifyResourceLayouts(ResourceLayout[] layouts, ResourceLayoutDescription[] compiled, List<ShaderContractViolation> violations)
+        // V7b: ResourceLayouts[set].Elements[binding] must be the compiled resource at (set, binding) BY NAME, same kind.
+        private static void VerifyResourceLayouts(ResourceLayoutDescription[] layouts, ResourceLayoutDescription[] compiled, List<ShaderContractViolation> violations)
         {
             layouts ??= [];
             compiled ??= [];
             for (int set = 0; set < Math.Max(layouts.Length, compiled.Length); set++)
             {
-                var pipelineElements = set < layouts.Length && layouts[set] != null ? (layouts[set].Description.Elements ?? []) : [];
+                var pipelineElements = set < layouts.Length ? (layouts[set].Elements ?? []) : [];
                 var compiledElements = set < compiled.Length ? (compiled[set].Elements ?? []) : [];
                 for (int binding = 0; binding < Math.Max(pipelineElements.Length, compiledElements.Length); binding++)
                 {
@@ -236,11 +265,11 @@ namespace Veldrid
             }
         }
 
-        // V7c: every registered [VdShaderUniformBlock(bundle, block)] struct: field NAME + Marshal.OffsetOf + size == block member; struct size == block size.
-        private static void VerifyUniformStructs(string bundleName, VdShaderUniformBlock[] blocks, List<ShaderContractViolation> violations)
+        // V7c: every [VdShaderUniformBlock(bundle, block)] struct: field NAME + Marshal.OffsetOf + size == block member; struct size == block size.
+        private static void VerifyUniformStructs(string bundleName, VdShaderUniformBlock[] blocks, IReadOnlyList<(Type StructType, string GlslBlockName)> structs, List<ShaderContractViolation> violations)
         {
             if (string.IsNullOrEmpty(bundleName)) return;
-            foreach (var (structType, glslBlockName) in ShaderUniformBlockRegistry.For(bundleName))
+            foreach (var (structType, glslBlockName) in structs)
             {
                 var block = blocks.FirstOrDefault(b => string.Equals(b.Name, glslBlockName, StringComparison.Ordinal));
                 string structName = structType.Name;

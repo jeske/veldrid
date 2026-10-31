@@ -11,6 +11,7 @@ default.ResourceFactory.CreateFromBundle.basePath: object null
 default.ResourceFactory.CreateFromBundle.basePath: object null
 default.ResourceFactory.CreateFromBundle.fileResolver: object null
 default.ResourceFactory.CreateFromBundle.fileResolver: object null
+default.ShaderPipelineShape.ToGraphicsPipelineDescription.specializations: object null
 default.VeldridShaderBundle.GetVertexFragmentShaderData.basePath: object null
 default.VeldridShaderBundle.GetVertexFragmentShaderData.fileResolver: object null
 enum.BlendFactor.BlendFactor: 10
@@ -832,6 +833,7 @@ method.Shader.Dispose: void()
 method.ShaderContractException..ctor: void(string bundleName, IReadOnlyList`1<ShaderContractViolation> violations)
 method.ShaderContractVerifier.FormatsCompatible: bool(VertexElementFormat pipeline, VertexElementFormat glsl)
 method.ShaderContractVerifier.ThrowIfViolated: void(ref GraphicsPipelineDescription description)
+method.ShaderContractVerifier.Verify: List`1<ShaderContractViolation>(ShaderPipelineShape shape, VeldridShaderBundle bundle)
 method.ShaderContractVerifier.Verify: List`1<ShaderContractViolation>(ref GraphicsPipelineDescription description, PrecompiledShaderResult bundle)
 method.ShaderContractViolation..ctor: void(string Rule, string Name, string SideA, string SideB, string Detail)
 method.ShaderContractViolation.Deconstruct: void(ref string Rule, ref string Name, ref string SideA, ref string SideB, ref string Detail)
@@ -846,6 +848,20 @@ method.ShaderDescription..ctor: void(ShaderStages stage, byte[] shaderBytes, str
 method.ShaderDescription.Equals: bool(ShaderDescription other)
 method.ShaderDescription.GetHashCode: int()
 method.ShaderInterfaceRegistry.TryGetBundle: PrecompiledShaderResult(Shader shader)
+method.ShaderPipelineContractRegistry.BundlesWithoutShapes: IReadOnlyList`1<string>(Assembly assembly, IEnumerable`1<string> bundleNames)
+method.ShaderPipelineContractRegistry.Enumerate: IReadOnlyList`1<ValueTuple`2<string, ShaderPipelineShape>>(Assembly assembly)
+method.ShaderPipelineContractRegistry.VerifyAll: IReadOnlyList`1<string>(Assembly assembly, Func`2<string, VeldridShaderBundle> resolveBundle)
+method.ShaderPipelineShape..ctor: void(string BundleName, VertexLayoutDescription[] VertexLayouts, ResourceLayoutDescription[] ResourceLayouts, Type[] UniformStructs)
+method.ShaderPipelineShape..ctor: void(string bundleName, VertexLayoutDescription[] vertexLayouts, ResourceLayoutDescription[] resourceLayouts)
+method.ShaderPipelineShape.<Clone>$: ShaderPipelineShape()
+method.ShaderPipelineShape.Deconstruct: void(ref string BundleName, ref VertexLayoutDescription[] VertexLayouts, ref ResourceLayoutDescription[] ResourceLayouts, ref Type[] UniformStructs)
+method.ShaderPipelineShape.Equals: bool(ShaderPipelineShape other)
+method.ShaderPipelineShape.Equals: bool(object obj)
+method.ShaderPipelineShape.GetHashCode: int()
+method.ShaderPipelineShape.ToGraphicsPipelineDescription: GraphicsPipelineDescription(Shader[] shaders, ResourceLayout[] resourceLayouts, BlendStateDescription blendState, DepthStencilStateDescription depthStencilState, RasterizerStateDescription rasterizerState, PrimitiveTopology primitiveTopology, OutputDescription outputs, SpecializationConstant[] specializations)
+method.ShaderPipelineShape.ToString: string()
+method.ShaderPipelineShape.op_Equality: bool(ShaderPipelineShape left, ShaderPipelineShape right)
+method.ShaderPipelineShape.op_Inequality: bool(ShaderPipelineShape left, ShaderPipelineShape right)
 method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts, Shader[] shaders)
 method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts, Shader[] shaders, SpecializationConstant[] specializations)
 method.ShaderSetDescription.Equals: bool(ShaderSetDescription other)
@@ -904,6 +920,7 @@ method.TextureViewDescription.GetHashCode: int()
 method.VdShaderBackendData..ctor: void()
 method.VdShaderBindingEntry..ctor: void()
 method.VdShaderInterface..ctor: void()
+method.VdShaderPipelineContractAttribute..ctor: void()
 method.VdShaderResourceElement..ctor: void()
 method.VdShaderResourceLayout..ctor: void()
 method.VdShaderUniformBlock..ctor: void()
@@ -1077,6 +1094,10 @@ property.ShaderContractViolation.Name: string { get; set; }
 property.ShaderContractViolation.Rule: string { get; set; }
 property.ShaderContractViolation.SideA: string { get; set; }
 property.ShaderContractViolation.SideB: string { get; set; }
+property.ShaderPipelineShape.BundleName: string { get; set; }
+property.ShaderPipelineShape.ResourceLayouts: ResourceLayoutDescription[] { get; set; }
+property.ShaderPipelineShape.UniformStructs: Type[] { get; set; }
+property.ShaderPipelineShape.VertexLayouts: VertexLayoutDescription[] { get; set; }
 property.StagingBufferPoolTelemetry.CreatedTotalBytes: long { get; }
 property.StagingBufferPoolTelemetry.CreatedTotalCount: long { get; }
 property.StagingBufferPoolTelemetry.EvictedTotalBytes: long { get; }
@@ -1569,6 +1590,8 @@ type.ShaderContractVerifier: static class
 type.ShaderContractViolation: struct
 type.ShaderDescription: struct
 type.ShaderInterfaceRegistry: static class
+type.ShaderPipelineContractRegistry: static class
+type.ShaderPipelineShape: sealed class
 type.ShaderSetDescription: struct
 type.ShaderStages: enum
 type.ShaderUniformBlockRegistry: static class
@@ -1590,6 +1613,7 @@ type.TextureViewDescription: struct
 type.VdShaderBackendData: sealed class
 type.VdShaderBindingEntry: sealed class
 type.VdShaderInterface: sealed class
+type.VdShaderPipelineContractAttribute: sealed class
 type.VdShaderResourceElement: sealed class
 type.VdShaderResourceLayout: sealed class
 type.VdShaderUniformBlock: sealed class

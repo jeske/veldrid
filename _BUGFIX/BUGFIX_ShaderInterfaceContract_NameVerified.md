@@ -391,7 +391,7 @@ set created through one shape may be bound through another IF the layouts are id
 O10 - dynamic uniform offsets (`DeviceBufferRange`): `UniformBlock<T>.UpdateAt(cl, index, in T)` + `BindResourceSets(cl, dynamicIndex)`;
 audit who uses them during migration.
 
-### 5.4 S9 - source-generated shapes: the same contract at C# COMPILE time, no runtime reflection (user, 2026-10-31)
+### 5.4 S9 - source-generated shapes: the same contract at C# COMPILE time, no runtime reflection (user, 2026-10-31) - DEFERRED; shapes are declared `partial` now so it needs no API change later
 
 **Goal:** FluidUI (precompiled bundles, Android/AOT) gets the contract as Roslyn build ERRORS and zero reflection at runtime. 5.3's API is
 designed so this is an alternative IMPLEMENTATION of the same contract, not a second contract:

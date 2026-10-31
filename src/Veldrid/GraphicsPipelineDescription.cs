@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Veldrid
 {
@@ -200,6 +200,7 @@ namespace Veldrid
                    && PrimitiveTopology == other.PrimitiveTopology
                    && ShaderSet.Equals(other.ShaderSet)
                    && Util.ArrayEquals(ResourceLayouts, other.ResourceLayouts)
+
                    && (ResourceBindingModel.HasValue && other.ResourceBindingModel.HasValue
                        ? ResourceBindingModel.Value == other.ResourceBindingModel.Value
                        : ResourceBindingModel.HasValue == other.ResourceBindingModel.HasValue)
@@ -219,6 +220,7 @@ namespace Veldrid
                 (int)PrimitiveTopology,
                 ShaderSet.GetHashCode(),
                 HashHelper.Array(ResourceLayouts),
+
                 ResourceBindingModel.GetHashCode(),
                 Outputs.GetHashCode());
         }

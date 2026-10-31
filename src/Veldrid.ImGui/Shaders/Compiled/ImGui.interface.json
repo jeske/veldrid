@@ -1,0 +1,105 @@
+{
+  "SourceHash": "6562f5dc2628f6fd20fd988d12c3367eab90ae3735a50d756b3c3fd59e1c3aa1",
+  "CompilerVersionTag": "spirv=5.2610.3112.1914;bundle=5.2610.3112.1302;native-abi=2",
+  "Interface": {
+    "vertexInputs": [
+      {
+        "name": "vsin_position",
+        "location": 0,
+        "format": "Float2"
+      },
+      {
+        "name": "vsin_texCoord",
+        "location": 1,
+        "format": "Float2"
+      },
+      {
+        "name": "vsin_color",
+        "location": 2,
+        "format": "Float4"
+      }
+    ],
+    "vertexOutputs": [
+      {
+        "name": "vsout_color",
+        "location": 0,
+        "type": "vec4",
+        "flat": false
+      },
+      {
+        "name": "vsout_texCoord",
+        "location": 1,
+        "type": "vec2",
+        "flat": false
+      }
+    ],
+    "fragmentInputs": [
+      {
+        "name": "vsout_color",
+        "location": 0,
+        "type": "vec4",
+        "flat": false
+      },
+      {
+        "name": "vsout_texCoord",
+        "location": 1,
+        "type": "vec2",
+        "flat": false
+      }
+    ],
+    "uniformBlocks": [
+      {
+        "name": "Projection",
+        "set": 0,
+        "binding": 0,
+        "sizeBytes": 80,
+        "stages": "Vertex",
+        "members": [
+          {
+            "name": "projection",
+            "type": "mat4",
+            "offsetBytes": 0,
+            "sizeBytes": 64
+          },
+          {
+            "name": "IsClipSpaceYInverted",
+            "type": "int",
+            "offsetBytes": 64,
+            "sizeBytes": 4
+          },
+          {
+            "name": "UseLegacyColorSpaceHandling",
+            "type": "int",
+            "offsetBytes": 68,
+            "sizeBytes": 4
+          }
+        ]
+      }
+    ]
+  },
+  "ResourceLayoutDescriptions": [
+    {
+      "elements": [
+        {
+          "name": "Projection",
+          "kind": "UniformBuffer",
+          "stages": "Vertex"
+        },
+        {
+          "name": "FontSampler",
+          "kind": "Sampler",
+          "stages": "Fragment"
+        }
+      ]
+    },
+    {
+      "elements": [
+        {
+          "name": "FontTexture",
+          "kind": "TextureReadOnly",
+          "stages": "Fragment"
+        }
+      ]
+    }
+  ]
+}

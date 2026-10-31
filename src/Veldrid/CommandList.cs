@@ -35,6 +35,9 @@ namespace Veldrid
         public abstract string Name { get; set; }
 
         private readonly GraphicsDeviceFeatures features;
+        internal ShapeCommandBindings GraphicsShapeBindings { get; } = new();
+        internal ShapeCommandBindings ComputeShapeBindings { get; } = new();
+
         private readonly uint uniformBufferAlignment;
         private readonly uint structuredBufferAlignment;
 
@@ -84,6 +87,10 @@ namespace Veldrid
         /// <param name="pipeline">The new <see cref="Pipeline" /> object.</param>
         public void SetPipeline(Pipeline pipeline)
         {
+            ArgumentNullException.ThrowIfNull(pipeline);
+            if (pipeline.IsDisposed) throw new ObjectDisposedException(nameof(pipeline));
+            var bindings = pipeline.IsComputePipeline ? ComputeShapeBindings : GraphicsShapeBindings;
+            bindings.Select(pipeline.VerifiedShape, pipeline.VerifiedVertexInputCount, pipeline.VerifiedHasResources);
             if (pipeline.IsComputePipeline)
                 ComputePipeline = pipeline;
             else
@@ -101,7 +108,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="index">The buffer slot.</param>
         /// <param name="buffer">The new <see cref="DeviceBuffer" />.</param>
-        public void SetVertexBuffer(uint index, DeviceBuffer buffer)
+        internal void SetVertexBuffer(uint index, DeviceBuffer buffer)
         {
             SetVertexBuffer(index, buffer, 0);
         }
@@ -118,7 +125,7 @@ namespace Veldrid
         /// <param name="offset">
         ///     The offset from the start of the buffer, in bytes, from which data will start to be read.
         /// </param>
-        public void SetVertexBuffer(uint index, DeviceBuffer buffer, uint offset)
+        internal void SetVertexBuffer(uint index, DeviceBuffer buffer, uint offset)
         {
 #if VALIDATE_USAGE
             if ((buffer.Usage & BufferUsage.VertexBuffer) == 0)
@@ -171,7 +178,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="slot">The resource slot.</param>
         /// <param name="rs">The new <see cref="ResourceSet" />.</param>
-        public unsafe void SetGraphicsResourceSet(uint slot, ResourceSet rs)
+        internal unsafe void SetGraphicsResourceSet(uint slot, ResourceSet rs)
         {
             SetGraphicsResourceSet(slot, rs, 0, ref Unsafe.AsRef<uint>(null));
         }
@@ -192,7 +199,7 @@ namespace Veldrid
         ///     <see cref="GraphicsDevice.UniformBufferMinOffsetAlignment" /> or
         ///     <see cref="GraphicsDevice.StructuredBufferMinOffsetAlignment" />, depending on the kind of resource.
         /// </param>
-        public void SetGraphicsResourceSet(uint slot, ResourceSet rs, uint[] dynamicOffsets)
+        internal void SetGraphicsResourceSet(uint slot, ResourceSet rs, uint[] dynamicOffsets)
         {
             SetGraphicsResourceSet(slot, rs, (uint)dynamicOffsets.Length, ref dynamicOffsets[0]);
         }
@@ -215,7 +222,7 @@ namespace Veldrid
         ///     <see cref="GraphicsDevice.UniformBufferMinOffsetAlignment" /> or
         ///     <see cref="GraphicsDevice.StructuredBufferMinOffsetAlignment" />, depending on the kind of resource.
         /// </param>
-        public void SetGraphicsResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
+        internal void SetGraphicsResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
         {
 #if VALIDATE_USAGE
             if (GraphicsPipeline == null) throw new VeldridException($"A graphics Pipeline must be active before {nameof(SetGraphicsResourceSet)} can be called.");
@@ -292,7 +299,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="slot">The resource slot.</param>
         /// <param name="rs">The new <see cref="ResourceSet" />.</param>
-        public unsafe void SetComputeResourceSet(uint slot, ResourceSet rs)
+        internal unsafe void SetComputeResourceSet(uint slot, ResourceSet rs)
         {
             SetComputeResourceSet(slot, rs, 0, ref Unsafe.AsRef<uint>(null));
         }
@@ -310,7 +317,7 @@ namespace Veldrid
         ///     offsets
         ///     are applied in the order that dynamic buffer elements appear in the <see cref="ResourceSet" />.
         /// </param>
-        public void SetComputeResourceSet(uint slot, ResourceSet rs, uint[] dynamicOffsets)
+        internal void SetComputeResourceSet(uint slot, ResourceSet rs, uint[] dynamicOffsets)
         {
             SetComputeResourceSet(slot, rs, (uint)dynamicOffsets.Length, ref dynamicOffsets[0]);
         }
@@ -333,7 +340,7 @@ namespace Veldrid
         ///     <see cref="GraphicsDevice.UniformBufferMinOffsetAlignment" /> or
         ///     <see cref="GraphicsDevice.StructuredBufferMinOffsetAlignment" />, depending on the kind of resource.
         /// </param>
-        public void SetComputeResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
+        internal void SetComputeResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
         {
 #if VALIDATE_USAGE
             if (ComputePipeline == null) throw new VeldridException($"A compute Pipeline must be active before {nameof(SetComputeResourceSet)} can be called.");
@@ -626,7 +633,13 @@ namespace Veldrid
         /// <param name="groupCountX">The X dimension of the compute thread groups that are dispatched.</param>
         /// <param name="groupCountY">The Y dimension of the compute thread groups that are dispatched.</param>
         /// <param name="groupCountZ">The Z dimension of the compute thread groups that are dispatched.</param>
-        public abstract void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ);
+        public void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
+        {
+            ComputeShapeBindings.ValidateDraw();
+            DispatchCore(groupCountX, groupCountY, groupCountZ);
+        }
+
+        private protected abstract void DispatchCore(uint groupCountX, uint groupCountY, uint groupCountZ);
 
         /// <summary>
         ///     Issues an indirect compute dispatch command based on the information contained in the given indirect
@@ -643,6 +656,7 @@ namespace Veldrid
         /// </param>
         public void DispatchIndirect(DeviceBuffer indirectBuffer, uint offset)
         {
+            ComputeShapeBindings.ValidateDraw();
             validateIndirectBuffer(indirectBuffer);
             validateIndirectOffset(offset);
             DispatchIndirectCore(indirectBuffer, offset);
@@ -1046,6 +1060,8 @@ namespace Veldrid
             Framebuffer = null;
             GraphicsPipeline = null;
             ComputePipeline = null;
+            GraphicsShapeBindings.Reset();
+            ComputeShapeBindings.Reset();
 #if VALIDATE_USAGE
             indexBuffer = null;
 #endif
@@ -1201,9 +1217,9 @@ namespace Veldrid
 #endif
         }
 
-        [Conditional("VALIDATE_USAGE")]
         private void preDrawValidation()
         {
+            GraphicsShapeBindings.ValidateDraw();
 #if VALIDATE_USAGE
 
             if (GraphicsPipeline == null) throw new VeldridException($"A graphics {nameof(Pipeline)} must be set in order to issue draw commands.");

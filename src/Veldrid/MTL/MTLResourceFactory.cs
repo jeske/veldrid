@@ -16,7 +16,7 @@ namespace Veldrid.MTL
             return new MtlCommandList(ref description, gd);
         }
 
-        public override Pipeline CreateComputePipeline(ref ComputePipelineDescription description)
+        internal override Pipeline CreateComputePipeline(ref ComputePipelineDescription description)
         {
             return new MtlPipeline(ref description, gd);
         }
@@ -26,12 +26,12 @@ namespace Veldrid.MTL
             return new MtlFramebuffer(gd, ref description);
         }
 
-        public override ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description)
+        internal override ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description)
         {
             return new MtlResourceLayout(ref description, gd);
         }
 
-        public override ResourceLayout CreateResourceLayout(
+        internal override ResourceLayout CreateResourceLayout(
             ref ResourceLayoutDescription description,
             uint setIndex,
             VdShaderBindingEntry[] bindingEntries)
@@ -44,7 +44,7 @@ namespace Veldrid.MTL
             return new MtlResourceLayout(ref description, gd);
         }
 
-        public override ResourceSet CreateResourceSet(ref ResourceSetDescription description)
+        internal override ResourceSet CreateResourceSet(ref ResourceSetDescription description)
         {
             ValidationHelpers.ValidateResourceSet(gd, ref description);
             return new MtlResourceSet(ref description, gd);

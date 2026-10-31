@@ -23,6 +23,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Veldrid\Veldrid.csproj" />
+    <!-- Exercise the exact ImGui shape source and bundle without a window or native ImGui dependency. -->
+    <Compile Include="..\Veldrid.ImGui\ImGuiShape.cs" Link="ImGuiShape.cs" />
+    <EmbeddedResource Include="..\Veldrid.ImGui\Shaders\Compiled\ImGui.vdshader" LogicalName="ContractTests.ImGui.vdshader" />
   </ItemGroup>
 
 </Project>

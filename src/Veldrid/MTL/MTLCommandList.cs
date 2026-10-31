@@ -137,7 +137,7 @@ namespace Veldrid.MTL
             ClearCachedState();
         }
 
-        public override void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
+        private protected override void DispatchCore(uint groupCountX, uint groupCountY, uint groupCountZ)
         {
             preComputeCommand();
             cce.dispatchThreadGroups(

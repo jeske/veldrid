@@ -193,7 +193,7 @@ namespace Veldrid.D3D11
             begun = false;
         }
 
-        public override void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
+        private protected override void DispatchCore(uint groupCountX, uint groupCountY, uint groupCountZ)
         {
             preDispatchCommand();
 

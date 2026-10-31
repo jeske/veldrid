@@ -1,4 +1,5 @@
 __stableApiVersion: 2
+const.ShaderContractVerifier.Rule_Identifier: string "ID"
 const.ShaderContractVerifier.Rule_V7_ShaderSet: string "V7"
 const.ShaderContractVerifier.Rule_V7a_VertexInputs: string "V7a"
 const.ShaderContractVerifier.Rule_V7b_ResourceLayouts: string "V7b"
@@ -11,7 +12,9 @@ default.ResourceFactory.CreateFromBundle.basePath: object null
 default.ResourceFactory.CreateFromBundle.basePath: object null
 default.ResourceFactory.CreateFromBundle.fileResolver: object null
 default.ResourceFactory.CreateFromBundle.fileResolver: object null
-default.ShaderPipelineShape.ToGraphicsPipelineDescription.specializations: object null
+default.ShaderPipelineShape.BindResourceSets.compute: bool false
+default.ShaderPipelineShape.CreateGraphicsPipeline.specializations: object null
+default.ShaderVertexBuffer`1.Update.firstVertex: uint 0
 default.VeldridShaderBundle.GetVertexFragmentShaderData.basePath: object null
 default.VeldridShaderBundle.GetVertexFragmentShaderData.fileResolver: object null
 enum.BlendFactor.BlendFactor: 10
@@ -598,23 +601,15 @@ method.CommandList.InsertDebugMarker: void(string name)
 method.CommandList.PopDebugGroup: void()
 method.CommandList.PushDebugGroup: void(string name)
 method.CommandList.ResolveTexture: void(Texture source, Texture destination)
-method.CommandList.SetComputeResourceSet: void(uint slot, ResourceSet rs)
-method.CommandList.SetComputeResourceSet: void(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
-method.CommandList.SetComputeResourceSet: void(uint slot, ResourceSet rs, uint[] dynamicOffsets)
 method.CommandList.SetFramebuffer: void(Framebuffer fb)
 method.CommandList.SetFullScissorRect: void(uint index)
 method.CommandList.SetFullScissorRects: void()
 method.CommandList.SetFullViewport: void(uint index)
 method.CommandList.SetFullViewports: void()
-method.CommandList.SetGraphicsResourceSet: void(uint slot, ResourceSet rs)
-method.CommandList.SetGraphicsResourceSet: void(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
-method.CommandList.SetGraphicsResourceSet: void(uint slot, ResourceSet rs, uint[] dynamicOffsets)
 method.CommandList.SetIndexBuffer: void(DeviceBuffer buffer, IndexFormat format)
 method.CommandList.SetIndexBuffer: void(DeviceBuffer buffer, IndexFormat format, uint offset)
 method.CommandList.SetPipeline: void(Pipeline pipeline)
 method.CommandList.SetScissorRect: void(uint index, uint x, uint y, uint width, uint height)
-method.CommandList.SetVertexBuffer: void(uint index, DeviceBuffer buffer)
-method.CommandList.SetVertexBuffer: void(uint index, DeviceBuffer buffer, uint offset)
 method.CommandList.SetViewport: void(uint index, Viewport viewport)
 method.CommandList.SetViewport: void(uint index, ref Viewport viewport)
 method.CommandList.UpdateBuffer: void(DeviceBuffer buffer, uint bufferOffsetInBytes, !!0 source)
@@ -758,6 +753,7 @@ method.OutputDescription..ctor: void(Nullable`1<OutputAttachmentDescription> dep
 method.OutputDescription..ctor: void(Nullable`1<OutputAttachmentDescription> depthAttachment, OutputAttachmentDescription[] colorAttachments, TextureSampleCount sampleCount)
 method.OutputDescription.Equals: bool(OutputDescription other)
 method.OutputDescription.GetHashCode: int()
+method.PerInstanceAttribute..ctor: void()
 method.Pipeline.Dispose: void()
 method.PixelFormatProperties.IsSampleCountSupported: bool(TextureSampleCount count)
 method.PrecompiledShaderResult..ctor: void(Shader[] shaders, ResourceLayoutDescription[] resourceLayouts, VdShaderBindingEntry[] flatBindingMap, VdShaderInterface shaderInterface, string bundleName)
@@ -770,24 +766,13 @@ method.ResourceFactory.CreateBuffer: DeviceBuffer(ref BufferDescription descript
 method.ResourceFactory.CreateCommandList: CommandList()
 method.ResourceFactory.CreateCommandList: CommandList(CommandListDescription description)
 method.ResourceFactory.CreateCommandList: CommandList(ref CommandListDescription description)
-method.ResourceFactory.CreateComputePipeline: Pipeline(ComputePipelineDescription description)
-method.ResourceFactory.CreateComputePipeline: Pipeline(ref ComputePipelineDescription description)
 method.ResourceFactory.CreateFence: Fence(bool signaled)
 method.ResourceFactory.CreateFramebuffer: Framebuffer(FramebufferDescription description)
 method.ResourceFactory.CreateFramebuffer: Framebuffer(ref FramebufferDescription description)
 method.ResourceFactory.CreateFromBundle: PrecompiledShaderResult(VeldridShaderBundle bundle, Func`2<string, byte[]> fileResolver, string basePath)
 method.ResourceFactory.CreateFromBundle: PrecompiledShaderResult(string vdshaderJson, Func`2<string, byte[]> fileResolver, string basePath)
-method.ResourceFactory.CreateGraphicsPipeline: Pipeline(GraphicsPipelineDescription description)
-method.ResourceFactory.CreateGraphicsPipeline: Pipeline(ref GraphicsPipelineDescription description)
-method.ResourceFactory.CreateResourceLayout: ResourceLayout(ResourceLayoutDescription description)
-method.ResourceFactory.CreateResourceLayout: ResourceLayout(ref ResourceLayoutDescription description)
-method.ResourceFactory.CreateResourceLayout: ResourceLayout(ref ResourceLayoutDescription description, uint setIndex, VdShaderBindingEntry[] bindingEntries)
-method.ResourceFactory.CreateResourceSet: ResourceSet(ResourceSetDescription description)
-method.ResourceFactory.CreateResourceSet: ResourceSet(ref ResourceSetDescription description)
 method.ResourceFactory.CreateSampler: Sampler(SamplerDescription description)
 method.ResourceFactory.CreateSampler: Sampler(ref SamplerDescription description)
-method.ResourceFactory.CreateShader: Shader(ShaderDescription description)
-method.ResourceFactory.CreateShader: Shader(ref ShaderDescription description)
 method.ResourceFactory.CreateSwapchain: Swapchain(SwapchainDescription description)
 method.ResourceFactory.CreateSwapchain: Swapchain(ref SwapchainDescription description)
 method.ResourceFactory.CreateTexture: Texture(TextureDescription description)
@@ -829,13 +814,18 @@ method.Sampler.Dispose: void()
 method.SamplerDescription..ctor: void(SamplerAddressMode addressModeU, SamplerAddressMode addressModeV, SamplerAddressMode addressModeW, SamplerFilter filter, Nullable`1<ComparisonKind> comparisonKind, uint maximumAnisotropy, uint minimumLod, uint maximumLod, int lodBias, SamplerBorderColor borderColor)
 method.SamplerDescription.Equals: bool(SamplerDescription other)
 method.SamplerDescription.GetHashCode: int()
+method.SamplerSlot..ctor: void()
+method.SamplerSlot.Set: void(Sampler sampler)
 method.Shader.Dispose: void()
+method.ShaderBundleAttribute..ctor: void(string bundleName)
 method.ShaderContractException..ctor: void(string bundleName, IReadOnlyList`1<ShaderContractViolation> violations)
 method.ShaderContractVerifier.FormatsCompatible: bool(VertexElementFormat pipeline, VertexElementFormat glsl)
+method.ShaderContractVerifier.IsLegalCSharpIdentifier: bool(string name)
 method.ShaderContractVerifier.IsPaddingField: bool(string fieldName)
+method.ShaderContractVerifier.ThrowIfViolated: void(ref ComputePipelineDescription description)
 method.ShaderContractVerifier.ThrowIfViolated: void(ref GraphicsPipelineDescription description)
-method.ShaderContractVerifier.Verify: List`1<ShaderContractViolation>(ShaderPipelineShape shape, VeldridShaderBundle bundle)
-method.ShaderContractVerifier.Verify: List`1<ShaderContractViolation>(ref GraphicsPipelineDescription description, PrecompiledShaderResult bundle)
+method.ShaderContractVerifier.VerifyShape: List`1<ShaderContractViolation>(ShapeDescriptor shape, string bundleName, VdShaderInterface itf, ResourceLayoutDescription[] compiledLayouts)
+method.ShaderContractVerifier.VerifyStructAgainstBlock: void(Type structType, VdShaderUniformBlock block, List`1<ShaderContractViolation> violations)
 method.ShaderContractViolation..ctor: void(string Rule, string Name, string SideA, string SideB, string Detail)
 method.ShaderContractViolation.Deconstruct: void(ref string Rule, ref string Name, ref string SideA, ref string SideB, ref string Detail)
 method.ShaderContractViolation.Equals: bool(ShaderContractViolation other)
@@ -849,28 +839,49 @@ method.ShaderDescription..ctor: void(ShaderStages stage, byte[] shaderBytes, str
 method.ShaderDescription.Equals: bool(ShaderDescription other)
 method.ShaderDescription.GetHashCode: int()
 method.ShaderInterfaceRegistry.TryGetBundle: PrecompiledShaderResult(Shader shader)
-method.ShaderPipelineContractRegistry.BundlesWithoutShapes: IReadOnlyList`1<string>(Assembly assembly, IEnumerable`1<string> bundleNames)
-method.ShaderPipelineContractRegistry.Enumerate: IReadOnlyList`1<ValueTuple`2<string, ShaderPipelineShape>>(Assembly assembly)
-method.ShaderPipelineContractRegistry.VerifyAll: IReadOnlyList`1<string>(Assembly assembly, Func`2<string, VeldridShaderBundle> resolveBundle)
-method.ShaderPipelineShape..ctor: void(string BundleName, VertexLayoutDescription[] VertexLayouts, ResourceLayoutDescription[] ResourceLayouts, Type[] UniformStructs)
-method.ShaderPipelineShape..ctor: void(string bundleName, VertexLayoutDescription[] vertexLayouts, ResourceLayoutDescription[] resourceLayouts)
-method.ShaderPipelineShape.<Clone>$: ShaderPipelineShape()
-method.ShaderPipelineShape.Deconstruct: void(ref string BundleName, ref VertexLayoutDescription[] VertexLayouts, ref ResourceLayoutDescription[] ResourceLayouts, ref Type[] UniformStructs)
-method.ShaderPipelineShape.Equals: bool(ShaderPipelineShape other)
-method.ShaderPipelineShape.Equals: bool(object obj)
-method.ShaderPipelineShape.GetHashCode: int()
-method.ShaderPipelineShape.ToGraphicsPipelineDescription: GraphicsPipelineDescription(Shader[] shaders, ResourceLayout[] resourceLayouts, BlendStateDescription blendState, DepthStencilStateDescription depthStencilState, RasterizerStateDescription rasterizerState, PrimitiveTopology primitiveTopology, OutputDescription outputs, SpecializationConstant[] specializations)
-method.ShaderPipelineShape.ToString: string()
-method.ShaderPipelineShape.op_Equality: bool(ShaderPipelineShape left, ShaderPipelineShape right)
-method.ShaderPipelineShape.op_Inequality: bool(ShaderPipelineShape left, ShaderPipelineShape right)
+method.ShaderPipelineShape.Bind: !!0(PrecompiledShaderResult bundle, ResourceFactory factory)
+method.ShaderPipelineShape.BindResourceSets: void(CommandList cl, bool compute)
+method.ShaderPipelineShape.CreateComputePipeline: Pipeline(uint threadGroupSizeX, uint threadGroupSizeY, uint threadGroupSizeZ)
+method.ShaderPipelineShape.CreateGraphicsPipeline: Pipeline(BlendStateDescription blend, DepthStencilStateDescription depthStencil, RasterizerStateDescription rasterizer, PrimitiveTopology topology, OutputDescription outputs, SpecializationConstant[] specializations)
+method.ShaderPipelineShape.Dispose: void()
+method.ShaderPipelineShape.EnumerateShapes: IReadOnlyList`1<ValueTuple`2<Type, string>>(Assembly assembly)
+method.ShaderPipelineShape.Verify: IReadOnlyList`1<ShaderContractViolation>(Type shapeType, VeldridShaderBundle bundle)
+method.ShaderPipelineShape.Verify: IReadOnlyList`1<ShaderContractViolation>(VeldridShaderBundle bundle)
 method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts, Shader[] shaders)
 method.ShaderSetDescription..ctor: void(VertexLayoutDescription[] vertexLayouts, Shader[] shaders, SpecializationConstant[] specializations)
 method.ShaderSetDescription.Equals: bool(ShaderSetDescription other)
 method.ShaderSetDescription.GetHashCode: int()
-method.ShaderUniformBlockRegistry.Clear: void()
-method.ShaderUniformBlockRegistry.For: IReadOnlyList`1<ValueTuple`2<Type, string>>(string bundleName)
-method.ShaderUniformBlockRegistry.Register: void(Assembly assembly)
-method.ShaderUniformBlockRegistry.Register: void(Type structType, string bundleName, string glslBlockName)
+method.ShaderVertexBuffer`1.Dispose: void()
+method.ShaderVertexBuffer`1.Update: void(CommandList commands, ReadOnlySpan`1<!0> vertices, uint firstVertex)
+method.ShapeDescriptor..ctor: void(string BundleName, ShapeSlotDescriptor[] Slots, ShapeVertexInputDescriptor[] VertexInputs)
+method.ShapeDescriptor.<Clone>$: ShapeDescriptor()
+method.ShapeDescriptor.Deconstruct: void(ref string BundleName, ref ShapeSlotDescriptor[] Slots, ref ShapeVertexInputDescriptor[] VertexInputs)
+method.ShapeDescriptor.Equals: bool(ShapeDescriptor other)
+method.ShapeDescriptor.Equals: bool(object obj)
+method.ShapeDescriptor.GetHashCode: int()
+method.ShapeDescriptor.ToString: string()
+method.ShapeDescriptor.op_Equality: bool(ShapeDescriptor left, ShapeDescriptor right)
+method.ShapeDescriptor.op_Inequality: bool(ShapeDescriptor left, ShapeDescriptor right)
+method.ShapeDescriptorBuilder.FromReflection: ShapeDescriptor(Type shapeType)
+method.ShapeDescriptorBuilder.VertexLayoutFor: VertexLayoutDescription(Type vertexType, bool perInstance)
+method.ShapeSlotDescriptor..ctor: void(string Name, Type SlotType, ResourceKind[] AcceptedKinds, Type StructType)
+method.ShapeSlotDescriptor.<Clone>$: ShapeSlotDescriptor()
+method.ShapeSlotDescriptor.Deconstruct: void(ref string Name, ref Type SlotType, ref ResourceKind[] AcceptedKinds, ref Type StructType)
+method.ShapeSlotDescriptor.Equals: bool(ShapeSlotDescriptor other)
+method.ShapeSlotDescriptor.Equals: bool(object obj)
+method.ShapeSlotDescriptor.GetHashCode: int()
+method.ShapeSlotDescriptor.ToString: string()
+method.ShapeSlotDescriptor.op_Equality: bool(ShapeSlotDescriptor left, ShapeSlotDescriptor right)
+method.ShapeSlotDescriptor.op_Inequality: bool(ShapeSlotDescriptor left, ShapeSlotDescriptor right)
+method.ShapeVertexInputDescriptor..ctor: void(string FieldName, Type VertexType, bool PerInstance, VertexLayoutDescription Layout)
+method.ShapeVertexInputDescriptor.<Clone>$: ShapeVertexInputDescriptor()
+method.ShapeVertexInputDescriptor.Deconstruct: void(ref string FieldName, ref Type VertexType, ref bool PerInstance, ref VertexLayoutDescription Layout)
+method.ShapeVertexInputDescriptor.Equals: bool(ShapeVertexInputDescriptor other)
+method.ShapeVertexInputDescriptor.Equals: bool(object obj)
+method.ShapeVertexInputDescriptor.GetHashCode: int()
+method.ShapeVertexInputDescriptor.ToString: string()
+method.ShapeVertexInputDescriptor.op_Equality: bool(ShapeVertexInputDescriptor left, ShapeVertexInputDescriptor right)
+method.ShapeVertexInputDescriptor.op_Inequality: bool(ShapeVertexInputDescriptor left, ShapeVertexInputDescriptor right)
 method.SpecializationConstant..ctor: void(uint id, ShaderConstantType type, ulong data)
 method.SpecializationConstant..ctor: void(uint id, bool value)
 method.SpecializationConstant..ctor: void(uint id, double value)
@@ -886,6 +897,10 @@ method.SpecializationConstant.GetHashCode: int()
 method.StencilBehaviorDescription..ctor: void(StencilOperation fail, StencilOperation pass, StencilOperation depthFail, ComparisonKind comparison)
 method.StencilBehaviorDescription.Equals: bool(StencilBehaviorDescription other)
 method.StencilBehaviorDescription.GetHashCode: int()
+method.StorageBufferSlot..ctor: void()
+method.StorageBufferSlot.Set: void(DeviceBuffer buffer)
+method.StorageImageSlot..ctor: void()
+method.StorageImageSlot.Set: void(TextureView view)
 method.Swapchain.Dispose: void()
 method.Swapchain.RecreateOnRestoredDevice: void()
 method.Swapchain.Resize: void(uint width, uint height)
@@ -911,6 +926,11 @@ method.TextureDescription.Texture1D: TextureDescription(uint width, uint mipLeve
 method.TextureDescription.Texture2D: TextureDescription(uint width, uint height, uint mipLevels, uint arrayLayers, PixelFormat format, TextureUsage usage)
 method.TextureDescription.Texture2D: TextureDescription(uint width, uint height, uint mipLevels, uint arrayLayers, PixelFormat format, TextureUsage usage, TextureSampleCount sampleCount)
 method.TextureDescription.Texture3D: TextureDescription(uint width, uint height, uint depth, uint mipLevels, PixelFormat format, TextureUsage usage)
+method.TextureSlot..ctor: void()
+method.TextureSlot.Forget: void(Texture texture)
+method.TextureSlot.Forget: void(TextureView view)
+method.TextureSlot.Set: void(Texture texture)
+method.TextureSlot.Set: void(TextureView view)
 method.TextureView.Dispose: void()
 method.TextureViewDescription..ctor: void(Texture target)
 method.TextureViewDescription..ctor: void(Texture target, PixelFormat format)
@@ -918,14 +938,16 @@ method.TextureViewDescription..ctor: void(Texture target, PixelFormat format, ui
 method.TextureViewDescription..ctor: void(Texture target, uint baseMipLevel, uint mipLevels, uint baseArrayLayer, uint arrayLayers)
 method.TextureViewDescription.Equals: bool(TextureViewDescription other)
 method.TextureViewDescription.GetHashCode: int()
+method.UniformBlock`1..ctor: void()
+method.UniformBlock`1.Dispose: void()
+method.UniformBlock`1.Update: void(CommandList cl, ref !0 value)
+method.UniformBlock`1.UpdateMember: void(CommandList cl, Expression`1<Func`2<!0, !!0>> member, ref !!0 value)
 method.VdShaderBackendData..ctor: void()
 method.VdShaderBindingEntry..ctor: void()
 method.VdShaderInterface..ctor: void()
-method.VdShaderPipelineContractAttribute..ctor: void()
 method.VdShaderResourceElement..ctor: void()
 method.VdShaderResourceLayout..ctor: void()
 method.VdShaderUniformBlock..ctor: void()
-method.VdShaderUniformBlockAttribute..ctor: void(string bundleName, string glslBlockName)
 method.VdShaderUniformMember..ctor: void()
 method.VdShaderVarying..ctor: void()
 method.VdShaderVertexInput..ctor: void()
@@ -949,6 +971,10 @@ method.VertexElementDescription..ctor: void(string name, VertexElementSemantic s
 method.VertexElementDescription..ctor: void(string name, VertexElementSemantic semantic, VertexElementFormat format, uint offset)
 method.VertexElementDescription.Equals: bool(VertexElementDescription other)
 method.VertexElementDescription.GetHashCode: int()
+method.VertexFormatAttribute..ctor: void(VertexElementFormat format)
+method.VertexInput`1..ctor: void()
+method.VertexInput`1.Bind: void(CommandList commands, ShaderVertexBuffer`1<!0> buffer)
+method.VertexInput`1.CreateBuffer: ShaderVertexBuffer`1<!0>(uint vertexCapacity)
 method.VertexLayoutDescription..ctor: void(VertexElementDescription[] elements)
 method.VertexLayoutDescription..ctor: void(uint stride, VertexElementDescription[] elements)
 method.VertexLayoutDescription..ctor: void(uint stride, uint instanceStepRate, VertexElementDescription[] elements)
@@ -1088,6 +1114,7 @@ property.Shader.EntryPoint: string { get; }
 property.Shader.IsDisposed: bool { get; }
 property.Shader.Name: string { get; set; }
 property.Shader.Stage: ShaderStages { get; }
+property.ShaderBundleAttribute.BundleName: string { get; }
 property.ShaderContractException.BundleName: string { get; }
 property.ShaderContractException.Violations: IReadOnlyList`1<ShaderContractViolation> { get; }
 property.ShaderContractViolation.Detail: string { get; set; }
@@ -1095,10 +1122,23 @@ property.ShaderContractViolation.Name: string { get; set; }
 property.ShaderContractViolation.Rule: string { get; set; }
 property.ShaderContractViolation.SideA: string { get; set; }
 property.ShaderContractViolation.SideB: string { get; set; }
-property.ShaderPipelineShape.BundleName: string { get; set; }
-property.ShaderPipelineShape.ResourceLayouts: ResourceLayoutDescription[] { get; set; }
-property.ShaderPipelineShape.UniformStructs: Type[] { get; set; }
-property.ShaderPipelineShape.VertexLayouts: VertexLayoutDescription[] { get; set; }
+property.ShaderPipelineShape.Bundle: PrecompiledShaderResult { get; }
+property.ShaderPipelineShape.BundleName: string { get; }
+property.ShaderVertexBuffer`1.Capacity: uint { get; }
+property.ShapeDescriptor.BundleName: string { get; set; }
+property.ShapeDescriptor.Slots: ShapeSlotDescriptor[] { get; set; }
+property.ShapeDescriptor.VertexInputs: ShapeVertexInputDescriptor[] { get; set; }
+property.ShapeSlot.Binding: uint { get; }
+property.ShapeSlot.Name: string { get; }
+property.ShapeSlot.Set: uint { get; }
+property.ShapeSlotDescriptor.AcceptedKinds: ResourceKind[] { get; set; }
+property.ShapeSlotDescriptor.Name: string { get; set; }
+property.ShapeSlotDescriptor.SlotType: Type { get; set; }
+property.ShapeSlotDescriptor.StructType: Type { get; set; }
+property.ShapeVertexInputDescriptor.FieldName: string { get; set; }
+property.ShapeVertexInputDescriptor.Layout: VertexLayoutDescription { get; set; }
+property.ShapeVertexInputDescriptor.PerInstance: bool { get; set; }
+property.ShapeVertexInputDescriptor.VertexType: Type { get; set; }
 property.StagingBufferPoolTelemetry.CreatedTotalBytes: long { get; }
 property.StagingBufferPoolTelemetry.CreatedTotalCount: long { get; }
 property.StagingBufferPoolTelemetry.EvictedTotalBytes: long { get; }
@@ -1160,8 +1200,6 @@ property.VdShaderUniformBlock.Name: string { get; set; }
 property.VdShaderUniformBlock.Set: uint { get; set; }
 property.VdShaderUniformBlock.SizeBytes: uint { get; set; }
 property.VdShaderUniformBlock.Stages: ShaderStages { get; set; }
-property.VdShaderUniformBlockAttribute.BundleName: string { get; }
-property.VdShaderUniformBlockAttribute.GlslBlockName: string { get; }
 property.VdShaderUniformMember.Name: string { get; set; }
 property.VdShaderUniformMember.OffsetBytes: uint { get; set; }
 property.VdShaderUniformMember.SizeBytes: uint { get; set; }
@@ -1186,6 +1224,9 @@ property.VeldridShaderBundle.ResourceLayoutDescriptions: VdShaderResourceLayout[
 property.VeldridShaderBundle.ShaderName: string { get; set; }
 property.VeldridShaderBundle.Version: int { get; set; }
 property.VeldridShaderBundle.VertexSource: string { get; set; }
+property.VertexFormatAttribute.Format: VertexElementFormat { get; }
+property.VertexInput`1.Layout: VertexLayoutDescription { get; }
+property.VertexInput`1.SlotIndex: uint { get; }
 struct.BackendInfoVulkan.ExtensionProperties._layout: Sequential
 struct.BackendInfoVulkan.ExtensionProperties._pack: 0
 struct.BackendInfoVulkan.ExtensionProperties._size: 0
@@ -1561,6 +1602,7 @@ type.MetalDeviceOptions: struct
 type.OpenGLPlatformInfo: class
 type.OutputAttachmentDescription: struct
 type.OutputDescription: struct
+type.PerInstanceAttribute: sealed class
 type.Pipeline: abstract class
 type.PixelFormat: enum
 type.PixelFormatProperties: struct
@@ -1584,22 +1626,30 @@ type.SamplerAddressMode: enum
 type.SamplerBorderColor: enum
 type.SamplerDescription: struct
 type.SamplerFilter: enum
+type.SamplerSlot: sealed class
 type.Shader: abstract class
+type.ShaderBundleAttribute: sealed class
 type.ShaderConstantType: enum
 type.ShaderContractException: sealed class
 type.ShaderContractVerifier: static class
 type.ShaderContractViolation: struct
 type.ShaderDescription: struct
 type.ShaderInterfaceRegistry: static class
-type.ShaderPipelineContractRegistry: static class
-type.ShaderPipelineShape: sealed class
+type.ShaderPipelineShape: abstract class
 type.ShaderSetDescription: struct
 type.ShaderStages: enum
-type.ShaderUniformBlockRegistry: static class
+type.ShaderVertexBuffer`1: sealed class
+type.ShapeDescriptor: sealed class
+type.ShapeDescriptorBuilder: static class
+type.ShapeSlot: abstract class
+type.ShapeSlotDescriptor: sealed class
+type.ShapeVertexInputDescriptor: sealed class
 type.SpecializationConstant: struct
 type.StagingBufferPoolTelemetry: static class
 type.StencilBehaviorDescription: struct
 type.StencilOperation: enum
+type.StorageBufferSlot: sealed class
+type.StorageImageSlot: sealed class
 type.Swapchain: abstract class
 type.SwapchainDescription: struct
 type.SwapchainScalingMode: enum
@@ -1607,18 +1657,18 @@ type.SwapchainSource: abstract class
 type.Texture: abstract class
 type.TextureDescription: struct
 type.TextureSampleCount: enum
+type.TextureSlot: sealed class
 type.TextureType: enum
 type.TextureUsage: enum
 type.TextureView: abstract class
 type.TextureViewDescription: struct
+type.UniformBlock`1: sealed class
 type.VdShaderBackendData: sealed class
 type.VdShaderBindingEntry: sealed class
 type.VdShaderInterface: sealed class
-type.VdShaderPipelineContractAttribute: sealed class
 type.VdShaderResourceElement: sealed class
 type.VdShaderResourceLayout: sealed class
 type.VdShaderUniformBlock: sealed class
-type.VdShaderUniformBlockAttribute: sealed class
 type.VdShaderUniformMember: sealed class
 type.VdShaderVarying: sealed class
 type.VdShaderVertexInput: sealed class
@@ -1628,6 +1678,8 @@ type.VeldridShaderBundle: sealed class
 type.VertexElementDescription: struct
 type.VertexElementFormat: enum
 type.VertexElementSemantic: enum
+type.VertexFormatAttribute: sealed class
+type.VertexInput`1: sealed class
 type.VertexLayoutDescription: struct
 type.Viewport: struct
 type.VkSurfaceSource: abstract class

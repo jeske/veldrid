@@ -458,3 +458,29 @@ day for the generator + tests. Trim/AOT note: reflection over struct fields is e
 - `AN_Veldrid/src/Veldrid/ShaderBundle/{VeldridShaderBundle,PrecompiledShaderResult,VdShader*}.cs`; `ResourceLayout.Description`
 - `AN_Monsters/_SPECS_RenderKit/60_ShaderInterfaceContract.md` (consumer side), `src/AN.RenderKit/Gpu/{PipelineCache,ShaderUniformBlockAttribute,EmbeddedShaderBundleSource}.cs`, `src/Monsters/Rendering/RuntimeGlslShaderSource.cs`, `Scripts/CompileShaders`
 - `AN_ArcaneSiege/src/AN.TileMapKit/Rendering/ShaderLoader.cs`, `Assets/Shaders/ChunkInstanced*.glsl`, `src/AN.TileMapKit.Tests/ShaderCrossCompileDumpTests.cs` (temporary evidence harness; HLSL dumps in `TestResults/shader_dump/`)
+
+### S8 implementation checkpoint: typed shapes in progress (2026-10-31)
+
+This supersedes earlier claims that S1-S6 closed every possible misalignment. S8 is not complete and its breaking API changes have NOT yet been published to consumers.
+
+- Veldrid core and ImGui built after the initial typed-shape conversion. ImGui uses its GLSL-derived embedded bundle without friend-assembly access; later extraction into AN_VeldridUtils remains deferred.
+- ImGui Y-flip and colour-space options now use named uniform fields. D3D11 does not consume pipeline specialization constants; relying on them after compiling DXBC would silently retain baked defaults.
+- Latest device-free contract run: 27 passed. Includes the actual ImGui shape/bundle, forbidden public factory/numbered binder checks, invalid member selectors, field-handle replacement, unbound/disposed shapes.
+- Removed the overridable Describe hook: callers cannot substitute invented descriptors for their real fields. Generator remains deferred and must supply a checked, non-bypassable descriptor path.
+- Remaining audit: positional raw vertex buffers, untyped storage buffers, mutable bundle metadata, pipeline/set pairing, backend-artifact validation, resource cache eviction and disposal. Passing current tests does not imply these are closed.
+- Next change: typed vertex-buffer uploads/binds through named VertexInput<T> fields; remove BindVertexBuffers(CommandList, params DeviceBuffer[]).
+- Acceptance test addition requested by user: AN_ArcaneSiege/src/ArcaneSiege's ImGui UI is a real-world regression target. Capture with ImGui visible (existing capture gates suppress debug overlays), exercising text, texture switching, clipping, windows and controls. Run bounded capture-and-exit, not indefinite interactive sessions.
+- Source generator and AN_VeldridUtils extraction remain deferred.
+
+### S8 checkpoint: named vertex binding and command-state checks (2026-10-31, 14:01)
+
+Local implementation, not yet published to downstream consumers:
+- Replaced positional raw vertex-buffer binding with VertexInput<T>.Bind(CommandList, ShaderVertexBuffer<T>); uploads accept only T. ImGui explicitly maps ImDrawVert fields into ImGuiVertex.
+- Pipeline records its verified shape. Graphics binding checks require that shape, invalidate bindings when selecting a pipeline, and validate before draws in Release as well as Debug.
+- Direct/indirect compute dispatch now enter common unconditional binding validation before backend calls. This does not complete compute bundle loading or storage layout support.
+- Shape resource binding revision rejects draws/dispatches after a slot change until rebinding.
+- TextureSlot.Forget evicts resource sets referencing a texture/view; ImGui image removal/font rebuilds use it. Disposed resources are rejected on texture assignment and resource-set binding.
+- Release contract suite: 39 passed, including bounded offscreen D3D11 and Vulkan rendering/readback using the actual ImGui bundle, eviction after recording, and invalid draw/dispatch rejection. These are not full ImGui-widget or downstream game validation.
+- Storage buffers currently fail with UNSUPPORTED_LAYOUT: compiled member offsets/array strides are not yet reflected. Must implement typed storage verification before consumers using SSBOs can migrate.
+- Remaining: immutable/validated bundle metadata, backend-artifact mapping checks, complete uniform type/stride/matrix-layout verification, compute loading, storage support, and downstream migration. No blanket claim that all misalignment paths are closed.
+- S9 generator and AN_VeldridUtils extraction remain deferred.

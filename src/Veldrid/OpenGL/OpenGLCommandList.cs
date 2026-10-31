@@ -44,7 +44,7 @@ namespace Veldrid.OpenGL
             CurrentCommands.Begin();
         }
 
-        public override void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
+        private protected override void DispatchCore(uint groupCountX, uint groupCountY, uint groupCountZ)
         {
             CurrentCommands.Dispatch(groupCountX, groupCountY, groupCountZ);
         }

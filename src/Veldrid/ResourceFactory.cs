@@ -27,7 +27,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="Pipeline" />.</returns>
-        public Pipeline CreateGraphicsPipeline(GraphicsPipelineDescription description)
+        internal Pipeline CreateGraphicsPipeline(GraphicsPipelineDescription description)
         {
             return CreateGraphicsPipeline(ref description);
         }
@@ -37,7 +37,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="Pipeline" /> which, when bound to a CommandList, is used to dispatch draw commands.</returns>
-        public Pipeline CreateGraphicsPipeline(ref GraphicsPipelineDescription description)
+        internal Pipeline CreateGraphicsPipeline(ref GraphicsPipelineDescription description)
         {
             // Shader interface contract V7 (AN_Veldrid/_BUGFIX/BUGFIX_ShaderInterfaceContract_NameVerified.md): if the shaders came from a
             // .vdshader bundle, the vertex layouts, resource layouts and registered uniform structs must match the compiled interface by
@@ -111,7 +111,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desirede properties of the created object.</param>
         /// <returns>A new <see cref="Pipeline" /> which, when bound to a CommandList, is used to dispatch compute commands.</returns>
-        public Pipeline CreateComputePipeline(ComputePipelineDescription description)
+        internal Pipeline CreateComputePipeline(ComputePipelineDescription description)
         {
             return CreateComputePipeline(ref description);
         }
@@ -121,7 +121,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desirede properties of the created object.</param>
         /// <returns>A new <see cref="Pipeline" /> which, when bound to a CommandList, is used to dispatch compute commands.</returns>
-        public abstract Pipeline CreateComputePipeline(ref ComputePipelineDescription description);
+        internal abstract Pipeline CreateComputePipeline(ref ComputePipelineDescription description);
 
         /// <summary>
         ///     Creates a new <see cref="Framebuffer" />.
@@ -387,7 +387,7 @@ namespace Veldrid
             "the ResourceLayout order exactly — a contract that is only enforced by the .vdshader bundle format. " +
             "Use CreateFromBundle() with a .vdshader file produced by Veldrid.SPIRV to get shaders AND the " +
             "matching ResourceLayoutDescription[] together, guaranteeing correct bindings on all backends.")]
-        public Shader CreateShader(ShaderDescription description)
+        internal Shader CreateShader(ShaderDescription description)
         {
             return CreateShader(ref description);
         }
@@ -403,7 +403,7 @@ namespace Veldrid
             "the ResourceLayout order exactly — a contract that is only enforced by the .vdshader bundle format. " +
             "Use CreateFromBundle() with a .vdshader file produced by Veldrid.SPIRV to get shaders AND the " +
             "matching ResourceLayoutDescription[] together, guaranteeing correct bindings on all backends.")]
-        public Shader CreateShader(ref ShaderDescription description)
+        internal Shader CreateShader(ref ShaderDescription description)
         {
 #if VALIDATE_USAGE
             if (!Features.ComputeShader && description.Stage == ShaderStages.Compute) throw new VeldridException("GraphicsDevice does not support Compute Shaders.");
@@ -517,7 +517,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="ResourceLayout" />.</returns>
-        public ResourceLayout CreateResourceLayout(ResourceLayoutDescription description)
+        internal ResourceLayout CreateResourceLayout(ResourceLayoutDescription description)
         {
             return CreateResourceLayout(ref description);
         }
@@ -527,7 +527,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="ResourceLayout" />.</returns>
-        public abstract ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description);
+        internal abstract ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description);
 
         /// <summary>
         /// Creates a new <see cref="ResourceLayout"/> using explicit binding slot assignments from a precompiled
@@ -543,7 +543,7 @@ namespace Veldrid
         /// from the cross-compiler. The binding map is the source of truth.
         /// </param>
         /// <returns>A new <see cref="ResourceLayout"/> with slots matching the compiled shader.</returns>
-        public virtual ResourceLayout CreateResourceLayout(
+        internal virtual ResourceLayout CreateResourceLayout(
             ref ResourceLayoutDescription description,
             uint setIndex,
             VdShaderBindingEntry[] bindingEntries)
@@ -557,7 +557,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="ResourceSet" />.</returns>
-        public ResourceSet CreateResourceSet(ResourceSetDescription description)
+        internal ResourceSet CreateResourceSet(ResourceSetDescription description)
         {
             return CreateResourceSet(ref description);
         }
@@ -567,7 +567,7 @@ namespace Veldrid
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>
         /// <returns>A new <see cref="ResourceSet" />.</returns>
-        public abstract ResourceSet CreateResourceSet(ref ResourceSetDescription description);
+        internal abstract ResourceSet CreateResourceSet(ref ResourceSetDescription description);
 
         /// <summary>
         ///     Creates a new <see cref="Fence" /> in the given state.

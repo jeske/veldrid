@@ -2,6 +2,18 @@ __stableApiVersion: 2
 enum.ColorSpaceHandling.Legacy: 0
 enum.ColorSpaceHandling.Linear: 1
 enum.ColorSpaceHandling._type: int
+field.ImGuiProjection.IsClipSpaceYInverted: int
+field.ImGuiProjection.UseLegacyColorSpaceHandling: int
+field.ImGuiProjection._pad0: int
+field.ImGuiProjection._pad1: int
+field.ImGuiProjection.projection: Matrix4x4
+field.ImGuiShape.FontSampler: SamplerSlot
+field.ImGuiShape.FontTexture: TextureSlot
+field.ImGuiShape.Projection: UniformBlock`1<ImGuiProjection>
+field.ImGuiShape.Vertices: VertexInput`1<ImGuiVertex>
+field.ImGuiVertex.vsin_color: uint
+field.ImGuiVertex.vsin_position: Vector2
+field.ImGuiVertex.vsin_texCoord: Vector2
 method.ImGuiRenderer..ctor: void(GraphicsDevice gd, OutputDescription outputDescription, int width, int height)
 method.ImGuiRenderer..ctor: void(GraphicsDevice gd, OutputDescription outputDescription, int width, int height, ColorSpaceHandling colorSpaceHandling)
 method.ImGuiRenderer.AddFocusEvent: void(bool focused)
@@ -17,7 +29,7 @@ method.ImGuiRenderer.CreateDeviceResources: void(GraphicsDevice gd, OutputDescri
 method.ImGuiRenderer.DestroyDeviceObjects: void()
 method.ImGuiRenderer.Dispose: void()
 method.ImGuiRenderer.EndFrame: void()
-method.ImGuiRenderer.GetImageResourceSet: ResourceSet(IntPtr imGuiBinding)
+method.ImGuiRenderer.GetImageTextureView: TextureView(IntPtr imGuiBinding)
 method.ImGuiRenderer.GetOrCreateImGuiBinding: IntPtr(ResourceFactory factory, Texture texture)
 method.ImGuiRenderer.GetOrCreateImGuiBinding: IntPtr(ResourceFactory factory, TextureView textureView)
 method.ImGuiRenderer.RecreateFontDeviceTexture: void()
@@ -27,5 +39,23 @@ method.ImGuiRenderer.RemoveImGuiBinding: void(TextureView textureView)
 method.ImGuiRenderer.Render: void(GraphicsDevice gd, CommandList cl)
 method.ImGuiRenderer.SetDisplayFramebufferScale: void(Vector2 scaleFactor)
 method.ImGuiRenderer.WindowResized: void(int width, int height)
+method.ImGuiShape..ctor: void()
+struct.ImGuiProjection._layout: Sequential
+struct.ImGuiProjection._pack: 0
+struct.ImGuiProjection._size: 0
+struct.ImGuiProjection.field0.projection: Matrix4x4
+struct.ImGuiProjection.field1.IsClipSpaceYInverted: int
+struct.ImGuiProjection.field2.UseLegacyColorSpaceHandling: int
+struct.ImGuiProjection.field3._pad0: int
+struct.ImGuiProjection.field4._pad1: int
+struct.ImGuiVertex._layout: Sequential
+struct.ImGuiVertex._pack: 0
+struct.ImGuiVertex._size: 0
+struct.ImGuiVertex.field0.vsin_position: Vector2
+struct.ImGuiVertex.field1.vsin_texCoord: Vector2
+struct.ImGuiVertex.field2.vsin_color: uint
 type.ColorSpaceHandling: enum
+type.ImGuiProjection: struct
 type.ImGuiRenderer: class
+type.ImGuiShape: sealed class
+type.ImGuiVertex: struct

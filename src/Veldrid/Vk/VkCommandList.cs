@@ -165,7 +165,7 @@ namespace Veldrid.Vk
             clearSets(currentComputeResourceSets);
         }
 
-        public override void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
+        private protected override void DispatchCore(uint groupCountX, uint groupCountY, uint groupCountZ)
         {
             preDispatchCommand();
 

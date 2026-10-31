@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ImGui shader precompiler: Shaders/Source/ImGui.{vert,frag}.glsl -> Shaders/Compiled/ImGui.vdshader (+ .interface.json), committed.
+       Standalone (NOT in Veldrid.sln): it references the PUBLISHED Veldrid.SPIRV package, which itself depends on the Veldrid package,
+       so it cannot be part of this repo's own build graph. Run after editing the GLSL or bumping the compiler:
+         dotnet run \-\-project src/Veldrid.ImGui/Scripts/CompileShaders.csproj -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <!-- stay out of the repo-wide BinDir/StableABI machinery -->
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ArtificialNecessity.Veldrid.SPIRV" Version="[5.261031.121914,)" />
+  </ItemGroup>
+</Project>

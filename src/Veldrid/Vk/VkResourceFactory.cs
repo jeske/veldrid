@@ -21,17 +21,17 @@
             return new VkFramebuffer(gd, ref description, false);
         }
 
-        public override Pipeline CreateComputePipeline(ref ComputePipelineDescription description)
+        internal override Pipeline CreateComputePipeline(ref ComputePipelineDescription description)
         {
             return new VkPipeline(gd, ref description);
         }
 
-        public override ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description)
+        internal override ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description)
         {
             return new VkResourceLayout(gd, ref description);
         }
 
-        public override ResourceSet CreateResourceSet(ref ResourceSetDescription description)
+        internal override ResourceSet CreateResourceSet(ref ResourceSetDescription description)
         {
             ValidationHelpers.ValidateResourceSet(gd, ref description);
             return new VkResourceSet(gd, ref description);

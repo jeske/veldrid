@@ -9,6 +9,9 @@ namespace Veldrid
     /// </summary>
     public abstract class Pipeline : IDeviceResource, IDisposable
     {
+        internal ShaderPipelineShape VerifiedShape { get; set; }
+        internal int VerifiedVertexInputCount { get; set; }
+        internal bool VerifiedHasResources { get; set; }
         /// <summary>
         ///     Gets a value indicating whether this instance represents a compute Pipeline.
         ///     If false, this instance is a graphics pipeline.

@@ -7,16 +7,16 @@ layout (location = 0) in vec2 vsin_position;
 layout (location = 1) in vec2 vsin_texCoord;
 layout (location = 2) in vec4 vsin_color;
 
-layout (binding = 0) uniform Projection
+layout (set = 0, binding = 0) uniform Projection
 {
     mat4 projection;
+    // Runtime values on every backend, including precompiled DXBC (not specialization constants).
+    int IsClipSpaceYInverted;
+    int UseLegacyColorSpaceHandling;
 };
 
 layout (location = 0) out vec4 vsout_color;
 layout (location = 1) out vec2 vsout_texCoord;
-
-layout (constant_id = 0) const bool IsClipSpaceYInverted = true;
-layout (constant_id = 1) const bool UseLegacyColorSpaceHandling = false;
 
 out gl_PerVertex 
 {
@@ -32,12 +32,12 @@ void main()
 {
     gl_Position = projection * vec4(vsin_position, 0, 1);
     vsout_color = vsin_color;
-    if (!UseLegacyColorSpaceHandling)
+    if (UseLegacyColorSpaceHandling == 0)
     {
         vsout_color.rgb = SrgbToLinear(vsin_color.rgb);
     }
     vsout_texCoord = vsin_texCoord;
-    if (IsClipSpaceYInverted)
+    if (IsClipSpaceYInverted != 0)
     {
         gl_Position.y = -gl_Position.y;
     }

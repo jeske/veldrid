@@ -1,124 +1,167 @@
 using System;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Veldrid;
 using Xunit;
 
 namespace Veldrid.ContractTests;
 
-/// <summary>S7: pipeline shapes verified against bundles at TEST time - no device, no window.</summary>
-[Collection("ShaderUniformBlockRegistry (global state)")]
+/// <summary>D10: a shape is a C# type whose field names are the GLSL names; Verify is Bind without a device.</summary>
 public class ShaderPipelineShapeTests
 {
+    // ---- the "compiled" bundle a Quad shader would produce ----
     private static VeldridShaderBundle QuadBundle() => new()
     {
         ShaderName = "Quad",
         ResourceLayoutDescriptions =
         [
             new VdShaderResourceLayout { Elements = [new VdShaderResourceElement { Name = "Projection", Kind = ResourceKind.UniformBuffer, Stages = ShaderStages.Vertex }] },
-            new VdShaderResourceLayout { Elements = [new VdShaderResourceElement { Name = "Tex", Kind = ResourceKind.TextureReadOnly, Stages = ShaderStages.Fragment }, new VdShaderResourceElement { Name = "Smp", Kind = ResourceKind.Sampler, Stages = ShaderStages.Fragment }] },
+            new VdShaderResourceLayout { Elements = [new VdShaderResourceElement { Name = "MainTexture", Kind = ResourceKind.TextureReadOnly, Stages = ShaderStages.Fragment }, new VdShaderResourceElement { Name = "MainSampler", Kind = ResourceKind.Sampler, Stages = ShaderStages.Fragment }] },
         ],
         Interface = new VdShaderInterface
         {
-            VertexInputs = [new VdShaderVertexInput { Name = "Position", Location = 0, Format = VertexElementFormat.Float2 }, new VdShaderVertexInput { Name = "TexCoord", Location = 1, Format = VertexElementFormat.Float2 }],
-            UniformBlocks = [new VdShaderUniformBlock { Name = "Projection", Set = 0, Binding = 0, SizeBytes = 64, Stages = ShaderStages.Vertex, Members = [new VdShaderUniformMember { Name = "Matrix", Type = "mat4", OffsetBytes = 0, SizeBytes = 64 }] }],
+            VertexInputs = [new VdShaderVertexInput { Name = "Position", Location = 0, Format = VertexElementFormat.Float2 }, new VdShaderVertexInput { Name = "TexCoord", Location = 1, Format = VertexElementFormat.Float2 }, new VdShaderVertexInput { Name = "Color", Location = 2, Format = VertexElementFormat.Float4 }],
+            UniformBlocks = [new VdShaderUniformBlock { Name = "Projection", Set = 0, Binding = 0, SizeBytes = 80, Stages = ShaderStages.Vertex,
+                Members = [new VdShaderUniformMember { Name = "Matrix", Type = "mat4", OffsetBytes = 0, SizeBytes = 64 }, new VdShaderUniformMember { Name = "Scale", Type = "float", OffsetBytes = 64, SizeBytes = 4 }] }],
         },
     };
 
-    [StructLayout(LayoutKind.Sequential)]
-    [VdShaderUniformBlock("Quad", "Projection")]
-    private struct ProjectionGood { public System.Numerics.Matrix4x4 Matrix; }
+    [StructLayout(LayoutKind.Sequential)] public struct QuadVertex { public Vector2 Position; public Vector2 TexCoord; [VertexFormat(VertexElementFormat.Byte4_Norm)] public RgbaByte Color; }
+    [StructLayout(LayoutKind.Sequential)] public struct Projection { public Matrix4x4 Matrix; public float Scale; public float _pad0, _pad1, _pad2; }
 
-    [StructLayout(LayoutKind.Sequential)]
-    [VdShaderUniformBlock("Quad", "Projection")]
-    private struct ProjectionWrongName { public System.Numerics.Matrix4x4 Proj; }
-
-    private static readonly ResourceLayoutDescription Set0 = new(new ResourceLayoutElementDescription("Projection", ResourceKind.UniformBuffer, ShaderStages.Vertex));
-    private static readonly ResourceLayoutDescription Set1 = new(new ResourceLayoutElementDescription("Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment), new ResourceLayoutElementDescription("Smp", ResourceKind.Sampler, ShaderStages.Fragment));
-    private static readonly VertexLayoutDescription Verts = new(
-        new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
-        new VertexElementDescription("TexCoord", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2));
-
-    [VdShaderPipelineContract]
-    public static ShaderPipelineShape GoodShape() => new("Quad", [Verts], [Set0, Set1], [typeof(ProjectionGood)]);
-
-    [Fact]
-    public void MatchingShape_NoViolations() => Assert.Empty(ShaderContractVerifier.Verify(GoodShape(), QuadBundle()));
-
-    [Fact]
-    public void RenamedVertexElement_V7a()
+    [ShaderBundle("Quad")]
+    public sealed partial class QuadShape : ShaderPipelineShape
     {
-        var verts = new VertexLayoutDescription(new VertexElementDescription("Pos", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2), new VertexElementDescription("TexCoord", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2));
-        var v = Assert.Single(ShaderContractVerifier.Verify(new ShaderPipelineShape("Quad", [verts], [Set0, Set1]), QuadBundle()));
-        Assert.Equal(ShaderContractVerifier.Rule_V7a_VertexInputs, v.Rule);
-        Assert.Equal("Position", v.Name);
+        public VertexInput<QuadVertex> Vertices;
+        public UniformBlock<Projection> Projection;
+        public TextureSlot MainTexture;
+        public SamplerSlot MainSampler;
     }
 
     [Fact]
-    public void SwappedTextureAndSampler_V7b_BothSlotsNamed()
+    public void GoodShape_Verifies_NoViolations() => Assert.Empty(ShaderPipelineShape.Verify<QuadShape>(QuadBundle()));
+
+    [Fact]
+    public void VertexLayout_IsGeneratedFromTheStruct_ByFieldNameOffsetAndFormat()
     {
-        var set1 = new ResourceLayoutDescription(new ResourceLayoutElementDescription("Smp", ResourceKind.Sampler, ShaderStages.Fragment), new ResourceLayoutElementDescription("Tex", ResourceKind.TextureReadOnly, ShaderStages.Fragment));
-        var violations = ShaderContractVerifier.Verify(new ShaderPipelineShape("Quad", [Verts], [Set0, set1]), QuadBundle());
-        Assert.Equal(4, violations.Count);   // name + kind at binding 0, name + kind at binding 1
-        Assert.All(violations, v => Assert.Equal(ShaderContractVerifier.Rule_V7b_ResourceLayouts, v.Rule));
+        var layout = ShapeDescriptorBuilder.VertexLayoutFor(typeof(QuadVertex), perInstance: false);
+        Assert.Equal(new[] { "Position", "TexCoord", "Color" }, layout.Elements.Select(e => e.Name).ToArray());
+        Assert.Equal(VertexElementFormat.Byte4_Norm, layout.Elements[2].Format);
+        Assert.Equal(16u, layout.Elements[2].Offset);
+        Assert.Equal(20u, layout.Stride);
+    }
+
+    [ShaderBundle("Quad")]
+    public sealed partial class MisspelledTextureShape : ShaderPipelineShape
+    {
+        public VertexInput<QuadVertex> Vertices;
+        public UniformBlock<Projection> Projection;
+        public TextureSlot MainTex;        // GLSL says MainTexture
+        public SamplerSlot MainSampler;
     }
 
     [Fact]
-    public void StructOnShape_WrongFieldName_V7c()
+    public void MisspelledField_IsReportedBothWays()
     {
-        var violations = ShaderContractVerifier.Verify(new ShaderPipelineShape("Quad", [Verts], [Set0, Set1], [typeof(ProjectionWrongName)]), QuadBundle());
-        Assert.Equal(2, violations.Count);   // C# field 'Proj' has no member; member 'Matrix' has no field
-        Assert.All(violations, v => Assert.Equal(ShaderContractVerifier.Rule_V7c_UniformStructs, v.Rule));
+        var v = ShaderPipelineShape.Verify<MisspelledTextureShape>(QuadBundle());
+        Assert.Contains(v, x => x.Rule == ShaderContractVerifier.Rule_V7b_ResourceLayouts && x.Name == "MainTexture" && x.SideA.Contains("no field"));
+        Assert.Contains(v, x => x.Rule == ShaderContractVerifier.Rule_V7b_ResourceLayouts && x.Name == "MainTex" && x.SideB.Contains("no such resource"));
+    }
+
+    [ShaderBundle("Quad")]
+    public sealed partial class WrongKindShape : ShaderPipelineShape
+    {
+        public VertexInput<QuadVertex> Vertices;
+        public UniformBlock<Projection> Projection;
+        public SamplerSlot MainTexture;    // kind swapped
+        public TextureSlot MainSampler;
     }
 
     [Fact]
-    public void V7c_TailPaddingFieldsAreAllowed_PaddingOverAMemberIsNot()
+    public void WrongSlotKind_IsReported()
     {
-        Assert.Empty(ShaderContractVerifier.Verify(new ShaderPipelineShape("Tail", [], [], [typeof(TailPaddedGood)]), TailBundle()));
-        var violations = ShaderContractVerifier.Verify(new ShaderPipelineShape("Tail", [], [], [typeof(PaddingOverlapsMember)]), TailBundle());
-        Assert.Contains(violations, v => v.Name == "Transforms._pad0" && v.Detail.Contains("tail"));
-        Assert.Contains(violations, v => v.Name == "Transforms.Scale");   // Scale is now @ 68, the shader has it @ 64
+        var v = ShaderPipelineShape.Verify<WrongKindShape>(QuadBundle());
+        Assert.Equal(2, v.Count(x => x.Detail.Contains("does not accept")));
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    [VdShaderUniformBlock("Tail", "Transforms")]
-    private struct TailPaddedGood { public System.Numerics.Matrix4x4 M; public float Scale; public float _pad0, _pad1, _pad2; }   // 64 + 4 + 12 = 80
-
-    [StructLayout(LayoutKind.Sequential)]
-    [VdShaderUniformBlock("Tail", "Transforms")]
-    private struct PaddingOverlapsMember { public System.Numerics.Matrix4x4 M; public float _pad0; public float Scale; public float _pad1, _pad2; }   // _pad0 sits where Scale belongs
-
-    private static VeldridShaderBundle TailBundle() => new()
+    [StructLayout(LayoutKind.Sequential)] public struct ProjectionSwapped { public float Scale; public Matrix4x4 Matrix; public float _pad0, _pad1, _pad2; }
+    [ShaderBundle("Quad")]
+    public sealed partial class SwappedStructShape : ShaderPipelineShape
     {
-        ShaderName = "Tail",
-        Interface = new VdShaderInterface { UniformBlocks = [new VdShaderUniformBlock { Name = "Transforms", Set = 0, Binding = 0, SizeBytes = 80, Stages = ShaderStages.Vertex,
-            Members = [new VdShaderUniformMember { Name = "M", Type = "mat4", OffsetBytes = 0, SizeBytes = 64 }, new VdShaderUniformMember { Name = "Scale", Type = "float", OffsetBytes = 64, SizeBytes = 4 }] }] },
-    };
-
-    [Fact]
-    public void ShapeNamesOneBundle_ResolverReturnsAnother_V7()
-    {
-        var other = QuadBundle(); other.ShaderName = "NotQuad";
-        var v = Assert.Single(ShaderContractVerifier.Verify(GoodShape(), other));
-        Assert.Equal(ShaderContractVerifier.Rule_V7_ShaderSet, v.Rule);
+        public VertexInput<QuadVertex> Vertices;
+        public UniformBlock<ProjectionSwapped> Projection;
+        public TextureSlot MainTexture;
+        public SamplerSlot MainSampler;
     }
 
     [Fact]
-    public void Registry_EnumeratesAttributedShapes_AndVerifyAllIsCleanForThisAssembly()
+    public void StructMemberAtWrongOffset_IsReported_V7c()
     {
-        var shapes = ShaderPipelineContractRegistry.Enumerate(typeof(ShaderPipelineShapeTests).Assembly);
-        Assert.Contains(shapes, s => s.Shape.BundleName == "Quad" && s.DeclaredBy.EndsWith(nameof(GoodShape)));
-        var lines = ShaderPipelineContractRegistry.VerifyAll(typeof(ShaderPipelineShapeTests).Assembly, name => name == "Quad" ? QuadBundle() : throw new InvalidOperationException("unknown bundle " + name));
-        Assert.Empty(lines);
-        Assert.Equal(["Other"], ShaderPipelineContractRegistry.BundlesWithoutShapes(typeof(ShaderPipelineShapeTests).Assembly, ["Quad", "Other"]));
+        var v = ShaderPipelineShape.Verify<SwappedStructShape>(QuadBundle());
+        Assert.Contains(v, x => x.Rule == ShaderContractVerifier.Rule_V7c_UniformStructs && x.Name == "Projection.Scale");
+        Assert.Contains(v, x => x.Rule == ShaderContractVerifier.Rule_V7c_UniformStructs && x.Name == "Projection.Matrix");
+    }
+
+    [StructLayout(LayoutKind.Sequential)] public struct QuadVertexSwapped { public Vector2 TexCoord; public Vector2 Position; [VertexFormat(VertexElementFormat.Byte4_Norm)] public RgbaByte Color; }
+    [ShaderBundle("Quad")]
+    public sealed partial class SwappedVertexShape : ShaderPipelineShape
+    {
+        public VertexInput<QuadVertexSwapped> Vertices;
+        public UniformBlock<Projection> Projection;
+        public TextureSlot MainTexture;
+        public SamplerSlot MainSampler;
     }
 
     [Fact]
-    public void ToGraphicsPipelineDescription_UsesTheShapesLayouts()
+    public void VertexFieldOrderMismatch_IsReported_V7a()
     {
-        var desc = GoodShape().ToGraphicsPipelineDescription(Array.Empty<Shader>(), new ResourceLayout[2], BlendStateDescription.SingleOverrideBlend, new DepthStencilStateDescription(false, false, ComparisonKind.Always), RasterizerStateDescription.DEFAULT, PrimitiveTopology.TriangleList, new OutputDescription());
-        Assert.Single(desc.ShaderSet.VertexLayouts);
-        Assert.Equal(2, desc.ResourceLayouts.Length);
-        Assert.Throws<VeldridException>(() => GoodShape().ToGraphicsPipelineDescription(Array.Empty<Shader>(), new ResourceLayout[1], BlendStateDescription.SingleOverrideBlend, new DepthStencilStateDescription(false, false, ComparisonKind.Always), RasterizerStateDescription.DEFAULT, PrimitiveTopology.TriangleList, new OutputDescription()));
+        var v = ShaderPipelineShape.Verify<SwappedVertexShape>(QuadBundle());
+        Assert.Equal(2, v.Count(x => x.Rule == ShaderContractVerifier.Rule_V7a_VertexInputs && x.Detail.Contains("NAME")));
+    }
+
+    [ShaderBundle("NotQuad")]
+    public sealed partial class WrongBundleShape : ShaderPipelineShape
+    {
+        public VertexInput<QuadVertex> Vertices;
+        public UniformBlock<Projection> Projection;
+        public TextureSlot MainTexture;
+        public SamplerSlot MainSampler;
+    }
+
+    [Fact]
+    public void ShapeNamesADifferentBundle_IsReported()
+        => Assert.Contains(ShaderPipelineShape.Verify<WrongBundleShape>(QuadBundle()), x => x.Rule == ShaderContractVerifier.Rule_V7_ShaderSet && x.Detail.Contains("wrong bundle"));
+
+    [Fact]
+    public void GlslNameThatIsNotACSharpIdentifier_IsReported()
+    {
+        var b = QuadBundle(); b.ResourceLayoutDescriptions[1].Elements[0].Name = "class";
+        Assert.Contains(ShaderPipelineShape.Verify<QuadShape>(b), x => x.Rule == ShaderContractVerifier.Rule_Identifier && x.Name == "class");
+    }
+
+    [Fact]
+    public void EnumerateShapes_FindsEveryConcreteShapeWithItsBundle()
+    {
+        var shapes = ShaderPipelineShape.EnumerateShapes(typeof(ShaderPipelineShapeTests).Assembly);
+        Assert.Contains(shapes, s => s.ShapeType == typeof(QuadShape) && s.BundleName == "Quad");
+        Assert.Contains(shapes, s => s.ShapeType == typeof(WrongBundleShape) && s.BundleName == "NotQuad");
+    }
+
+    [Fact]
+    public void BundleFormat_Version1_OrNoInterface_IsRejectedOnDeserialize()
+    {
+        var ex = Assert.Throws<VeldridException>(() => VeldridShaderBundle.Deserialize("{\"version\":1,\"shaderName\":\"Old\",\"backends\":{}}"));
+        Assert.Contains("Recompile", ex.Message);
+        Assert.Throws<VeldridException>(() => VeldridShaderBundle.Deserialize("{\"version\":2,\"shaderName\":\"NoItf\",\"backends\":{}}"));
+    }
+
+    [Fact]
+    public void Bundle_RoundTripsInterface()
+    {
+        var back = VeldridShaderBundle.Deserialize(QuadBundle().Serialize());
+        Assert.Equal(VeldridShaderBundle.CurrentFormatVersion, back.Version);
+        Assert.Equal("Color", back.Interface.VertexInputs[2].Name);
+        Assert.Equal(64u, back.Interface.UniformBlocks.Single().Members[1].OffsetBytes);
     }
 }

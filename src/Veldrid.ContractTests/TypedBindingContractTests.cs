@@ -96,22 +96,22 @@ public sealed class TypedBindingContractTests
             commands.UpdateBuffer(a.Projection, new ImGuiProjection { projection = Matrix4x4.Identity });
             commands.UpdateBuffer(b.Projection, new ImGuiProjection { projection = Matrix4x4.Identity });
 
-            // No pipeline: nothing can be bound through a shape.
-            Assert.Throws<ShaderContractException>(() => commands.SetVertexBuffer(a.Vertices, vertices));
+            // No pipeline: resource sets need the pipeline (as the backends do); the vertex buffer does NOT - it is command-list state,
+            // bindable up front and shared across every family with the same vertex type (Silky binds once per flush).
             Assert.Throws<ShaderContractException>(() => commands.SetGraphicsResourceSet(gpuA.MainSet));
-
-            // Pipeline A: a draw needs A's vertex input and BOTH of A's sets bound.
-            commands.SetPipeline(gpuA.Pipeline);
-            Assert.Throws<ShaderContractException>(() => commands.Draw(3));                     // nothing bound
             commands.SetVertexBuffer(a.Vertices, vertices);
+
+            // Pipeline A: a draw needs a matching vertex buffer and BOTH of A's sets bound.
+            commands.SetPipeline(gpuA.Pipeline);
             Assert.Throws<ShaderContractException>(() => commands.Draw(3));                     // sets missing
             commands.SetGraphicsResourceSet(gpuA.MainSet);
             Assert.Throws<ShaderContractException>(() => commands.Draw(3));                     // set 1 missing
             commands.SetGraphicsResourceSet(gpuA.TextureSet);
             commands.Draw(3);
-            // B's slots/sets are refused while A's pipeline is selected (provenance, not position).
-            Assert.Throws<ShaderContractException>(() => commands.SetVertexBuffer(b.Vertices, vertices));
+            // B's sets are refused while A's pipeline is selected (provenance, not position); B's vertex input binds the same
+            // typed buffer to the same slot - legal, since the type is what the draw checks.
             Assert.Throws<ShaderContractException>(() => commands.SetGraphicsResourceSet(gpuB.MainSet));
+            commands.SetVertexBuffer(b.Vertices, vertices);
 
             // Switch to pipeline B: the vertex buffer STAYS bound (same TVertex) exactly as on the GPU - no rebind required;
             // the sets do not carry over (they belong to A) and must be B's.

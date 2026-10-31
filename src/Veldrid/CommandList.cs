@@ -159,7 +159,9 @@ namespace Veldrid
             input.EnsureBound();
             buffer.EnsureAlive();
             if (!ReferenceEquals(input.Factory, buffer.Factory)) throw new InvalidOperationException("Vertex buffer belongs to a different device.");
-            GraphicsShapeBindings.RequireOwner(input.Owner);
+            // Vertex buffers are command-list state independent of the selected pipeline (D3D11/Vulkan/Metal alike): a consumer may bind
+            // one shared buffer before any SetPipeline and draw it through many families. The slot index and vertex TYPE come from the
+            // verified input; the draw-time check confirms the bound type matches the selected shape's input at that slot.
             SetVertexBuffer(input.SlotIndex, buffer.Buffer, offset);   // SAME CODE the uint form runs
             GraphicsShapeBindings.MarkVertex(input, buffer.Factory);
         }

@@ -37,7 +37,7 @@ internal sealed class ShapeCommandBindings
 
     internal void MarkVertex(VertexInput input, ResourceFactory factory)
     {
-        RequireOwner(input.Owner);
+        // No owner check: vertex bindings are pipeline-independent state; ValidateDraw compares the bound TYPE to the selected shape.
         uint slot = input.SlotIndex;
         if (slot >= boundVertexTypes.Length)
         {

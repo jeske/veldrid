@@ -856,6 +856,8 @@ method.ShaderSetDescription.GetHashCode: int()
 method.ShaderUniformArena`1.Dispose: void()
 method.ShaderUniformArena`1.Stage: void(UniformArenaElement element, ref !0 value)
 method.ShaderUniformArena`1.Upload: void(CommandList commands)
+method.ShaderUniformBuffer`1.Dispose: void()
+method.ShaderUniformBuffer`1.Update: void(CommandList commands, ref !0 value)
 method.ShaderVertexBuffer`1.Dispose: void()
 method.ShaderVertexBuffer`1.Update: void(CommandList commands, ReadOnlySpan`1<!0> vertices, uint firstVertex)
 method.ShapeDescriptor..ctor: void(string BundleName, ShapeSlotDescriptor[] Slots, ShapeVertexInputDescriptor[] VertexInputs)
@@ -954,8 +956,10 @@ method.UniformArenaElement.op_Inequality: bool(UniformArenaElement left, Uniform
 method.UniformBlock`1..ctor: void()
 method.UniformBlock`1.CreateArena: ShaderUniformArena`1<!0>(GraphicsDevice device, uint capacity, BufferUsage usage)
 method.UniformBlock`1.CreateBuffer: void(BufferUsage usage)
+method.UniformBlock`1.CreateSharedBuffer: ShaderUniformBuffer`1<!0>(BufferUsage usage)
 method.UniformBlock`1.Dispose: void()
 method.UniformBlock`1.Select: void(ShaderUniformArena`1<!0> arena, UniformArenaElement element)
+method.UniformBlock`1.Share: void(ShaderUniformBuffer`1<!0> storage)
 method.UniformBlock`1.Update: void(CommandList cl, ref !0 value)
 method.UniformBlock`1.UpdateMember: void(CommandList cl, Expression`1<Func`2<!0, !!0>> member, ref !!0 value)
 method.UniformBufferBindingTimeOffsetSelectableAttribute..ctor: void()
@@ -1145,6 +1149,7 @@ property.ShaderPipelineShape.BundleName: string { get; }
 property.ShaderUniformArena`1.Capacity: uint { get; }
 property.ShaderUniformArena`1.SizeInBytes: uint { get; }
 property.ShaderUniformArena`1.StrideBytes: uint { get; }
+property.ShaderUniformBuffer`1.SizeInBytes: uint { get; }
 property.ShaderVertexBuffer`1.Capacity: uint { get; }
 property.ShapeDescriptor.BundleName: string { get; set; }
 property.ShapeDescriptor.Slots: ShapeSlotDescriptor[] { get; set; }
@@ -1666,6 +1671,7 @@ type.ShaderPipelineShape: abstract class
 type.ShaderSetDescription: struct
 type.ShaderStages: enum
 type.ShaderUniformArena`1: sealed class
+type.ShaderUniformBuffer`1: sealed class
 type.ShaderVertexBuffer`1: sealed class
 type.ShapeDescriptor: sealed class
 type.ShapeDescriptorBuilder: static class

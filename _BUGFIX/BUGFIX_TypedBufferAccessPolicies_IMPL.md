@@ -172,6 +172,43 @@ consumers would just move the hazard to a less obvious method; going internal mu
       creation arguments, and every `GraphicsDevice.UpdateBuffer` -> `UpdateBufferOutsideCommandList` with a deliberate flag decision per buffer.
 - [ ] Continue the typed-shape migration worklist in `BUGFIX_ShaderInterfaceContract_IMPL_Tracking.md` (A-G) until every
       `AN_SilkyNvg/tests/graphical/**` test passes on D3D11 and Vulkan. Stop and discuss the shared view-buffer API gap before working around it.
+
+## C.2 Shared typed uniform storage: `ShaderUniformBuffer<T>` (approved 2026-10-31, implementing)
+
+**Governing rule (user):** Silky's GPU behaviour must NOT change. The migration fits what Silky already does into the typed binding
+abstraction; where the abstraction cannot express existing behaviour, FIX THE ABSTRACTION in Veldrid, never restructure Silky to fit.
+
+**Existing GPU behaviour to preserve byte-for-byte:**
+| Buffer | Usage | Size | Updates | Shared by |
+|---|---|---|---|---|
+| `_viewSizeUniformBuffer` | `UniformBuffer` (non-Dynamic; D3D11 UpdateSubresource sequencing, torn-state note at Pipelines.cs:1395) | 32 B | `commandList.UpdateBuffer`, several per flush | every resource set of every family (~25 sets, 30 shapes) |
+| `_textGammaUniformBuffer` | `UniformBuffer \| Dynamic` | 16 B | `commandList.UpdateBuffer` per flush | textured / sweeper / blend / clip-mask sets |
+
+**Gap:** `UniformBlock<T>` is one-slot-owns-one-buffer. Thirty `ViewSize` slots today bind ONE buffer with ONE upload. The arena is the
+same shape (one storage -> many blocks of one verified T) but exists for element selection with binding offsets; using a one-element arena
+would change the binding mode. Per-family buffers would multiply uploads. Both rejected.
+
+**API (Veldrid, `src/Veldrid/ShaderBundle/ShaderUniformBuffer.cs` + `ShaderPipelineShape.cs`):**
+- `public sealed class ShaderUniformBuffer<T> : IDisposable` - `internal DeviceBuffer Buffer`, `internal ResourceFactory Factory`,
+  `public void Update(CommandList cl, in T value)` = exactly one `cl.UpdateBuffer(Buffer, 0, value)`. No device-level path. Raw buffer never public.
+- `UniformBlock<T>.CreateSharedBuffer(BufferUsage usage)` - same checks and `BufferDescription(Compiled.SizeBytes, usage)` as `CreateBuffer`,
+  but returns the storage handle and attaches it to this block.
+- `UniformBlock<T>.Share(ShaderUniformBuffer<T> storage)` - attach to another block verified against the same T: same factory, this block's
+  `Compiled.SizeBytes == sizeof(T)`, `SetResource(storage.Buffer)`. Safe by construction: every destination block was name/type-verified
+  against T at Bind (the same argument already accepted for the arena feeding PaintParams/GradientParams/ImagePatternParams).
+- `UniformBlock<T>.Update/UpdateMember` refuse to write when the bound resource is shared storage (write through the storage), mirroring the
+  existing arena guard. `Dispose` of a block never disposes shared storage.
+- NOT added: `SharedResourceSet<T>` (rejected in handoff; that shares SETS, this shares STORAGE).
+
+**Tests (ContractTests):** two shapes share one `ShaderUniformBuffer`; one `Update` between draws is observed by both (D3D11 + Vulkan readback);
+`Share` across factories rejected; `Update` on a sharing slot rejected; `Share` onto a block that already owns storage rejected; disposing the
+storage makes both slots fail `RequireLiveResource`; usage flags preserved (non-Dynamic and Dynamic both allowed via `RequireUniform`).
+
+- [ ] Veldrid: ShaderUniformBuffer.cs, CreateSharedBuffer/Share, guards, XML docs.
+- [ ] Veldrid: tests above; Release build; StableABI accept; ContractTests all pass; commit; publish-local; record version.
+- [ ] Silky: `_viewSizeUniformBuffer` -> `ShaderUniformBuffer<RenderTargetTransformUniform>` (non-Dynamic), `_textGammaUniformBuffer` ->
+      `ShaderUniformBuffer<Vector4-equivalent block type>` (Dynamic); every family `Share`s. Existing update call sites become `storage.Update(cl, …)`
+      one-for-one. Upload counts unchanged.
 - Fresh verification: dotnet build Veldrid.sln -c Release => exit 0, 0 errors, 1186 warnings; ContractTests Release => exit 0, 47 passed, 0 failed/skipped. Logs C:/TEMP/veldrid-outside-command-list-{abi,build,tests}.log. No Metal/OpenGL runtime verification.
 - NEXT (approved, NOT implemented): default-off buffer/storage permission AllowUpdateBufferOutsideCommandList checked unconditionally in the device-level root method. Permission is an acknowledgement of caller-owned synchronization, not proof of safe ordering and not a memory allocation flag. Explicitly opt in internal backend staging buffers as needed; do not blanket-enable buffers. Include focused negative/positive tests and ensure command-list writes remain unaffected.
 - User narrowed this checkpoint to naming, compilation and handoff due to session size. No BufferDescription/DeviceBuffer permission changes have been made.

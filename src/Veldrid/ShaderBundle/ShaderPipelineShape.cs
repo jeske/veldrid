@@ -60,6 +60,9 @@ namespace Veldrid
             Bound = resource;
         }
 
+        /// <summary>Liveness of whatever this slot binds; slots with wrapper-owned storage add the wrapper's own disposed state.</summary>
+        internal virtual void RequireLiveBinding() => RequireLiveResource(Bound);
+
         internal static void RequireLiveResource(IBindableResource resource)
         {
             bool isDisposed = resource switch
@@ -91,6 +94,7 @@ namespace Veldrid
             if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
             Owner.EnsureBound();
             if (Buffer != null) throw new InvalidOperationException($"UniformBlock '{Name}' already owns storage.");
+            if (SharedStorage != null) throw new InvalidOperationException($"UniformBlock '{Name}' already binds shared storage; it cannot also own a buffer.");
             TypedBufferUsageValidation.RequireUniform(usage);
             if (System.Runtime.CompilerServices.Unsafe.SizeOf<T>() != Compiled.SizeBytes)
                 throw new InvalidOperationException($"UniformBlock '{Name}' managed size differs from the verified block size.");
@@ -99,6 +103,55 @@ namespace Veldrid
             catch { buffer.Dispose(); throw; }
             Buffer = buffer;
             SelectedUniformBindingOffset = 0;
+        }
+
+        /// <summary>
+        ///     Create ONE typed uniform buffer from this verified block and bind it here; other blocks verified against the same
+        ///     <typeparamref name="T"/> attach with <see cref="Share"/>. One <see cref="ShaderUniformBuffer{T}.Update"/> feeds every sharer
+        ///     in command order - the upload count does not grow with the number of shapes. Allocation usage is explicit.
+        /// </summary>
+        public ShaderUniformBuffer<T> CreateSharedBuffer(BufferUsage usage)
+        {
+            if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
+            Owner.EnsureBound();
+            if (Buffer != null || SharedStorage != null) throw new InvalidOperationException($"UniformBlock '{Name}' already binds storage.");
+            if (UniformBindingOffsetSelectable) throw new InvalidOperationException($"UniformBlock '{Name}' declares [UniformBufferBindingTimeOffsetSelectable]; use CreateArena/Select, not shared whole-block storage.");
+            var storage = new ShaderUniformBuffer<T>(Owner.BoundFactory, Name, Compiled.SizeBytes, usage);
+            try { Share(storage); }
+            catch { storage.Dispose(); throw; }
+            return storage;
+        }
+
+        /// <summary>
+        ///     Bind storage created by another block's <see cref="CreateSharedBuffer"/>. Legal because THIS block was independently
+        ///     name/type-verified against <typeparamref name="T"/> at <c>Bind</c>; no unchecked C# &lt;-&gt; shader mapping is introduced.
+        ///     The block does not own the storage and never disposes it.
+        /// </summary>
+        public void Share(ShaderUniformBuffer<T> storage)
+        {
+            ArgumentNullException.ThrowIfNull(storage);
+            if (Owner is null) throw new InvalidOperationException("Unbound uniform block.");
+            Owner.EnsureBound();
+            if (Buffer != null) throw new InvalidOperationException($"UniformBlock '{Name}' already owns storage; it cannot also share.");
+            if (SharedStorage != null) throw new InvalidOperationException($"UniformBlock '{Name}' already shares storage created by '{SharedStorage.CreatingBlockName}'. A slot binds exactly one storage.");
+            if (UniformBindingOffsetSelectable) throw new InvalidOperationException($"UniformBlock '{Name}' declares [UniformBufferBindingTimeOffsetSelectable]; use CreateArena/Select, not shared whole-block storage.");
+            if (!ReferenceEquals(storage.Factory, Owner.BoundFactory)) throw new InvalidOperationException("Shared uniform storage device differs from this shape's device.");
+            if (Compiled.SizeBytes != storage.SizeInBytes) throw new InvalidOperationException($"UniformBlock '{Name}' verified size {Compiled.SizeBytes} B differs from shared storage size {storage.SizeInBytes} B.");
+            storage.EnsureAlive();
+            SetResource(storage.Buffer);
+            SharedStorage = storage;
+            SelectedUniformBindingOffset = 0;
+        }
+
+        /// <summary>Non-null when this slot binds a <see cref="ShaderUniformBuffer{T}"/> it does not own.</summary>
+        internal ShaderUniformBuffer<T> SharedStorage { get; private set; }
+
+        internal override void RequireLiveBinding()
+        {
+            // The wrapper knows it was disposed even where the backend defers native destruction while recorded
+            // commands still reference the buffer (Vulkan refcounting leaves DeviceBuffer.IsDisposed false meanwhile).
+            SharedStorage?.EnsureAlive();
+            base.RequireLiveBinding();
         }
 
         /// <summary>Create aligned typed arena storage with an explicit allocation usage; offset selection is a separate field declaration.</summary>
@@ -130,7 +183,8 @@ namespace Veldrid
         /// <summary>Write the whole block. <typeparamref name="T"/> was verified field-by-field against the compiled block at <c>Bind</c>.</summary>
         public void Update(CommandList cl, in T value)
         {
-            if (Buffer is null) throw new InvalidOperationException($"UniformBlock '{Name}' has no owned storage. Call CreateBuffer with explicit usage, or update its selected arena.");
+            if (SharedStorage != null) throw new InvalidOperationException($"UniformBlock '{Name}' binds shared storage created by '{SharedStorage.CreatingBlockName}'. Write it once through ShaderUniformBuffer.Update, not per slot.");
+            if (Buffer is null) throw new InvalidOperationException($"UniformBlock '{Name}' has no owned storage. Call CreateBuffer with explicit usage, share a ShaderUniformBuffer, or update its selected arena.");
             Owner.EnsureBound();
             if (!ReferenceEquals(Bound, Buffer)) throw new InvalidOperationException("Write selected arena elements through the arena, not Update.");
             ShapeSlot.RequireLiveResource(Buffer);
@@ -145,6 +199,7 @@ namespace Veldrid
             if (member.Body is not MemberExpression me || me.Member is not FieldInfo field
                 || me.Expression != member.Parameters[0] || field.DeclaringType != typeof(T) || field.IsStatic)
                 throw new ArgumentException("UpdateMember takes a direct field access expression, e.g. b => b.LightMVP", nameof(member));
+            if (SharedStorage != null) throw new InvalidOperationException($"UniformBlock '{Name}' binds shared storage created by '{SharedStorage.CreatingBlockName}'. Write it once through ShaderUniformBuffer.Update, not per slot.");
             if (Buffer is null || Compiled is null)
                 throw new InvalidOperationException($"UniformBlock '{Name}' is not bound (shape not created through ShaderPipelineShape.Bind).");
             var compiledMember = Compiled.Members.FirstOrDefault(m => m.Name == field.Name)
@@ -163,7 +218,7 @@ namespace Veldrid
             cl.UpdateBuffer(Buffer, compiledMember.OffsetBytes, value);
         }
 
-        /// <summary>Dispose the owned buffer (the shape disposes its blocks).</summary>
+        /// <summary>Dispose the OWNED buffer (the shape disposes its blocks). Shared storage belongs to its <see cref="ShaderUniformBuffer{T}"/> and is never disposed here.</summary>
         public void Dispose() => Buffer?.Dispose();
     }
 
@@ -433,7 +488,7 @@ namespace Veldrid
             ArgumentNullException.ThrowIfNull(cl);
             var bindings = compute ? cl.ComputeShapeBindings : cl.GraphicsShapeBindings;
             bindings.RequireOwner(this);
-            foreach (var slot in slots) if (slot.Bound != null) ShapeSlot.RequireLiveResource(slot.Bound);
+            foreach (var slot in slots) if (slot.Bound != null) slot.RequireLiveBinding();
             for (int set = 0; set < layouts.Length; set++)
             {
                 if (setDirty[set] || sets[set] is null)

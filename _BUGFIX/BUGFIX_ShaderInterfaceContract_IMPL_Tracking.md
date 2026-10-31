@@ -44,11 +44,11 @@ There is no process/test running that needs to be kept alive. No critical reason
 
 Code commits below are before the handoff documentation commits; use git log for the final checkpoint IDs.
 
-**Current session changes are NOT committed or published.** The table describes package/checkpoint history, not the current Veldrid source API. Veldrid has source/test/ABI/docs changes; FluidUI has the moved spec deletion and project-structure link; ArcaneSiege has new _EXTERNAL_APIS/BufferPolicies reference snapshots. Silky is unchanged this session.
+Veldrid is committed (56e42ba3) and published (5.261031.163330). FluidUI still has the uncommitted moved-spec deletion and project-structure link; ArcaneSiege has uncommitted _EXTERNAL_APIS/BufferPolicies snapshots. Silky migration to the new package begins next.
 
 | Repo | Code checkpoint | Current consumer dependency floor / state |
 |---|---|---|
-| AN_Veldrid | 8b402229 S8 checkpoint; 7d3d49b1 typed arenas | Published runtime **5.261031.143705**, including ImGui package. Release tests 41 passed. |
+| AN_Veldrid | **56e42ba3** explicit allocation + UpdateBufferOutsideCommandList + permission flag | Published runtime **5.261031.163330**, including ImGui package. ContractTests 62 passed. |
 | AN_VeldridSpirv | efb170c | Latest published compiler **5.261031.121914**; source still references Veldrid **5.261031.121302** (old API). Needs migration before rebuilding against S8. |
 | AN_SilkyNvg | **5e0d8bab** full in-progress migration checkpoint | Runtime floor **[5.261031.143705,)**; compiler floor **[5.261031.114910,)**. Renderer currently broken; do NOT publish it as validated. |
 | AN_FluidUI | e6da1957 | Still old API: Veldrid [5.261031.114508,), SPIRV [5.261031.114910,), Silky [1.261031.115316,). Last published FluidUI **0.261031.115758**. |

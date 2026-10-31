@@ -54,6 +54,10 @@ field.ShaderPipelineShapeTests.WrongKindShape.Projection: UniformBlock`1<Project
 field.ShaderPipelineShapeTests.WrongKindShape.Vertices: VertexInput`1<QuadVertex>
 field.ShapeBypassTests.Nested.Inner: Values
 field.ShapeBypassTests.Values.Value: float
+field.SharedUniformStorageTests.SecondFamilyShape.FontSampler: SamplerSlot
+field.SharedUniformStorageTests.SecondFamilyShape.FontTexture: TextureSlot
+field.SharedUniformStorageTests.SecondFamilyShape.Projection: UniformBlock`1<ImGuiProjection>
+field.SharedUniformStorageTests.SecondFamilyShape.Vertices: VertexInput`1<ImGuiVertex>
 field.UniformArenaRenderTests.ArenaShape.FontSampler: SamplerSlot
 field.UniformArenaRenderTests.ArenaShape.FontTexture: TextureSlot
 field.UniformArenaRenderTests.ArenaShape.Projection: UniformBlock`1<ImGuiProjection>
@@ -107,6 +111,12 @@ method.ShapeCommandBindingTests.BindingBeforeSelectingPipelineThrows: void()
 method.ShapeCommandBindingTests.CannotInventVertexSlotsOrSelectUnverifiedPipeline: void()
 method.ShapeCommandBindingTests.DifferentShapeInstanceCannotBindToSelectedPipeline: void()
 method.ShapeCommandBindingTests.ResetRemovesOwnership: void()
+method.SharedUniformStorageTests..ctor: void()
+method.SharedUniformStorageTests.DisposingStorageInvalidatesEverySharerButBlocksNeverDisposeIt: void(GraphicsBackend backend)
+method.SharedUniformStorageTests.OneUpdateIsObservedByEverySharingShapeInCommandOrder: void(GraphicsBackend backend, BufferUsage usage)
+method.SharedUniformStorageTests.SecondFamilyShape..ctor: void()
+method.SharedUniformStorageTests.SharingAcrossDevicesIsRejected: void()
+method.SharedUniformStorageTests.SharingSlotsAreWrittenOnlyThroughTheStorage: void(GraphicsBackend backend)
 method.TypedVertexBindingTests..ctor: void()
 method.TypedVertexBindingTests.BindAcceptsOnlyTheSlotsExactVertexType: void()
 method.TypedVertexBindingTests.TypedBufferHasNoPublicRawBufferOrConstructor: void()
@@ -195,6 +205,8 @@ type.ShapeBypassTests.UnsealedShape: class
 type.ShapeBypassTests.Values: struct
 type.ShapeBypassTests: sealed class
 type.ShapeCommandBindingTests: sealed class
+type.SharedUniformStorageTests.SecondFamilyShape: sealed class
+type.SharedUniformStorageTests: sealed class
 type.TypedVertexBindingTests: sealed class
 type.UniformArenaRenderTests.ArenaShape: sealed class
 type.UniformArenaRenderTests: sealed class

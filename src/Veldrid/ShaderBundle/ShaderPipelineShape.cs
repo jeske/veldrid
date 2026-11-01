@@ -352,22 +352,29 @@ namespace Veldrid
         /// <summary>
         ///     Whether a verified <see cref="ResourceSet"/> may be bound at <paramref name="set"/> for THIS shape's pipelines. True when the
         ///     set was created from this instance, or from any shape whose compiled layout for that set is element-wise identical (name,
-        ///     kind, stages, options). That is the GPU's rule (descriptor-set layout compatibility), and it is name-sound: the set's
-        ///     resources were checked against the same names and kinds this shape declares. Different shape, different names => refused.
+        ///     kind, stages, options) AND whose flat binding map for that set is identical (V7d - the absolute D3D11 / Metal registers
+        ///     the two cross-compiled shaders use). That is the GPU's rule (descriptor-set layout compatibility) plus what the
+        ///     flattening backends need; it is name-sound: the set's resources were checked against the same names and kinds this
+        ///     shape declares. Any difference => refused, with the binding named.
         /// </summary>
-        internal bool AcceptsResourceSet(ResourceSet rs, uint set)
+        internal List<ShaderContractViolation> ResourceSetBindingViolations(ResourceSet rs, uint set)
         {
-            if (rs.VerifiedShape is null || set >= compiledLayouts.Length) return false;
-            if (ReferenceEquals(rs.VerifiedShape, this)) return true;
-            if (rs.VerifiedSetIndex != set) return false;
-            var mine = compiledLayouts[set].Elements ?? Array.Empty<ResourceLayoutElementDescription>();
-            var theirs = rs.VerifiedShape.CompiledLayoutFor(rs.VerifiedSetIndex).Elements ?? Array.Empty<ResourceLayoutElementDescription>();
-            if (mine.Length != theirs.Length) return false;
-            for (int i = 0; i < mine.Length; i++)
-                if (mine[i].Name != theirs[i].Name || mine[i].Kind != theirs[i].Kind || mine[i].Stages != theirs[i].Stages || mine[i].Options != theirs[i].Options)
-                    return false;
-            return true;
+            var violations = new List<ShaderContractViolation>();
+            if (rs.VerifiedShape is null)
+            { violations.Add(new ShaderContractViolation("BIND", $"set {set}", "resource set without a verified shape", "a set from ResourceSetDescription(layout, slot bindings)", "only verified sets can be bound")); return violations; }
+            if (set >= compiledLayouts.Length)
+            { violations.Add(new ShaderContractViolation("BIND", $"set {set}", $"{GetType().Name} declares {compiledLayouts.Length} set(s)", $"set index {set}", "the selected pipeline has no such descriptor set")); return violations; }
+            if (ReferenceEquals(rs.VerifiedShape, this)) return violations;
+            if (rs.VerifiedSetIndex != set)
+            { violations.Add(new ShaderContractViolation("BIND", $"set {set}", $"set was created for descriptor set {rs.VerifiedSetIndex}", $"bound at descriptor set {set}", "a set binds only at the descriptor set it was created for")); return violations; }
+            ShaderContractVerifier.VerifySharedSetBinding(set,
+                compiledLayouts[set], Bundle?.FlatBindingMap,
+                rs.VerifiedShape.CompiledLayoutFor(rs.VerifiedSetIndex), rs.VerifiedShape.Bundle?.FlatBindingMap,
+                violations);
+            return violations;
         }
+
+        internal bool AcceptsResourceSet(ResourceSet rs, uint set) => ResourceSetBindingViolations(rs, set).Count == 0;
 
         // No overridable descriptor hook: validation must see the actual fields. Generated descriptors (deferred) must preserve this invariant.
         private ShapeDescriptor Describe() => ShapeDescriptorBuilder.FromReflection(GetType());

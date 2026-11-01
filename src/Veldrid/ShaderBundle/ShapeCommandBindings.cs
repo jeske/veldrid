@@ -51,7 +51,7 @@ internal sealed class ShapeCommandBindings
     internal void MarkResourceSet(ResourceSet set)
     {
         if (owner is null) throw Failure("no verified pipeline selected; select the pipeline before binding its resource sets");
-        if (!owner.AcceptsResourceSet(set, set.VerifiedSetIndex)) throw Failure($"resource set {set.VerifiedSetIndex} was created for {set.VerifiedShape?.GetType().Name}, whose layout for that set differs from the selected pipeline's shape ({owner.GetType().Name}); bind a set of a layout-identical shape");
+        ThrowIfSetRefused(owner, set, set.VerifiedSetIndex);
         uint index = set.VerifiedSetIndex;
         if (index >= boundSets.Length) Array.Resize(ref boundSets, (int)index + 1);
         boundSets[index] = set;
@@ -73,9 +73,18 @@ internal sealed class ShapeCommandBindings
         {
             ResourceSet bound = set < boundSets.Length ? boundSets[set] : null;
             if (bound is null) throw Failure($"resource set {set} is not bound for this pipeline");
-            if (!owner.AcceptsResourceSet(bound, set)) throw Failure($"resource set {set} was created for {bound.VerifiedShape?.GetType().Name}, whose layout differs from the selected pipeline's shape ({owner.GetType().Name}); bind a layout-identical set");
+            ThrowIfSetRefused(owner, bound, set);
             if (bound.IsDisposed) throw Failure($"resource set {set} is disposed");
         }
+    }
+
+    // The refusal carries the verifier's per-binding violations (V7d names the binding and both bundles' registers), not a summary.
+    private static void ThrowIfSetRefused(ShaderPipelineShape owner, ResourceSet set, uint index)
+    {
+        var violations = owner.ResourceSetBindingViolations(set, index);
+        if (violations.Count == 0) return;
+        violations.Insert(0, new ShaderContractViolation("BIND", $"set {index}", $"created for {set.VerifiedShape?.GetType().Name ?? "(no shape)"}", $"selected pipeline {owner.GetType().Name}", "a set binds only to a pipeline whose shader declares that set identically (layout and flat registers)"));
+        throw new ShaderContractException(owner.BundleName, violations);
     }
 
     private static ShaderContractException Failure(string detail) => new("command bindings",

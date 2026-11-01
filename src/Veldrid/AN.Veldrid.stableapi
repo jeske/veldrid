@@ -4,6 +4,7 @@ const.ShaderContractVerifier.Rule_V7_ShaderSet: string "V7"
 const.ShaderContractVerifier.Rule_V7a_VertexInputs: string "V7a"
 const.ShaderContractVerifier.Rule_V7b_ResourceLayouts: string "V7b"
 const.ShaderContractVerifier.Rule_V7c_UniformStructs: string "V7c"
+const.ShaderContractVerifier.Rule_V7d_SharedSetBinding: string "V7d"
 const.VeldridShaderBundle.CurrentFormatVersion: int 2
 default.PrecompiledShaderResult..ctor.bundleName: object null
 default.PrecompiledShaderResult..ctor.flatBindingMap: object null
@@ -841,6 +842,7 @@ method.ShaderContractVerifier.IsLegalCSharpIdentifier: bool(string name)
 method.ShaderContractVerifier.ThrowIfViolated: void(ref ComputePipelineDescription description)
 method.ShaderContractVerifier.ThrowIfViolated: void(ref GraphicsPipelineDescription description)
 method.ShaderContractVerifier.VerifyShape: List`1<ShaderContractViolation>(ShapeDescriptor shape, string bundleName, VdShaderInterface itf, ResourceLayoutDescription[] compiledLayouts)
+method.ShaderContractVerifier.VerifySharedSetBinding: void(uint set, ResourceLayoutDescription pipelineLayout, VdShaderBindingEntry[] pipelineFlatMap, ResourceLayoutDescription setLayout, VdShaderBindingEntry[] setFlatMap, List`1<ShaderContractViolation> violations)
 method.ShaderContractVerifier.VerifyStructAgainstBlock: void(Type structType, VdShaderUniformBlock block, List`1<ShaderContractViolation> violations)
 method.ShaderContractViolation..ctor: void(string Rule, string Name, string SideA, string SideB, string Detail)
 method.ShaderContractViolation.Deconstruct: void(ref string Rule, ref string Name, ref string SideA, ref string SideB, ref string Detail)

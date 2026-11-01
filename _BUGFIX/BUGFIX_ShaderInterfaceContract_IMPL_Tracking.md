@@ -1,8 +1,16 @@
 # Shader interface contract - implementation tracking and handoff
 
-Updated 2026-10-31 21:00 (explicit allocation and device-update rename checkpoint). **READ THIS FIRST in the next session.**
+Updated 2026-11-01 15:00 (S8 consumer chain COMPLETE: every repo on typed shapes, six 0-px gates). **READ THIS FIRST in the next session.**
 Design/rationale: `BUGFIX_ShaderInterfaceContract_NameVerified.md` in this directory.
 This tracking file is the authority for current status; historical checked boxes and green gates in the design do NOT mean S8 is complete.
+
+### Latest checkpoint (2026-11-01 15:00): H0, I, J, K DONE - the whole consumer chain is on typed shapes
+Veldrid 5.261101.143935, SPIRV 5.261101.144028, Silky 1.261031.214635, FluidUI 0.261031.220130; Monsters 578ce07, ArcaneSiege 43a0336.
+Veldrid changes this day: V7c `_pad*` exemption removed (Size = N is the mechanism); V7d = identical declarations; D3D11/Metal bind a set through the
+PIPELINE's compiled register map (the b1/b2 drift fix); resource-less shapes (vertex inputs, no slots) create pipelines from the shader set and
+need no bound set for the compiler's empty set 0. What the migration FOUND in consumers (none would have surfaced under the raw API): a device-shared
+shape double-`CreateBuffer()` in RenderKit; a C# texture name that drifted from its GLSL (SpaceGame RingHaze); a pre-shapes SilkyNvg via a stale
+FluidUI floor (Monsters); a vertex-lit chunk draw with its lighting set unbound on the first frames (TileMapKit). Open: L, M, the verification audit.
 
 ## Immediate next task
 
@@ -88,12 +96,12 @@ Veldrid is committed (56e42ba3) and published (5.261031.163330). FluidUI still h
 
 | Repo | Code checkpoint | Current consumer dependency floor / state |
 |---|---|---|
-| AN_Veldrid | **00f160f4** (IsDisposed on typed storage; f06c05b0 alloc-free verified set ctor; 0fcb886c span-typed alloc-free bind; 8e056c13 typed slot arguments) | Published runtime **5.261031.214031**, including ImGui package. ContractTests 73 passed, LifetimeTests 11 passed. |
-| AN_VeldridSpirv | efb170c | Latest published compiler **5.261031.121914**; source still references Veldrid **5.261031.121302** (old API). Needs migration before rebuilding against S8. |
+| AN_Veldrid | **44979842** (7f3284e7/12a9fb62/44979842 resource-less shapes name their pipeline by shader set, empty compiled sets need no bound set; 9f7384d2 D3D11/Metal bind sets through the PIPELINE's layout, V7d = identical declarations; 8b7160a5 `_pad*` exemption removed) | Published runtime **5.261101.143935**. ContractTests 82/82. |
+| AN_VeldridSpirv | **d228272** | Published compiler **5.261101.144028**; Veldrid floor 5.261101.143935. Tests 119/119 incl. SharedMaterialSetFlatBindingTests, SharedSetCrossPipelineBindingGpuTests, ResourcelessShapePipelineGpuTests. Dead `CreateFromSpirv` removed. |
 | AN_SilkyNvg | **eb805e3a** (35c64e2c renderer on typed slot arguments; eb805e3a device-lost recovery tests moved here) | Published **1.261031.214635**. Runtime floor **[5.261031.214031,)**; compiler floor **[5.261031.114910,)**. Unit 386/386; graphical D3D11 39/42 (3 pre-existing), Vulkan 17/42 (all pre-existing; no Vulkan golds). |
 | AN_FluidUI | **33aac265** StretchBlit + GameCompositor_Test on typed shapes; windowed GPU recovery test | Published **0.261031.220130**. Veldrid [5.261031.214031,), Silky [1.261031.214635,), SPIRV [5.261031.114910,) (compile tool only; works against new Veldrid). Unit 2,580 pass / 9 pre-existing fails; WPT fluid:/verifyhtml/** 322 run, 0 new divergences. Plan: AN_FluidUI/_BUGFIX/BUGFIX_TypedShapeMigration_IMPL.md. |
-| AN_Monsters | 0cf0651 code; **145068a** handoff | Old S7 API: Veldrid [5.261031.122406,), SPIRV [5.261031.121914,), FluidUI 0.261031.115758. Direct RenderKit project reference into ArcaneSiege. |
-| AN_ArcaneSiege | fc9d1e0 code; **ab6a68d** handoff | Old S7 API: Veldrid [5.261031.122406,), SPIRV [5.261031.121914,), FluidUI [0.261031.115758,). TOMF gameplay parked. |
+| AN_Monsters | **578ce07** (RenderKit e602745, Monsters 1ba01dc, Orrery+SpaceGame c815f28) | Fully on typed shapes. Veldrid [5.261101.143935,), SPIRV [5.261101.144028,), FluidUI 0.261031.220130. Monsters.slnx 0 errors; RenderKit.Tests 175/175. RenderKit remains a project reference into ArcaneSiege. |
+| AN_ArcaneSiege | **43a0336** (kit 8532462, game 79b1f92, TOMF 95ae923, floors 1999a7c) | Fully on typed shapes (runtime GLSL via ShaderLoader.LoadBundle). Veldrid [5.261101.143935,), SPIRV [5.261101.144028,), FluidUI [0.261031.220130,). Six gates 0 px. |
 
 NuGet ranges resolve the lowest satisfying version: publishing alone does NOT move consumers. Bump each incoming Build.props floor deliberately.
 Local feed: `C:\PROJECTS\LocalNuGet`, via LOCAL_NUGET_REPO. Other machines must republish the dependency chain; user accepts this.
@@ -200,18 +208,23 @@ Logs on this machine: `C:\TEMP\silky-pipeline-shapes-build.log`, `silky-paint-re
 
 ## After Silky: downstream chain and acceptance
 
-- [ ] **H0 (applies to EVERY consumer below).** Purge wrongful `GraphicsDevice.UpdateBuffer` -> now `UpdateBufferOutsideCommandList` use. The ONLY legal
+- [x] **H0 (applies to EVERY consumer below).** Purge wrongful `GraphicsDevice.UpdateBuffer` -> now `UpdateBufferOutsideCommandList` use. The ONLY legal
       use: (a) nothing pending references the buffer AND (b) nothing uses it until a WaitForIdle after the write. Everything else -> `CommandList.UpdateBuffer`.
       Delete (do not reword) rationalising comments ("fine because per frame" etc.). Inventory and rule: `BUGFIX_TypedBufferAccessPolicies_IMPL.md` C.1.
       Counts at 2026-10-31: Silky 0, FluidUI 2, Monsters 13 (1 legal: StaticDeviceBufferUpload), ArcaneSiege 21 (0 legal).
-- [ ] H. AN_FluidUI (highest-priority consumer): bump Silky/Veldrid/SPIRV as needed; migrate StretchBlit to typed shape; precompile/check bundles; bounded D3D11/Vulkan capture tests; publish.
-- [ ] I. AN_Monsters/RenderKit: replace old S7 data-record shapes, attributes/registry and raw APIs. Keep SpaceGame building; validate `src/Monsters` gameplay with captures, not just splash. Existing LightPointStencil struct test failure predates S8.
-- [ ] J. AN_ArcaneSiege: migrate shared TileMapKit, ArcaneSiege and TOMF renderers; explicit dependency floors; ordinary unit tests.
-- [ ] K. ArcaneSiege 3 gates: default vertexlit, unlit review, deferred. TOMF 3 gates: world/HUD/combat. Commands/oracles in `_SPECS_TOMF/00_TOMF_IMPL_Tracking.md`.
+      **DONE 2026-11-01: 0 remaining in Silky, FluidUI, Monsters (RenderKit's StaticDeviceBufferUpload staging write is the one legal site), ArcaneSiege, TOMF.**
+- [x] H. AN_FluidUI (highest-priority consumer): bump Silky/Veldrid/SPIRV as needed; migrate StretchBlit to typed shape; precompile/check bundles; bounded D3D11/Vulkan capture tests; publish. (33aac265 / 0.261031.220130)
+- [x] I. AN_Monsters/RenderKit: replace old S7 data-record shapes, attributes/registry and raw APIs. Keep SpaceGame building; validate `src/Monsters` gameplay with captures, not just splash. Existing LightPointStencil struct test failure predates S8.
+      (RenderKit e602745; Monsters 1ba01dc; Orrery+SpaceGame c815f28; floors 578ce07. Plan: `AN_Monsters/_SPECS_RenderKit/61_TypedShaderShapes_Migration_IMPL.md`.)
+- [x] J. AN_ArcaneSiege: migrate shared TileMapKit, ArcaneSiege and TOMF renderers; explicit dependency floors; ordinary unit tests.
+      (kit 8532462, game 79b1f92, TOMF 95ae923, floors 1999a7c. TileMapKit.Tests 40/40, TOMF.Tests 92/92. Plan: `AN_ArcaneSiege/_SPECS/VELDRID/10_TypedShaderShapes_Migration_IMPL.md`.)
+- [x] K. ArcaneSiege 3 gates: default vertexlit, unlit review, deferred. TOMF 3 gates: world/HUD/combat. Commands/oracles in `_SPECS_TOMF/00_TOMF_IMPL_Tracking.md`.
+      **All six 0 px, byte-identical on Veldrid 5.261101.143935 / SPIRV 5.261101.144028 (2026-11-01).** Note: the first run after a package bump
+      recompiles every bundle into the cold shader cache and can capture the loading panel - warm once, then gate.
 - [ ] L. Additional ArcaneSiege visible ImGui capture: existing `--capture` hides overlays, so it is not enough to validate the GUI. Exercise text, windows, clipping, image switching. Bounded exit required.
 - [ ] M. Cold/warm shader cache and deliberate bad-name/offset/missing-metadata tests. Publish/commit/push tested consumer checkpoints with exact versions.
 
-The older six 0-pixel gates were against Veldrid 5.261031.122406 / SPIRV 5.261031.121914, BEFORE mandatory typed API changes. They do NOT validate the current S8 packages.
+The six 0-pixel gates were re-run against the current S8 packages (Veldrid 5.261101.143935 / SPIRV 5.261101.144028) on 2026-11-01; see K.
 
 ## Outstanding verification audit (do not claim complete safety yet)
 

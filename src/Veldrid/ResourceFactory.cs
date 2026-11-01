@@ -45,10 +45,11 @@ namespace Veldrid
             // Typed slot arguments (BUGFIX_ShaderInterfaceContract_TypedSlotArguments.md): the shader set and every layout carry the
             // shape they were built from; they must agree. Then the SAME V7 verification and backend path as before.
             var shaderSetShape = description.ShaderSet.VerifiedShape;
-            // A shape with vertex inputs and NO resource sets (a clip-space debug quad: `in Position, in Color`, nothing bound) has no
-            // layouts to name it - its shader set does. Every other pipeline is named by its layouts, which must cover every set.
+            // A shape with vertex inputs and NO resource slots (a clip-space debug quad: `in Position, in Color`, nothing bound) has no
+            // layouts to name it - its shader set does. (The compiler still records an EMPTY set 0 for such a shader, so the test is the
+            // shape's slots, not its set count.) Every other pipeline is named by its layouts, which must cover every set.
             bool noLayouts = description.ResourceLayouts is null || description.ResourceLayouts.Length == 0;
-            var layoutShape = noLayouts && shaderSetShape is { SetCount: 0 }
+            var layoutShape = noLayouts && shaderSetShape is { HasResources: false }
                 ? shaderSetShape
                 : RequireOneShapeForLayouts(description.ResourceLayouts, "graphics pipeline");
             if (shaderSetShape is null)

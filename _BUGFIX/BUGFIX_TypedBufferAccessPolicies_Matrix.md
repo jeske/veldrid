@@ -4,7 +4,7 @@ Status: initial source audit plus explicit-allocation implementation slice. Not 
 Implementation tracker: [Typed buffer policies](BUGFIX_TypedBufferAccessPolicies_IMPL.md).
 
 ## Evidence and provenance
-Native documentation snapshots are in AN_ArcaneSiege/_EXTERNAL_APIS/BufferPolicies/ because url_fetch file output is restricted to the active workspace.
+Native documentation snapshots are in `_BUGFIX/BufferPolicies_NativeDocs/` (fetched 2026-10-31; they first landed in AN_ArcaneSiege/_EXTERNAL_APIS because url_fetch could only write to the active workspace - moved here 2026-11-01).
 - Microsoft UpdateSubresource: https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-updatesubresource
   - Constant buffers cannot be partially updated through this method.
   - Dynamic and immutable destinations are prohibited.

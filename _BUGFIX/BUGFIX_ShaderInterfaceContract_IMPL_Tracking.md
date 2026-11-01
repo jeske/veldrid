@@ -10,6 +10,12 @@ This tracking file is the authority for current status; historical checked boxes
 User approved separating binding-offset selection from storage/update policy and the name `[UniformBufferBindingTimeOffsetSelectable]`.
 That allocation defect is fixed in the unpublished working tree: Bind creates verified handles/layouts, not uniform storage. UniformBlock.CreateBuffer(usage), VertexInput.CreateBuffer(capacity, usage), and UniformBlock.CreateArena(device, capacity, usage) require explicit choices. No mandatory CPU shadow/staging and no hidden widened member uploads. ImGui is migrated; Silky still references the previous package.
 
+### Latest checkpoint (2026-10-31 22:10): HANDOFF -> `BUGFIX_HANDOFF_2026-10-31_ArcaneSiege_TypedShapes.md`
+Veldrid 5.261031.214031, Silky 1.261031.214635, FluidUI 0.261031.220130 all published and committed. ArcaneSiege/TOMF (item J) is PLANNED:
+`AN_ArcaneSiege/_SPECS/VELDRID/10_TypedShaderShapes_Migration_IMPL.md`; Phase 0 done (floors bumped UNCOMMITTED; SPIRV runtime path proven to
+work against 214031 - runtime GLSL stays, no precompiled bundles needed); Phase 1 (TileMapKit) not started. H0 counts: Silky 0, FluidUI 0
+(GameCompositor_Test sites moved to the command list), ArcaneSiege 20 live sites (classified in the plan). The handoff file carries the ordered TODO.
+
 ### Latest checkpoint (2026-10-31 22:00): FluidUI migrated and published; Silky published; tests relocated to their seams
 - **FluidUI 0.261031.220130 (33aac265)**: `StretchBlitShape`; GameCompositor_Test's two demo shaders are precompiled bundles bound through
   shapes (runtime Veldrid.SPIRV removed from it; H0 sites -> first command list). The stale SPIRV compiler package DOES drive

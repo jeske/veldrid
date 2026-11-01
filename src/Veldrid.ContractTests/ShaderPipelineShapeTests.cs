@@ -28,7 +28,8 @@ public class ShaderPipelineShapeTests
     };
 
     [StructLayout(LayoutKind.Sequential)] public struct QuadVertex { public Vector2 Position; public Vector2 TexCoord; [VertexFormat(VertexElementFormat.Byte4_Norm)] public RgbaByte Color; }
-    [StructLayout(LayoutKind.Sequential)] public struct Projection { public Matrix4x4 Matrix; public float Scale; public float _pad0, _pad1, _pad2; }
+    // 80 B = the 16-rounded std140 block size (mat4 64 + float 4 -> 68 -> 80); Size reaches it without fields the GLSL does not declare.
+    [StructLayout(LayoutKind.Sequential, Size = 80)] public struct Projection { public Matrix4x4 Matrix; public float Scale; }
 
     [ShaderBundle("Quad")]
     public sealed partial class QuadShape : ShaderPipelineShape
@@ -85,7 +86,8 @@ public class ShaderPipelineShapeTests
         Assert.Equal(2, v.Count(x => x.Detail.Contains("does not accept")));
     }
 
-    [StructLayout(LayoutKind.Sequential)] public struct ProjectionSwapped { public float Scale; public Matrix4x4 Matrix; public float _pad0, _pad1, _pad2; }
+    // 80 B = the 16-rounded std140 block size; Size reaches it without fields the GLSL does not declare.
+    [StructLayout(LayoutKind.Sequential, Size = 80)] public struct ProjectionSwapped { public float Scale; public Matrix4x4 Matrix; }
     [ShaderBundle("Quad")]
     public sealed partial class SwappedStructShape : ShaderPipelineShape
     {
@@ -101,6 +103,41 @@ public class ShaderPipelineShapeTests
         var v = ShaderPipelineShape.Verify<SwappedStructShape>(QuadBundle());
         Assert.Contains(v, x => x.Rule == ShaderContractVerifier.Rule_V7c_UniformStructs && x.Name == "Projection.Scale");
         Assert.Contains(v, x => x.Rule == ShaderContractVerifier.Rule_V7c_UniformStructs && x.Name == "Projection.Matrix");
+    }
+
+    // Same members as the block, but no Size: Marshal.SizeOf = 68, the compiler reports the 16-rounded 80. Must be a V7c violation.
+    [StructLayout(LayoutKind.Sequential)] public struct ProjectionUnrounded { public Matrix4x4 Matrix; public float Scale; }
+    [ShaderBundle("Quad")]
+    public sealed partial class UnroundedStructShape : ShaderPipelineShape
+    {
+        public VertexInput<QuadVertex> Vertices;
+        public UniformBlock<ProjectionUnrounded> Projection;
+        public TextureSlot MainTexture;
+        public SamplerSlot MainSampler;
+    }
+
+    [Fact]
+    public void StructSmallerThanThe16RoundedBlockSize_IsReported_V7c()
+    {
+        var v = ShaderPipelineShape.Verify<UnroundedStructShape>(QuadBundle());
+        var sizeViolation = Assert.Single(v, x => x.Rule == ShaderContractVerifier.Rule_V7c_UniformStructs && x.Name == "Projection" && x.Detail.Contains("struct size must equal"));
+        Assert.Contains("68 bytes", sizeViolation.SideA);
+        Assert.Contains("80 bytes", sizeViolation.SideB);
+        Assert.Contains("Size = N", sizeViolation.Detail);
+    }
+
+    // The CLR does NOT throw for a Size smaller than the fields need: Size is a minimum, and the natural size wins silently.
+    // The verifier's size comparison is therefore the ONLY place an undersized declaration surfaces - pin both facts.
+    [StructLayout(LayoutKind.Sequential, Size = 8)] public struct SizeSmallerThanFields { public Matrix4x4 Matrix; public float Scale; }
+
+    [Fact]
+    public void StructLayoutSize_SmallerThanTheFields_IsSilentlyIgnoredByTheRuntime_SoTheVerifierMustCatchIt()
+    {
+        Assert.Equal(68, Marshal.SizeOf<SizeSmallerThanFields>());          // not 8: the natural size is used, no exception
+        var block = QuadBundle().Interface.UniformBlocks.Single();          // 80 B reported
+        var violations = new System.Collections.Generic.List<ShaderContractViolation>();
+        ShaderContractVerifier.VerifyStructAgainstBlock(typeof(SizeSmallerThanFields), block, violations);
+        Assert.Contains(violations, x => x.Rule == ShaderContractVerifier.Rule_V7c_UniformStructs && x.SideA.Contains("68 bytes") && x.SideB.Contains("80 bytes"));
     }
 
     [StructLayout(LayoutKind.Sequential)] public struct QuadVertexSwapped { public Vector2 TexCoord; public Vector2 Position; [VertexFormat(VertexElementFormat.Byte4_Norm)] public RgbaByte Color; }

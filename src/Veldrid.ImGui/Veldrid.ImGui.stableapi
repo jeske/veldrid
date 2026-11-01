@@ -4,8 +4,6 @@ enum.ColorSpaceHandling.Linear: 1
 enum.ColorSpaceHandling._type: int
 field.ImGuiProjection.IsClipSpaceYInverted: int
 field.ImGuiProjection.UseLegacyColorSpaceHandling: int
-field.ImGuiProjection._pad0: int
-field.ImGuiProjection._pad1: int
 field.ImGuiProjection.projection: Matrix4x4
 field.ImGuiShape.FontSampler: SamplerSlot
 field.ImGuiShape.FontTexture: TextureSlot
@@ -42,12 +40,10 @@ method.ImGuiRenderer.WindowResized: void(int width, int height)
 method.ImGuiShape..ctor: void()
 struct.ImGuiProjection._layout: Sequential
 struct.ImGuiProjection._pack: 0
-struct.ImGuiProjection._size: 0
+struct.ImGuiProjection._size: 80
 struct.ImGuiProjection.field0.projection: Matrix4x4
 struct.ImGuiProjection.field1.IsClipSpaceYInverted: int
 struct.ImGuiProjection.field2.UseLegacyColorSpaceHandling: int
-struct.ImGuiProjection.field3._pad0: int
-struct.ImGuiProjection.field4._pad1: int
 struct.ImGuiVertex._layout: Sequential
 struct.ImGuiVertex._pack: 0
 struct.ImGuiVertex._size: 0

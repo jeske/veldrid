@@ -12,14 +12,13 @@ namespace Veldrid
         [VertexFormat(VertexElementFormat.Byte4_Norm)] public uint vsin_color;
     }
 
-    /// <summary>The Projection block of ImGui.vert.glsl, including cross-backend runtime flags.</summary>
-    [StructLayout(LayoutKind.Sequential)]
+    /// <summary>The Projection block of ImGui.vert.glsl, including cross-backend runtime flags. 80 B = the 16-rounded std140 block size (64 + 4 + 4 -> 72 -> 80).</summary>
+    [StructLayout(LayoutKind.Sequential, Size = 80)]
     public struct ImGuiProjection
     {
         public Matrix4x4 projection;
         public int IsClipSpaceYInverted;
         public int UseLegacyColorSpaceHandling;
-        public int _pad0, _pad1;
     }
 
     /// <summary>

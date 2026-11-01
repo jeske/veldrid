@@ -274,7 +274,11 @@ namespace Veldrid
             }
         }
 
-        /// <summary>V7c: a C# struct against a compiled block - field NAME == member name, Marshal.OffsetOf == std140 offset, size == size, struct size == block size; <c>_pad*</c> fields only in the std140 tail.</summary>
+        /// <summary>
+        /// V7c: a C# struct against a compiled block - EVERY C# field has a GLSL member of the same NAME at the same std140 offset and
+        /// size, EVERY GLSL member has a C# field, and the struct size equals the 16-rounded block size. No name is exempt: a struct
+        /// reaches the rounded size with <c>[StructLayout(LayoutKind.Sequential, Size = N)]</c>, never with fields the GLSL does not declare.
+        /// </summary>
         public static void VerifyStructAgainstBlock(Type structType, VdShaderUniformBlock block, List<ShaderContractViolation> violations)
         {
             string structName = structType.Name; string glslBlockName = block.Name;
@@ -285,20 +289,13 @@ namespace Veldrid
             }
             int structSize = Marshal.SizeOf(structType);
             if (structSize != block.SizeBytes)
-                violations.Add(new ShaderContractViolation(Rule_V7c_UniformStructs, glslBlockName, $"C# {structName}: {structSize} bytes", $"shader block: {block.SizeBytes} bytes (std140)", "struct size must equal the std140 block size"));
+                violations.Add(new ShaderContractViolation(Rule_V7c_UniformStructs, glslBlockName, $"C# {structName}: {structSize} bytes", $"shader block: {block.SizeBytes} bytes (std140, 16-rounded)", "struct size must equal the std140 block size - declare [StructLayout(LayoutKind.Sequential, Size = N)] to reach the rounded size"));
             var fields = structType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             var membersByName = block.Members.ToDictionary(m => m.Name, StringComparer.Ordinal);
-            uint lastMemberEnd = block.Members.Length == 0 ? 0 : block.Members.Max(m => m.OffsetBytes + m.SizeBytes);
             foreach (var field in fields)
             {
                 int offset = (int)Marshal.OffsetOf(structType, field.Name);
                 int size = Marshal.SizeOf(field.FieldType);
-                if (IsPaddingField(field.Name))
-                {
-                    if (offset < lastMemberEnd || offset + size > block.SizeBytes)
-                        violations.Add(new ShaderContractViolation(Rule_V7c_UniformStructs, $"{glslBlockName}.{field.Name}", $"C# padding @ {offset} ({size} B)", $"shader members end @ {lastMemberEnd}, block {block.SizeBytes} B", "padding fields may only occupy the std140 tail after the last member"));
-                    continue;
-                }
                 if (!membersByName.TryGetValue(field.Name, out var member))
                 {
                     violations.Add(new ShaderContractViolation(Rule_V7c_UniformStructs, $"{glslBlockName}.{field.Name}", $"C# field {structName}.{field.Name}", "shader: no such member", "struct field NAME must equal the GLSL member name"));
@@ -311,8 +308,5 @@ namespace Veldrid
                 if (!fields.Any(f => string.Equals(f.Name, member.Name, StringComparison.Ordinal)))
                     violations.Add(new ShaderContractViolation(Rule_V7c_UniformStructs, $"{glslBlockName}.{member.Name}", $"C# {structName}: no such field", $"shader {member.Type} @ {member.OffsetBytes}", "every GLSL member must have a struct field of the same name"));
         }
-
-        /// <summary>A C# field that exists only to fill std140 tail padding: <c>_pad</c>, <c>_pad0</c>, <c>_padding</c>, <c>_padding1</c>...</summary>
-        public static bool IsPaddingField(string fieldName) => fieldName.StartsWith("_pad", StringComparison.Ordinal);
     }
 }

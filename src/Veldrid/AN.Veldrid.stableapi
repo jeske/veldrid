@@ -1152,10 +1152,13 @@ property.ShaderContractViolation.SideB: string { get; set; }
 property.ShaderPipelineShape.Bundle: PrecompiledShaderResult { get; }
 property.ShaderPipelineShape.BundleName: string { get; }
 property.ShaderUniformArena`1.Capacity: uint { get; }
+property.ShaderUniformArena`1.IsDisposed: bool { get; }
 property.ShaderUniformArena`1.SizeInBytes: uint { get; }
 property.ShaderUniformArena`1.StrideBytes: uint { get; }
+property.ShaderUniformBuffer`1.IsDisposed: bool { get; }
 property.ShaderUniformBuffer`1.SizeInBytes: uint { get; }
 property.ShaderVertexBuffer`1.Capacity: uint { get; }
+property.ShaderVertexBuffer`1.IsDisposed: bool { get; }
 property.ShaderVertexBuffer`1.SizeInBytes: uint { get; }
 property.ShaderVertexBuffer`1.Usage: BufferUsage { get; }
 property.ShapeDescriptor.BundleName: string { get; set; }

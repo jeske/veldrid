@@ -20,6 +20,8 @@ public sealed class ShaderUniformArena<T> : IDisposable, IUniformArenaOffsets wh
     public uint Capacity { get; }
     public uint StrideBytes { get; }
     public uint SizeInBytes => Buffer.SizeInBytes;
+    /// <summary>True once <see cref="Dispose"/> ran (or the underlying buffer was destroyed, e.g. device loss). Same contract as <see cref="DeviceBuffer.IsDisposed"/>.</summary>
+    public bool IsDisposed => disposed || Buffer.IsDisposed;
     private readonly byte[] staging;
     private bool disposed;
 

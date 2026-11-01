@@ -20,6 +20,8 @@ public sealed class ShaderUniformBuffer<T> : IDisposable where T : unmanaged
     internal ResourceFactory Factory { get; }
     internal string CreatingBlockName { get; }
     public uint SizeInBytes => Buffer.SizeInBytes;
+    /// <summary>True once <see cref="Dispose"/> ran (or the underlying buffer was destroyed, e.g. device loss). Same contract as <see cref="DeviceBuffer.IsDisposed"/>.</summary>
+    public bool IsDisposed => disposed || Buffer.IsDisposed;
     private bool disposed;
 
     internal ShaderUniformBuffer(ResourceFactory factory, string creatingBlockName, uint blockSize, BufferUsage usage)

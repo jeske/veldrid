@@ -23,6 +23,8 @@ public sealed class ShaderVertexBuffer<TVertex> : IDisposable where TVertex : un
 
     /// <summary>Byte size of the whole buffer (for consumers that preserve a full-buffer upload policy).</summary>
     public uint SizeInBytes => Buffer.SizeInBytes;
+    /// <summary>True once <see cref="Dispose"/> ran (or the underlying buffer was destroyed, e.g. device loss). Same contract as <see cref="DeviceBuffer.IsDisposed"/>.</summary>
+    public bool IsDisposed => disposed || Buffer.IsDisposed;
     /// <summary>The native-usage flags this storage was created with.</summary>
     public BufferUsage Usage => Buffer.Usage;
 

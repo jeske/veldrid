@@ -334,6 +334,21 @@ namespace Veldrid
         }
         internal IEnumerable<ShapeSlot> SlotsOfSet(uint set) => slots.Where(s => s.Set == set);
 
+        // Per-set slot arrays in BINDING order, built once on first use. Set construction runs per transient set (clip masks, filters),
+        // so it must not pay for a LINQ iterator per call; the shape's slots never change after Bind.
+        private ShapeSlot[][] slotsBySetInBindingOrder;
+        /// <summary>The slots of one descriptor set, ordered by binding index. Allocation-free after the first call.</summary>
+        internal ReadOnlySpan<ShapeSlot> SlotsOfSetSpan(uint set)
+        {
+            if (slotsBySetInBindingOrder is null)
+            {
+                var bySet = new ShapeSlot[compiledLayouts.Length][];
+                for (uint s = 0; s < bySet.Length; s++) bySet[s] = slots.Where(x => x.Set == s).OrderBy(x => x.Binding).ToArray();
+                slotsBySetInBindingOrder = bySet;
+            }
+            return set < slotsBySetInBindingOrder.Length ? slotsBySetInBindingOrder[set] : ReadOnlySpan<ShapeSlot>.Empty;
+        }
+
         /// <summary>
         ///     Whether a verified <see cref="ResourceSet"/> may be bound at <paramref name="set"/> for THIS shape's pipelines. True when the
         ///     set was created from this instance, or from any shape whose compiled layout for that set is element-wise identical (name,

@@ -26,6 +26,8 @@ namespace Veldrid
         ///     Constructs a new ResourceSetDescription from NAMED bindings - the SAME call as before, with each positional resource
         ///     replaced by <c>slot.With(resource)</c> (BUGFIX_ShaderInterfaceContract_TypedSlotArguments.md). The layout must have been built
         ///     from the same shape's slots; every slot of its set is supplied exactly once; order is irrelevant.
+        ///     Consumers build transient sets per draw (clip masks, filters), so the happy path allocates only the two arrays the set
+        ///     itself owns; the violation list exists only once a violation has been found.
         /// </summary>
         /// <param name="layout">A <see cref="ResourceLayout" /> created from <see cref="ResourceLayoutDescription(ShapeSlot[])"/>.</param>
         /// <param name="bindings">One <c>slot.With(...)</c> per slot of the layout's set.</param>
@@ -37,32 +39,50 @@ namespace Veldrid
                 ?? throw new ShaderContractException("resource set", [new ShaderContractViolation("BIND", "layout", "raw layout", "a layout built from shape slots", "sets are described by slot bindings against a slot-built layout")]);
             shape.EnsureBound();
             uint set = layout.VerifiedSetIndex;
-            var violations = new System.Collections.Generic.List<ShaderContractViolation>();
+            System.Collections.Generic.List<ShaderContractViolation> violations = null;
             foreach (var binding in bindings)
             {
-                if (binding.Slot is null) violations.Add(new ShaderContractViolation("BIND", "?", "default ShapeResourceBinding", "a slot's With(...)", "bindings must come from a slot"));
-                else if (!ReferenceEquals(binding.Slot.Owner, shape)) violations.Add(new ShaderContractViolation("BIND", binding.Slot.Name, $"slot of {binding.Slot.Owner?.GetType().Name}", shape.GetType().Name, "a set binds only the layout's shape"));
-                else if (binding.Slot.Set != set) violations.Add(new ShaderContractViolation("BIND", binding.Slot.Name, $"set {binding.Slot.Set}", $"set {set}", "a set binds only slots of the layout's descriptor set"));
+                if (binding.Slot is null) (violations ??= new()).Add(new ShaderContractViolation("BIND", "?", "default ShapeResourceBinding", "a slot's With(...)", "bindings must come from a slot"));
+                else if (!ReferenceEquals(binding.Slot.Owner, shape)) (violations ??= new()).Add(new ShaderContractViolation("BIND", binding.Slot.Name, $"slot of {binding.Slot.Owner?.GetType().Name}", shape.GetType().Name, "a set binds only the layout's shape"));
+                else if (binding.Slot.Set != set) (violations ??= new()).Add(new ShaderContractViolation("BIND", binding.Slot.Name, $"set {binding.Slot.Set}", $"set {set}", "a set binds only slots of the layout's descriptor set"));
             }
-            if (violations.Count > 0) throw new ShaderContractException(shape.BundleName, violations);
+            if (violations is not null) throw new ShaderContractException(shape.BundleName, violations);
             var elements = shape.CompiledLayoutFor(set).Elements ?? Array.Empty<ResourceLayoutElementDescription>();
             var bound = new IBindableResource[elements.Length];
-            var arenas = new IUniformArenaOffsets[elements.Length];
+            // Offset-selectable bindings are a fixed property of the compiled set: count them once so the arena array is exact-sized
+            // (Array.Empty for the common no-arena set) and filled in BINDING order without sorting (same rule as the raw API).
+            int offsetSelectableCount = 0;
+            foreach (var slot in shape.SlotsOfSetSpan(set))
+                if (slot.UniformBindingOffsetSelectable) offsetSelectableCount++;
+            var arenasInBindingOrder = offsetSelectableCount == 0 ? Array.Empty<IUniformArenaOffsets>() : new IUniformArenaOffsets[offsetSelectableCount];
             foreach (var binding in bindings)
             {
                 int b = (int)binding.Slot.Binding;
-                if (bound[b] != null) violations.Add(new ShaderContractViolation("BIND", binding.Slot.Name, "bound twice", "once", "each slot is supplied exactly once"));
-                bound[b] = binding.Resource; arenas[b] = binding.Arena;
+                if (bound[b] != null) (violations ??= new()).Add(new ShaderContractViolation("BIND", binding.Slot.Name, "bound twice", "once", "each slot is supplied exactly once"));
+                bound[b] = binding.Resource;
             }
-            foreach (var slot in shape.SlotsOfSet(set))
-                if (bound[slot.Binding] is null) violations.Add(new ShaderContractViolation("BIND", slot.Name, "not supplied", $"set {set} binding {slot.Binding} {elements[slot.Binding].Kind}", "every shader resource of the set must be bound"));
-            if (violations.Count > 0) throw new ShaderContractException(shape.BundleName, violations);
+            foreach (var slot in shape.SlotsOfSetSpan(set))
+                if (bound[slot.Binding] is null) (violations ??= new()).Add(new ShaderContractViolation("BIND", slot.Name, "not supplied", $"set {set} binding {slot.Binding} {elements[slot.Binding].Kind}", "every shader resource of the set must be bound"));
+            if (violations is not null) throw new ShaderContractException(shape.BundleName, violations);
+            // Second pass over the bindings, ordered by binding index via the slot list (already binding-ordered per set in the bundle),
+            // so each offset-selectable binding's arena lands at its position among the offset-selectable bindings.
+            int arenaIndex = 0;
+            foreach (var slot in shape.SlotsOfSetSpan(set))
+            {
+                if (!slot.UniformBindingOffsetSelectable) continue;
+                arenasInBindingOrder[arenaIndex++] = ArenaBoundTo(bindings, slot);
+            }
             Layout = layout;
             BoundResources = bound;
-            // Dynamic offsets are applied in BINDING order of the offset-selectable elements (same rule as the raw API).
-            VerifiedOffsetArenas = shape.SlotsOfSet(set)
-                .Where(s => s.UniformBindingOffsetSelectable).OrderBy(s => s.Binding)
-                .Select(s => arenas[s.Binding]).ToArray();
+            VerifiedOffsetArenas = arenasInBindingOrder;
+        }
+
+        /// <summary>The arena supplied for <paramref name="slot"/> (every slot of the set is bound exactly once by the time this runs).</summary>
+        private static IUniformArenaOffsets ArenaBoundTo(ShapeResourceBinding[] bindings, ShapeSlot slot)
+        {
+            foreach (var binding in bindings)
+                if (ReferenceEquals(binding.Slot, slot)) return binding.Arena;
+            return null;
         }
 
         /// <summary>

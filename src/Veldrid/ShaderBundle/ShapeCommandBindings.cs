@@ -71,6 +71,9 @@ internal sealed class ShapeCommandBindings
         }
         for (uint set = 0; set < owner.SetCount; set++)
         {
+            // The compiler records an EMPTY set for a shader with nothing bound there (a resource-less debug quad): no set object exists
+            // or is needed for it. Only sets with elements must be bound.
+            if (owner.CompiledLayoutFor(set).Elements is null or { Length: 0 }) continue;
             ResourceSet bound = set < boundSets.Length ? boundSets[set] : null;
             if (bound is null) throw Failure($"resource set {set} is not bound for this pipeline");
             ThrowIfSetRefused(owner, bound, set);

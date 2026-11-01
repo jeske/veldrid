@@ -10,6 +10,16 @@ This tracking file is the authority for current status; historical checked boxes
 User approved separating binding-offset selection from storage/update policy and the name `[UniformBufferBindingTimeOffsetSelectable]`.
 That allocation defect is fixed in the unpublished working tree: Bind creates verified handles/layouts, not uniform storage. UniformBlock.CreateBuffer(usage), VertexInput.CreateBuffer(capacity, usage), and UniformBlock.CreateArena(device, capacity, usage) require explicit choices. No mandatory CPU shadow/staging and no hidden widened member uploads. ImGui is migrated; Silky still references the previous package.
 
+### Latest checkpoint (2026-10-31 22:00): FluidUI migrated and published; Silky published; tests relocated to their seams
+- **FluidUI 0.261031.220130 (33aac265)**: `StretchBlitShape`; GameCompositor_Test's two demo shaders are precompiled bundles bound through
+  shapes (runtime Veldrid.SPIRV removed from it; H0 sites -> first command list). The stale SPIRV compiler package DOES drive
+  `ShaderBundlePipeline` against Veldrid 214031 (bundle bytes unchanged, only input hashes) - no SPIRV migration needed for bundle generation.
+- **Device-lost tests relocated**: the two FluidUI Offscreen tests that reached Silky renderer privates by reflection moved to
+  `AN_SilkyNvg/tests/unit/SilkyNvg.Tests.RendererRecovery` (direct member access via InternalsVisibleTo; `plans/device_lost_recovery_tests.md`).
+  FluidUI gained `src/Tests/FluidUI.GpuRecovery.Test`: a WINDOWED black-box test (real window, shapes view, capture -> DebugSimulateGpuDeviceLost ->
+  recover -> capture byte-identical), PASS 2 cycles D3D11. Veldrid gained `IsDisposed` on typed storage (00f160f4, 5.261031.214031).
+- Backend fact recorded: only D3D11 implements `RecoverFromDeviceLost`; Vulkan/Metal/OpenGL throw NotSupportedException (Veldrid gap, not a Silky/FluidUI bug).
+
 ### Latest checkpoint (2026-10-31 21:00): typed slot arguments DONE in Veldrid AND Silky; alloc regressions fixed; Silky unpublished
 Spec: `BUGFIX_ShaderInterfaceContract_TypedSlotArguments.md`. Veldrid commits `8e056c13` (typed slot arguments, 5.261031.180305) ->
 `0fcb886c` -> `f06c05b0` (published **5.261031.200011**). Silky commit **35c64e2c** (floor bumped to 200011).
@@ -72,10 +82,10 @@ Veldrid is committed (56e42ba3) and published (5.261031.163330). FluidUI still h
 
 | Repo | Code checkpoint | Current consumer dependency floor / state |
 |---|---|---|
-| AN_Veldrid | **f06c05b0** (0fcb886c span-typed alloc-free bind; f06c05b0 alloc-free verified set ctor; 8e056c13 typed slot arguments) | Published runtime **5.261031.200011**, including ImGui package. ContractTests 73 passed, LifetimeTests 11 passed. |
+| AN_Veldrid | **00f160f4** (IsDisposed on typed storage; f06c05b0 alloc-free verified set ctor; 0fcb886c span-typed alloc-free bind; 8e056c13 typed slot arguments) | Published runtime **5.261031.214031**, including ImGui package. ContractTests 73 passed, LifetimeTests 11 passed. |
 | AN_VeldridSpirv | efb170c | Latest published compiler **5.261031.121914**; source still references Veldrid **5.261031.121302** (old API). Needs migration before rebuilding against S8. |
-| AN_SilkyNvg | **35c64e2c** renderer fully migrated to typed slot arguments | Runtime floor **[5.261031.200011,)**; compiler floor **[5.261031.114910,)**. Builds 0 errors; unit 383/383; graphical D3D11 39/42 (3 pre-existing); NOT yet published - see 2026-10-31 21:00 checkpoint. |
-| AN_FluidUI | e6da1957 | Still old API: Veldrid [5.261031.114508,), SPIRV [5.261031.114910,), Silky [1.261031.115316,). Last published FluidUI **0.261031.115758**. |
+| AN_SilkyNvg | **eb805e3a** (35c64e2c renderer on typed slot arguments; eb805e3a device-lost recovery tests moved here) | Published **1.261031.214635**. Runtime floor **[5.261031.214031,)**; compiler floor **[5.261031.114910,)**. Unit 386/386; graphical D3D11 39/42 (3 pre-existing), Vulkan 17/42 (all pre-existing; no Vulkan golds). |
+| AN_FluidUI | **33aac265** StretchBlit + GameCompositor_Test on typed shapes; windowed GPU recovery test | Published **0.261031.220130**. Veldrid [5.261031.214031,), Silky [1.261031.214635,), SPIRV [5.261031.114910,) (compile tool only; works against new Veldrid). Unit 2,580 pass / 9 pre-existing fails; WPT fluid:/verifyhtml/** 322 run, 0 new divergences. Plan: AN_FluidUI/_BUGFIX/BUGFIX_TypedShapeMigration_IMPL.md. |
 | AN_Monsters | 0cf0651 code; **145068a** handoff | Old S7 API: Veldrid [5.261031.122406,), SPIRV [5.261031.121914,), FluidUI 0.261031.115758. Direct RenderKit project reference into ArcaneSiege. |
 | AN_ArcaneSiege | fc9d1e0 code; **ab6a68d** handoff | Old S7 API: Veldrid [5.261031.122406,), SPIRV [5.261031.121914,), FluidUI [0.261031.115758,). TOMF gameplay parked. |
 

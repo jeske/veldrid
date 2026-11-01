@@ -74,18 +74,20 @@ Raw-positional constructors (`ResourceLayoutDescription(ResourceLayoutElementDes
 
 - [x] `ShaderPipelineShape.cs`: shapes are verified descriptors + storage factories. No bound state, no set cache, no verbs, no pipeline creation.
       Slots gain `With(...)`; `UniformBlock` keeps `CreateBuffer/CreateSharedBuffer/CreateArena` and gains `ResolveMemberOffset` (for `cl.UpdateBuffer(block, expr, v)`).
-- [ ] `ResourceLayoutDescription(params ShapeSlot[])`; raw ctor internal. `ResourceLayout.VerifiedShape/VerifiedSetIndex`.
-- [ ] `ResourceSetDescription(ResourceLayout, params ShapeResourceBinding[])`; raw ctor internal. `ResourceSet.VerifiedShape/VerifiedSetIndex/VerifiedOffsetArenas`.
-- [ ] `VertexInput` non-generic base; `ShaderSetDescription(VertexInput[], Shader[][, SpecializationConstant[]])`; raw ctors internal; `VerifiedShape`.
-- [ ] `ResourceFactory`: `CreateResourceLayout`, `CreateResourceSet`, `CreateGraphicsPipeline`, `CreateComputePipeline` public with the checks above.
-- [ ] `CommandList`: typed `SetVertexBuffer`, `SetGraphicsResourceSet`, `SetComputeResourceSet`, `UpdateBuffer` forms (forwarding). `uint` forms stay internal.
-- [ ] `ShapeCommandBindings`: type-based vertex readiness; shape-identity set readiness.
-- [ ] Storage types lose their verbs (done): `ShaderUniformBuffer.Update`, `ShaderUniformArena.Upload`, `ShaderVertexBuffer.Update`.
-- [ ] ImGui: same-name forms; explicit per-texture `ResourceSet` cache as its pre-S8 code had.
-- [ ] ContractTests rewritten to the same-name forms; new: same-`TVertex` pipeline switch needs no rebind / different-`TVertex` throws; set from another
+- [x] `ResourceLayoutDescription(params ShapeSlot[])`; raw ctor internal. `ResourceLayout.VerifiedShape/VerifiedSetIndex`.
+- [x] `ResourceSetDescription(ResourceLayout, params ShapeResourceBinding[])`; raw ctor internal. `ResourceSet.VerifiedShape/VerifiedSetIndex/VerifiedOffsetArenas`.
+      (f06c05b0: allocation-free on the happy path - consumers build these per draw for transient sets.)
+- [x] `VertexInput` non-generic base; `ShaderSetDescription(VertexInput[], Shader[][, SpecializationConstant[]])`; raw ctors internal; `VerifiedShape`.
+- [x] `ResourceFactory`: `CreateResourceLayout`, `CreateResourceSet`, `CreateGraphicsPipeline`, `CreateComputePipeline` public with the checks above.
+- [x] `CommandList`: typed `SetVertexBuffer`, `SetGraphicsResourceSet`, `SetComputeResourceSet`, `UpdateBuffer` forms (forwarding). `uint` forms stay internal.
+      (0fcb886c: `params ReadOnlySpan<UniformArenaElement>` + stackalloc offsets, zero per-draw allocation; internal plumbing is `ReadOnlySpan<uint>`.)
+- [x] `ShapeCommandBindings`: type-based vertex readiness; shape-identity set readiness.
+- [x] Storage types lose their verbs (done): `ShaderUniformBuffer.Update`, `ShaderUniformArena.Upload`, `ShaderVertexBuffer.Update`.
+- [x] ImGui: same-name forms; explicit per-texture `ResourceSet` cache as its pre-S8 code had.
+- [x] ContractTests rewritten to the same-name forms; new: same-`TVertex` pipeline switch needs no rebind / different-`TVertex` throws; set from another
       shape rejected; wrong/missing/duplicate slot in layout or set rejected; arena elements land (readback). StableABI gate: every S7 public
       `CommandList`/`ResourceFactory`/description API exists with the same name, only `uint`/positional -> typed.
-- [ ] Build, 100% ContractTests, commit, publish, record version.
+- [x] Build, 100% ContractTests (73/73), commit, publish, record version: **5.261031.200011** (f06c05b0).
 
 ## Silky transformation (mechanical, after the Veldrid publish)
 

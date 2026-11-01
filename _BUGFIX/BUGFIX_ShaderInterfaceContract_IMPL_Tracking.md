@@ -1,6 +1,6 @@
 # Shader interface contract - implementation tracking and handoff
 
-Updated 2026-10-31 16:02 (explicit allocation and device-update rename checkpoint). **READ THIS FIRST in the next session.**
+Updated 2026-10-31 21:00 (explicit allocation and device-update rename checkpoint). **READ THIS FIRST in the next session.**
 Design/rationale: `BUGFIX_ShaderInterfaceContract_NameVerified.md` in this directory.
 This tracking file is the authority for current status; historical checked boxes and green gates in the design do NOT mean S8 is complete.
 
@@ -9,6 +9,30 @@ This tracking file is the authority for current status; historical checked boxes
 **New prerequisite from typed-buffer review:** see [Typed buffer access policies](BUGFIX_TypedBufferAccessPolicies_IMPL.md) and [initial backend matrix / decisions](BUGFIX_TypedBufferAccessPolicies_Matrix.md).
 User approved separating binding-offset selection from storage/update policy and the name `[UniformBufferBindingTimeOffsetSelectable]`.
 That allocation defect is fixed in the unpublished working tree: Bind creates verified handles/layouts, not uniform storage. UniformBlock.CreateBuffer(usage), VertexInput.CreateBuffer(capacity, usage), and UniformBlock.CreateArena(device, capacity, usage) require explicit choices. No mandatory CPU shadow/staging and no hidden widened member uploads. ImGui is migrated; Silky still references the previous package.
+
+### Latest checkpoint (2026-10-31 21:00): typed slot arguments DONE in Veldrid AND Silky; alloc regressions fixed; Silky unpublished
+Spec: `BUGFIX_ShaderInterfaceContract_TypedSlotArguments.md`. Veldrid commits `8e056c13` (typed slot arguments, 5.261031.180305) ->
+`0fcb886c` -> `f06c05b0` (published **5.261031.200011**). Silky commit **35c64e2c** (floor bumped to 200011).
+- **Alloc regression found by Silky's `[ALLOC]` gates and fixed in Veldrid:** the 8e056c13 typed `SetGraphicsResourceSet(rs, params UniformArenaElement[])`
+  allocated twice per draw (call-site params array + internal `new uint[]`). Now `params ReadOnlySpan<UniformArenaElement>` (C# 13; Veldrid
+  `LangVersion` 13.0, **callers need .NET 9 SDK + LangVersion >= 13**) with offsets in a `stackalloc`, and the whole internal
+  `(uint count, ref uint)` dynamic-offset plumbing (CommandList, *Core, D3D11, Vk, MTL, OpenGL recorder/executor, BoundResourceSetInfo,
+  SmallFixedOrDynamicArray) is `ReadOnlySpan<uint>` - no `Unsafe.Add` on offsets anywhere. Second source: the verified
+  `ResourceSetDescription` ctor allocated a violations List + LINQ per transient set (clip-mask/filter sets per draw); now allocation-free on
+  the happy path (`ShaderPipelineShape.SlotsOfSetSpan` cached per set in binding order). Both gates closed: ScissorIntersectTest 134,856 B,
+  PdfFidelityTest 180,016 B steady.
+- **Pre-existing failures confirmed by git worktree of 75bb0fca (`C:\PROJECTS\_silky_base_75bb0fca`, needs junction `SafeStbTrueTypeSharp` -> `C:\PROJECTS\AN_SilkyNvg\SafeStbTrueTypeSharp`):**
+  D3D11: ColorPrecisionTest (no gold), ScissorTransform3DTest 618/80255 (0.770%), SubpixelPhasedText independent_letters_small 31/548.
+  Vulkan: 21 tests have NO Vulkan gold in the repo; BlendClipTest 9.404%, BlendModeTest 5.698%, FontShapeTortureTest 9.409%,
+  TargetBufferRenderingTest CRASH-GUARD - all byte-identical on baseline. Vulkan full sweep 17/42 on both trees.
+- **Unreproduced hang:** ClipMaskMemoryTest on Vulkan sat 32 min (window unresponsive) once inside the full sweep; 0/9 reproductions in isolation or
+  in the BlendPaint->ClipMaskMemory sequence. `tests/graphical/TestCrashGuard.cs` now has a watchdog (default 300 s, `SILKY_TEST_WATCHDOG_SECONDS`,
+  0 disables; captures all managed stacks via `dotnet-stack report -p <self>`; exit 71) and `scripts/testRunner.cs` labels exit 71 `HANG`, perf
+  lanes get 1800 s. Next occurrence self-reports with stacks.
+- Veldrid `BindingTests` (console Exe) crashes in `Test_OldPath_UsesSequentialCounters` on 8e056c13 too: it builds a raw positional layout the
+  name-verified contract rejects. Pre-existing S8 casualty; update or delete that test.
+- Ungated observation: ClipMaskMemoryTest Vulkan `[ALLOC] steady` 9.37 MB vs 8.68 MB on baseline (+~325 B per transient set: wider
+  `ShapeResourceBinding[]` + second `BoundResources` copy). Record-only lane; revisit if a gate latches it.
 
 ### Latest checkpoint (2026-10-31 16:30): AllowUpdateBufferOutsideCommandList permission DONE; Silky migration NEXT
 - `BufferDescription.AllowUpdateBufferOutsideCommandList` (default false, 5-arg ctor overload, in Equals/Hash) -> stamped onto concrete
@@ -48,9 +72,9 @@ Veldrid is committed (56e42ba3) and published (5.261031.163330). FluidUI still h
 
 | Repo | Code checkpoint | Current consumer dependency floor / state |
 |---|---|---|
-| AN_Veldrid | **d01a60cc** + ShaderUniformBuffer<T> shared typed storage (56e42ba3 explicit allocation + UpdateBufferOutsideCommandList + permission) | Published runtime **5.261031.164332**, including ImGui package. ContractTests 70 passed. |
+| AN_Veldrid | **f06c05b0** (0fcb886c span-typed alloc-free bind; f06c05b0 alloc-free verified set ctor; 8e056c13 typed slot arguments) | Published runtime **5.261031.200011**, including ImGui package. ContractTests 73 passed, LifetimeTests 11 passed. |
 | AN_VeldridSpirv | efb170c | Latest published compiler **5.261031.121914**; source still references Veldrid **5.261031.121302** (old API). Needs migration before rebuilding against S8. |
-| AN_SilkyNvg | **5e0d8bab** full in-progress migration checkpoint | Runtime floor **[5.261031.143705,)**; compiler floor **[5.261031.114910,)**. Renderer currently broken; do NOT publish it as validated. |
+| AN_SilkyNvg | **35c64e2c** renderer fully migrated to typed slot arguments | Runtime floor **[5.261031.200011,)**; compiler floor **[5.261031.114910,)**. Builds 0 errors; unit 383/383; graphical D3D11 39/42 (3 pre-existing); NOT yet published - see 2026-10-31 21:00 checkpoint. |
 | AN_FluidUI | e6da1957 | Still old API: Veldrid [5.261031.114508,), SPIRV [5.261031.114910,), Silky [1.261031.115316,). Last published FluidUI **0.261031.115758**. |
 | AN_Monsters | 0cf0651 code; **145068a** handoff | Old S7 API: Veldrid [5.261031.122406,), SPIRV [5.261031.121914,), FluidUI 0.261031.115758. Direct RenderKit project reference into ArcaneSiege. |
 | AN_ArcaneSiege | fc9d1e0 code; **ab6a68d** handoff | Old S7 API: Veldrid [5.261031.122406,), SPIRV [5.261031.121914,), FluidUI [0.261031.115758,). TOMF gameplay parked. |

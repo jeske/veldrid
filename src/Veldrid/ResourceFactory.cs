@@ -44,8 +44,13 @@ namespace Veldrid
         {
             // Typed slot arguments (BUGFIX_ShaderInterfaceContract_TypedSlotArguments.md): the shader set and every layout carry the
             // shape they were built from; they must agree. Then the SAME V7 verification and backend path as before.
-            var layoutShape = RequireOneShapeForLayouts(description.ResourceLayouts, "graphics pipeline");
             var shaderSetShape = description.ShaderSet.VerifiedShape;
+            // A shape with vertex inputs and NO resource sets (a clip-space debug quad: `in Position, in Color`, nothing bound) has no
+            // layouts to name it - its shader set does. Every other pipeline is named by its layouts, which must cover every set.
+            bool noLayouts = description.ResourceLayouts is null || description.ResourceLayouts.Length == 0;
+            var layoutShape = noLayouts && shaderSetShape is { SetCount: 0 }
+                ? shaderSetShape
+                : RequireOneShapeForLayouts(description.ResourceLayouts, "graphics pipeline");
             if (shaderSetShape is null)
             {
                 // Input-less shader set (fullscreen triangle): the layouts name the shape; the shaders must still be its bundle's.

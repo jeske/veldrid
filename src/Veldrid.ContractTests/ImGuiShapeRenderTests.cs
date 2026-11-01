@@ -45,11 +45,17 @@ public sealed class ImGuiShapeRenderTests
             commands.SetVertexBuffer(shape.Vertices, vertices);
             commands.Draw(3);
 
-            // A set created for ANOTHER shape instance is refused for this pipeline (same bundle, different verified instance).
+            // A set from ANOTHER shape instance with an IDENTICAL layout is legal (GPU descriptor-set compatibility); a set whose
+            // layout differs (the arena shape's offset-selectable Projection at set 0) is refused.
             using var other = ShaderPipelineShape.Bind<ImGuiShape>(bundle, factory);
             using var otherLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(other.FontTexture));
             using var otherSet = factory.CreateResourceSet(new ResourceSetDescription(otherLayout, other.FontTexture.With(white)));
-            Assert.Throws<ShaderContractException>(() => commands.SetGraphicsResourceSet(otherSet));
+            commands.SetGraphicsResourceSet(otherSet);
+            using var arenaShape = ShaderPipelineShape.Bind<UniformArenaRenderTests.ArenaShape>(bundle, factory);
+            using var arena = arenaShape.Projection.CreateArena(device, 1, BufferUsage.UniformBuffer);
+            using var arenaLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(arenaShape.Projection, arenaShape.FontSampler));
+            using var arenaSet = factory.CreateResourceSet(new ResourceSetDescription(arenaLayout, arenaShape.Projection.With(arena), arenaShape.FontSampler.With(device.PointSampler)));
+            Assert.Throws<ShaderContractException>(() => commands.SetGraphicsResourceSet(arenaSet, new UniformArenaElement(0)));
             // Binding a disposed texture through a slot is refused at binding time.
             using var removed = factory.CreateTexture(TextureDescription.Texture2D(1, 1, 1, 1, PixelFormat.R8G8B8A8UNorm, TextureUsage.Sampled));
             removed.Dispose();

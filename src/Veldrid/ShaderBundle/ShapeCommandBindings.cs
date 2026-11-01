@@ -50,7 +50,8 @@ internal sealed class ShapeCommandBindings
 
     internal void MarkResourceSet(ResourceSet set)
     {
-        RequireOwner(set.VerifiedShape);
+        if (owner is null) throw Failure("no verified pipeline selected; select the pipeline before binding its resource sets");
+        if (!owner.AcceptsResourceSet(set, set.VerifiedSetIndex)) throw Failure($"resource set {set.VerifiedSetIndex} was created for {set.VerifiedShape?.GetType().Name}, whose layout for that set differs from the selected pipeline's shape ({owner.GetType().Name}); bind a set of a layout-identical shape");
         uint index = set.VerifiedSetIndex;
         if (index >= boundSets.Length) Array.Resize(ref boundSets, (int)index + 1);
         boundSets[index] = set;
@@ -72,7 +73,7 @@ internal sealed class ShapeCommandBindings
         {
             ResourceSet bound = set < boundSets.Length ? boundSets[set] : null;
             if (bound is null) throw Failure($"resource set {set} is not bound for this pipeline");
-            if (!ReferenceEquals(bound.VerifiedShape, owner)) throw Failure($"resource set {set} was created for {bound.VerifiedShape?.GetType().Name}, not the selected pipeline's shape; bind a set of this shape");
+            if (!owner.AcceptsResourceSet(bound, set)) throw Failure($"resource set {set} was created for {bound.VerifiedShape?.GetType().Name}, whose layout differs from the selected pipeline's shape ({owner.GetType().Name}); bind a layout-identical set");
             if (bound.IsDisposed) throw Failure($"resource set {set} is disposed");
         }
     }

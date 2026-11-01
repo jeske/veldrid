@@ -417,7 +417,7 @@ namespace Veldrid
             elements ??= Array.Empty<UniformArenaElement>();
             if (rs.VerifiedShape is null)
                 throw new ShaderContractException("command bindings", [new ShaderContractViolation("BIND", "ResourceSet", "raw set", "a set created from shape slot bindings", "only verified sets can be bound")]);
-            bindings.RequireOwner(rs.VerifiedShape);
+            // Ownership/compatibility is checked in MarkResourceSet (layout-identical sets from another shape instance are legal, as on the GPU).
             var arenas = rs.VerifiedOffsetArenas;
             if (elements.Length != arenas.Length)
                 throw new ShaderContractException(rs.VerifiedShape.BundleName, [new ShaderContractViolation("BIND", $"set {rs.VerifiedSetIndex}", $"{elements.Length} element(s)", $"{arenas.Length} offset-selectable binding(s)", "supply one arena element per [UniformBufferBindingTimeOffsetSelectable] binding, in binding order")]);

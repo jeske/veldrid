@@ -334,6 +334,26 @@ namespace Veldrid
         }
         internal IEnumerable<ShapeSlot> SlotsOfSet(uint set) => slots.Where(s => s.Set == set);
 
+        /// <summary>
+        ///     Whether a verified <see cref="ResourceSet"/> may be bound at <paramref name="set"/> for THIS shape's pipelines. True when the
+        ///     set was created from this instance, or from any shape whose compiled layout for that set is element-wise identical (name,
+        ///     kind, stages, options). That is the GPU's rule (descriptor-set layout compatibility), and it is name-sound: the set's
+        ///     resources were checked against the same names and kinds this shape declares. Different shape, different names => refused.
+        /// </summary>
+        internal bool AcceptsResourceSet(ResourceSet rs, uint set)
+        {
+            if (rs.VerifiedShape is null || set >= compiledLayouts.Length) return false;
+            if (ReferenceEquals(rs.VerifiedShape, this)) return true;
+            if (rs.VerifiedSetIndex != set) return false;
+            var mine = compiledLayouts[set].Elements ?? Array.Empty<ResourceLayoutElementDescription>();
+            var theirs = rs.VerifiedShape.CompiledLayoutFor(rs.VerifiedSetIndex).Elements ?? Array.Empty<ResourceLayoutElementDescription>();
+            if (mine.Length != theirs.Length) return false;
+            for (int i = 0; i < mine.Length; i++)
+                if (mine[i].Name != theirs[i].Name || mine[i].Kind != theirs[i].Kind || mine[i].Stages != theirs[i].Stages || mine[i].Options != theirs[i].Options)
+                    return false;
+            return true;
+        }
+
         // No overridable descriptor hook: validation must see the actual fields. Generated descriptors (deferred) must preserve this invariant.
         private ShapeDescriptor Describe() => ShapeDescriptorBuilder.FromReflection(GetType());
 

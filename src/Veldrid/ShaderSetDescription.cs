@@ -60,7 +60,7 @@ namespace Veldrid
         ///     vertex layout replaced by the typed <see cref="VertexInput"/> that owns it (array position was the vertex slot index).
         ///     All inputs must belong to one shape and appear in slot order; the shaders must be that shape's bundle shaders.
         /// </summary>
-        /// <param name="vertexInputs">The shape's <c>VertexInput</c> fields, in slot order.</param>
+        /// <param name="vertexInputs">The shape's <c>VertexInput</c> fields, in slot order (EMPTY for shaders with no vertex attributes - fullscreen triangles from <c>gl_VertexIndex</c>; the pipeline's shape then comes from its layouts).</param>
         /// <param name="shaders">The shape's bundle shaders (<c>shape.Bundle.Shaders</c>).</param>
         /// <param name="specializations">Specialization constants, if the GLSL declares any.</param>
         public ShaderSetDescription(VertexInput[] vertexInputs, Shader[] shaders, SpecializationConstant[] specializations = null)
@@ -79,8 +79,14 @@ namespace Veldrid
                 else if (input.SlotIndex != i) violations.Add(new ShaderContractViolation("SHADERSET", $"[{i}]", $"slot {input.SlotIndex}", $"slot {i}", "vertex inputs are listed in slot order"));
             }
             if (violations.Count > 0) throw new ShaderContractException("shader set", violations);
-            if (shape is null && vertexInputs.Length == 0)
-                throw new ShaderContractException("shader set", [new ShaderContractViolation("SHADERSET", "vertexInputs", "empty", "the shape's VertexInput fields", "a graphics shader set names its vertex inputs")]);
+            if (vertexInputs.Length == 0)
+            {
+                VertexLayouts = Array.Empty<VertexLayoutDescription>();
+                Shaders = shaders;
+                Specializations = specializations;
+                VerifiedShape = null;   // established by the pipeline's layouts in ResourceFactory.CreateGraphicsPipeline
+                return;
+            }
             shape.EnsureBound();
             if (vertexInputs.Length != shape.VertexInputCount)
                 violations.Add(new ShaderContractViolation("SHADERSET", "vertexInputs", $"{vertexInputs.Length}", $"{shape.VertexInputCount}", "every VertexInput of the shape must be listed"));

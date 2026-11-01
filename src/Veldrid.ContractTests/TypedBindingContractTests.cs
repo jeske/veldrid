@@ -96,9 +96,9 @@ public sealed class TypedBindingContractTests
             commands.UpdateBuffer(a.Projection, new ImGuiProjection { projection = Matrix4x4.Identity });
             commands.UpdateBuffer(b.Projection, new ImGuiProjection { projection = Matrix4x4.Identity });
 
-            // No pipeline: resource sets need the pipeline (as the backends do); the vertex buffer does NOT - it is command-list state,
-            // bindable up front and shared across every family with the same vertex type (Silky binds once per flush).
-            Assert.Throws<ShaderContractException>(() => commands.SetGraphicsResourceSet(gpuA.MainSet));
+            // No pipeline: resource sets need the pipeline (Veldrid's own VALIDATE_USAGE rule, as the backends require); the vertex
+            // buffer does NOT - it is command-list state, bindable up front and shared across every family with the same vertex type.
+            Assert.Throws<VeldridException>(() => commands.SetGraphicsResourceSet(gpuA.MainSet));
             commands.SetVertexBuffer(a.Vertices, vertices);
 
             // Pipeline A: a draw needs a matching vertex buffer and BOTH of A's sets bound.
@@ -108,25 +108,22 @@ public sealed class TypedBindingContractTests
             Assert.Throws<ShaderContractException>(() => commands.Draw(3));                     // set 1 missing
             commands.SetGraphicsResourceSet(gpuA.TextureSet);
             commands.Draw(3);
-            // B's sets are refused while A's pipeline is selected (provenance, not position); B's vertex input binds the same
-            // typed buffer to the same slot - legal, since the type is what the draw checks.
-            Assert.Throws<ShaderContractException>(() => commands.SetGraphicsResourceSet(gpuB.MainSet));
-            commands.SetVertexBuffer(b.Vertices, vertices);
-
-            // Switch to pipeline B: the vertex buffer STAYS bound (same TVertex) exactly as on the GPU - no rebind required;
-            // the sets do not carry over (they belong to A) and must be B's.
-            commands.SetPipeline(gpuB.Pipeline);
-            Assert.Throws<ShaderContractException>(() => commands.Draw(3));                     // A's sets are not B's
+            // B is a different shape INSTANCE with a layout-identical set 0: its set is legal under A's pipeline, exactly as the GPU
+            // treats compatible descriptor-set layouts (Silky binds one solid-fill set to even-odd pipelines of another bundle).
             commands.SetGraphicsResourceSet(gpuB.MainSet);
-            commands.SetGraphicsResourceSet(gpuB.TextureSet);
-            commands.Draw(3);                                                                  // vertex buffer survived the switch
-
-            // Back to A: A's sets are still the ones bound at set 0/1? No - B's are. Rebind A's; vertex buffer still fine.
-            commands.SetPipeline(gpuA.Pipeline);
-            Assert.Throws<ShaderContractException>(() => commands.Draw(3));
-            commands.SetGraphicsResourceSet(gpuA.MainSet);
-            commands.SetGraphicsResourceSet(gpuA.TextureSet);
+            commands.SetVertexBuffer(b.Vertices, vertices);
             commands.Draw(3);
+
+            // Switch to pipeline B: vertex buffer and layout-identical sets both STAY bound, exactly as on the GPU - no rebinds.
+            commands.SetPipeline(gpuB.Pipeline);
+            commands.Draw(3);
+
+            // A set whose layout DIFFERS is refused: the arena shape's set 0 has an offset-selectable Projection.
+            using var arenaShape = ShaderPipelineShape.Bind<UniformArenaRenderTests.ArenaShape>(bundle, factory);
+            using var arena = arenaShape.Projection.CreateArena(device, 1, BufferUsage.UniformBuffer);
+            using var arenaLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(arenaShape.Projection, arenaShape.FontSampler));
+            using var arenaSet = factory.CreateResourceSet(new ResourceSetDescription(arenaLayout, arenaShape.Projection.With(arena), arenaShape.FontSampler.With(device.PointSampler)));
+            Assert.Throws<ShaderContractException>(() => commands.SetGraphicsResourceSet(arenaSet, new UniformArenaElement(0)));
             commands.End();
         }
         finally { foreach (var shader in bundle.Shaders) shader.Dispose(); }

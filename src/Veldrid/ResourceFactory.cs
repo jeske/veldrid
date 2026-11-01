@@ -44,10 +44,18 @@ namespace Veldrid
         {
             // Typed slot arguments (BUGFIX_ShaderInterfaceContract_TypedSlotArguments.md): the shader set and every layout carry the
             // shape they were built from; they must agree. Then the SAME V7 verification and backend path as before.
-            var shaderSetShape = description.ShaderSet.VerifiedShape
-                ?? throw new ShaderContractException("graphics pipeline", [new ShaderContractViolation("SHADERSET", "ShaderSet", "raw vertex layouts", "new ShaderSetDescription(new VertexInput[]{ shape.X }, shape.Bundle.Shaders)", "pipelines take the shape's vertex inputs")]);
             var layoutShape = RequireOneShapeForLayouts(description.ResourceLayouts, "graphics pipeline");
-            if (!ReferenceEquals(shaderSetShape, layoutShape))
+            var shaderSetShape = description.ShaderSet.VerifiedShape;
+            if (shaderSetShape is null)
+            {
+                // Input-less shader set (fullscreen triangle): the layouts name the shape; the shaders must still be its bundle's.
+                if (description.ShaderSet.VertexLayouts is { Length: > 0 })
+                    throw new ShaderContractException("graphics pipeline", [new ShaderContractViolation("SHADERSET", "ShaderSet", "raw vertex layouts", "new ShaderSetDescription(new VertexInput[]{ shape.X }, shape.Bundle.Shaders)", "pipelines take the shape's vertex inputs")]);
+                if (layoutShape.VertexInputCount != 0 || !Util.ArrayEquals(description.ShaderSet.Shaders, layoutShape.Bundle.Shaders))
+                    throw new ShaderContractException(layoutShape.BundleName, [new ShaderContractViolation(ShaderContractVerifier.Rule_V7_ShaderSet, "ShaderSet", "inputs/shaders of another shape", $"{layoutShape.GetType().Name}: {layoutShape.VertexInputCount} input(s), its bundle shaders", "shader set and layouts must come from the same shape instance")]);
+                shaderSetShape = layoutShape;
+            }
+            else if (!ReferenceEquals(shaderSetShape, layoutShape))
                 throw new ShaderContractException(shaderSetShape.BundleName, [new ShaderContractViolation("SHAPE", "ResourceLayouts", $"layouts of {layoutShape.GetType().Name}", shaderSetShape.GetType().Name, "shader set and layouts must come from the same shape instance")]);
             // Shader interface contract V7 (AN_Veldrid/_BUGFIX/BUGFIX_ShaderInterfaceContract_NameVerified.md): if the shaders came from a
             // .vdshader bundle, the vertex layouts, resource layouts and registered uniform structs must match the compiled interface by

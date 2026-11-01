@@ -209,7 +209,7 @@ namespace Veldrid
         /// <param name="rs">The new <see cref="ResourceSet" />.</param>
         internal unsafe void SetGraphicsResourceSet(uint slot, ResourceSet rs)
         {
-            SetGraphicsResourceSet(slot, rs, 0, ref Unsafe.AsRef<uint>(null));
+            SetGraphicsResourceSet(slot, rs, ReadOnlySpan<uint>.Empty);
         }
 
         /// <summary>
@@ -230,12 +230,7 @@ namespace Veldrid
         /// </param>
         internal void SetGraphicsResourceSet(uint slot, ResourceSet rs, uint[] dynamicOffsets)
         {
-            if (dynamicOffsets.Length == 0)
-            {
-                SetGraphicsResourceSet(slot, rs);
-                return;
-            }
-            SetGraphicsResourceSet(slot, rs, (uint)dynamicOffsets.Length, ref dynamicOffsets[0]);
+            SetGraphicsResourceSet(slot, rs, dynamicOffsets.AsSpan());
         }
 
         /// <summary>
@@ -244,19 +239,14 @@ namespace Veldrid
         /// </summary>
         /// <param name="slot">The resource slot.</param>
         /// <param name="rs">The new <see cref="ResourceSet" />.</param>
-        /// <param name="dynamicOffsetsCount">
-        ///     The number of dynamic offsets being used. This must be equal to the number of
-        ///     dynamic buffers (<see cref="ResourceLayoutElementOptions.DynamicBinding" />) contained in the
-        ///     <see cref="ResourceSet" />.
-        /// </param>
         /// <param name="dynamicOffsets">
-        ///     A reference to the first of a series of offsets which will be applied to the dynamic
-        ///     buffers contained in the <see cref="ResourceSet" />. These offsets are applied in the order that dynamic buffer
-        ///     elements appear in the <see cref="ResourceSet" />. Each of these offsets must be a multiple of either
+        ///     The offsets applied to the dynamic buffers contained in the <see cref="ResourceSet" />, one per dynamic buffer
+        ///     (<see cref="ResourceLayoutElementOptions.DynamicBinding" />), in the order those elements appear in the set. The span
+        ///     carries its own length, so no separate count can disagree with the storage. Each offset must be a multiple of either
         ///     <see cref="GraphicsDevice.UniformBufferMinOffsetAlignment" /> or
         ///     <see cref="GraphicsDevice.StructuredBufferMinOffsetAlignment" />, depending on the kind of resource.
         /// </param>
-        internal void SetGraphicsResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
+        internal void SetGraphicsResourceSet(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
 #if VALIDATE_USAGE
             if (GraphicsPipeline == null) throw new VeldridException($"A graphics Pipeline must be active before {nameof(SetGraphicsResourceSet)} can be called.");
@@ -292,12 +282,12 @@ namespace Veldrid
                 }
             }
 
-            if (rs.Layout.DynamicBufferCount != dynamicOffsetsCount)
+            if (rs.Layout.DynamicBufferCount != dynamicOffsets.Length)
             {
                 throw new VeldridException(
                     "A dynamic offset must be provided for each resource that specifies " +
                     $"{nameof(ResourceLayoutElementOptions)}.{nameof(ResourceLayoutElementOptions.DynamicBinding)}. " +
-                    $"{rs.Layout.DynamicBufferCount} offsets were expected, but only {dynamicOffsetsCount} were provided.");
+                    $"{rs.Layout.DynamicBufferCount} offsets were expected, but only {dynamicOffsets.Length} were provided.");
             }
 
             uint dynamicOffsetIndex = 0;
@@ -309,7 +299,7 @@ namespace Veldrid
                     uint requiredAlignment = layoutDesc.Elements[i].Kind == ResourceKind.UniformBuffer
                         ? uniformBufferAlignment
                         : structuredBufferAlignment;
-                    uint desiredOffset = Unsafe.Add(ref dynamicOffsets, (int)dynamicOffsetIndex);
+                    uint desiredOffset = dynamicOffsets[(int)dynamicOffsetIndex];
                     dynamicOffsetIndex += 1;
                     var range = Util.GetBufferRange(rs.Resources[i], desiredOffset);
 
@@ -324,7 +314,7 @@ namespace Veldrid
             }
 
 #endif
-            SetGraphicsResourceSetCore(slot, rs, dynamicOffsetsCount, ref dynamicOffsets);
+            SetGraphicsResourceSetCore(slot, rs, dynamicOffsets);
         }
 
         /// <summary>
@@ -335,7 +325,7 @@ namespace Veldrid
         /// <param name="rs">The new <see cref="ResourceSet" />.</param>
         internal unsafe void SetComputeResourceSet(uint slot, ResourceSet rs)
         {
-            SetComputeResourceSet(slot, rs, 0, ref Unsafe.AsRef<uint>(null));
+            SetComputeResourceSet(slot, rs, ReadOnlySpan<uint>.Empty);
         }
 
         /// <summary>
@@ -353,12 +343,7 @@ namespace Veldrid
         /// </param>
         internal void SetComputeResourceSet(uint slot, ResourceSet rs, uint[] dynamicOffsets)
         {
-            if (dynamicOffsets.Length == 0)
-            {
-                SetComputeResourceSet(slot, rs);
-                return;
-            }
-            SetComputeResourceSet(slot, rs, (uint)dynamicOffsets.Length, ref dynamicOffsets[0]);
+            SetComputeResourceSet(slot, rs, dynamicOffsets.AsSpan());
         }
 
         /// <summary>
@@ -367,15 +352,10 @@ namespace Veldrid
         /// </summary>
         /// <param name="slot">The resource slot.</param>
         /// <param name="rs">The new <see cref="ResourceSet" />.</param>
-        /// <param name="dynamicOffsetsCount">
-        ///     The number of dynamic offsets being used. This must be equal to the number of
-        ///     dynamic buffers (<see cref="ResourceLayoutElementOptions.DynamicBinding" />) contained in the
-        ///     <see cref="ResourceSet" />.
-        /// </param>
         /// <param name="dynamicOffsets">
-        ///     A reference to the first of a series of offsets which will be applied to the dynamic
-        ///     buffers contained in the <see cref="ResourceSet" />. These offsets are applied in the order that dynamic buffer
-        ///     elements appear in the <see cref="ResourceSet" />. Each of these offsets must be a multiple of either
+        ///     The offsets applied to the dynamic buffers contained in the <see cref="ResourceSet" />, one per dynamic buffer
+        ///     (<see cref="ResourceLayoutElementOptions.DynamicBinding" />), in the order those elements appear in the set. The span
+        ///     carries its own length. Each offset must be a multiple of either
         ///     <see cref="GraphicsDevice.UniformBufferMinOffsetAlignment" /> or
         ///     <see cref="GraphicsDevice.StructuredBufferMinOffsetAlignment" />, depending on the kind of resource.
         /// </param>
@@ -387,11 +367,12 @@ namespace Veldrid
         /// </summary>
         /// <param name="rs">A <see cref="ResourceSet" /> created from this pipeline's shape.</param>
         /// <param name="elements">The arena element selected for each offset-selectable binding, in binding order.</param>
-        public unsafe void SetComputeResourceSet(ResourceSet rs, params UniformArenaElement[] elements)
+        public void SetComputeResourceSet(ResourceSet rs, params ReadOnlySpan<UniformArenaElement> elements)
         {
-            uint slot = ResolveVerifiedSet(rs, elements, ComputeShapeBindings, out uint[] offsets);
-            if (offsets.Length == 0) SetComputeResourceSet(slot, rs, 0, ref Unsafe.AsRef<uint>(null));      // SAME CODE the uint form runs
-            else SetComputeResourceSet(slot, rs, (uint)offsets.Length, ref offsets[0]);
+            var arenas = VerifyOffsetSelectableElementCount(rs, elements.Length);
+            Span<uint> offsets = stackalloc uint[elements.Length];
+            ResolveArenaOffsets(arenas, elements, offsets);
+            SetComputeResourceSet(rs.VerifiedSetIndex, rs, offsets);
             ComputeShapeBindings.MarkResourceSet(rs);
         }
 
@@ -400,37 +381,45 @@ namespace Veldrid
         ///     index: <paramref name="rs"/> was created from a slot-built layout and carries its set index; <paramref name="elements"/>
         ///     replace the raw dynamic byte offsets (one per <see cref="UniformBufferBindingTimeOffsetSelectableAttribute"/> binding, in
         ///     binding order). The typed element can only come from the arena the set binds, so the offset is always in range and aligned.
+        ///     Allocation-free per call (hot path: one call per draw): the <c>params</c> span is compiler-provided inline storage and the
+        ///     resolved byte offsets live on the stack, exactly like the pre-typed <c>ref uint</c> form.
         /// </summary>
         /// <param name="rs">A <see cref="ResourceSet" /> created from this pipeline's shape.</param>
         /// <param name="elements">The arena element selected for each offset-selectable binding, in binding order.</param>
-        public unsafe void SetGraphicsResourceSet(ResourceSet rs, params UniformArenaElement[] elements)
+        public void SetGraphicsResourceSet(ResourceSet rs, params ReadOnlySpan<UniformArenaElement> elements)
         {
-            uint slot = ResolveVerifiedSet(rs, elements, GraphicsShapeBindings, out uint[] offsets);
-            if (offsets.Length == 0) SetGraphicsResourceSet(slot, rs, 0, ref Unsafe.AsRef<uint>(null));
-            else SetGraphicsResourceSet(slot, rs, (uint)offsets.Length, ref offsets[0]);
+            var arenas = VerifyOffsetSelectableElementCount(rs, elements.Length);
+            Span<uint> offsets = stackalloc uint[elements.Length];
+            ResolveArenaOffsets(arenas, elements, offsets);
+            SetGraphicsResourceSet(rs.VerifiedSetIndex, rs, offsets);
             GraphicsShapeBindings.MarkResourceSet(rs);
         }
 
-        private static uint ResolveVerifiedSet(ResourceSet rs, UniformArenaElement[] elements, ShapeCommandBindings bindings, out uint[] offsets)
+        /// <summary>Verifies the set is shape-built and that exactly one element was supplied per offset-selectable binding; returns those bindings' arenas.
+        /// The count (and so the callers' stackalloc) is bounded by the set's own element count, which the layout already validated against the device's dynamic-buffer limits.</summary>
+        private static IUniformArenaOffsets[] VerifyOffsetSelectableElementCount(ResourceSet rs, int elementCount)
         {
             ArgumentNullException.ThrowIfNull(rs);
-            elements ??= Array.Empty<UniformArenaElement>();
             if (rs.VerifiedShape is null)
                 throw new ShaderContractException("command bindings", [new ShaderContractViolation("BIND", "ResourceSet", "raw set", "a set created from shape slot bindings", "only verified sets can be bound")]);
             // Ownership/compatibility is checked in MarkResourceSet (layout-identical sets from another shape instance are legal, as on the GPU).
             var arenas = rs.VerifiedOffsetArenas;
-            if (elements.Length != arenas.Length)
-                throw new ShaderContractException(rs.VerifiedShape.BundleName, [new ShaderContractViolation("BIND", $"set {rs.VerifiedSetIndex}", $"{elements.Length} element(s)", $"{arenas.Length} offset-selectable binding(s)", "supply one arena element per [UniformBufferBindingTimeOffsetSelectable] binding, in binding order")]);
-            offsets = new uint[elements.Length];
+            if (elementCount != arenas.Length)
+                throw new ShaderContractException(rs.VerifiedShape.BundleName, [new ShaderContractViolation("BIND", $"set {rs.VerifiedSetIndex}", $"{elementCount} element(s)", $"{arenas.Length} offset-selectable binding(s)", "supply one arena element per [UniformBufferBindingTimeOffsetSelectable] binding, in binding order")]);
+            return arenas;
+        }
+
+        /// <summary>Writes each element's byte offset (from the arena the set actually binds) into caller-owned contiguous storage.</summary>
+        private static void ResolveArenaOffsets(IUniformArenaOffsets[] arenas, ReadOnlySpan<UniformArenaElement> elements, Span<uint> offsets)
+        {
             for (int i = 0; i < elements.Length; i++)
             {
                 arenas[i].EnsureAlive();
                 offsets[i] = arenas[i].OffsetOf(elements[i]);
             }
-            return rs.VerifiedSetIndex;
         }
 
-        internal void SetComputeResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
+        internal void SetComputeResourceSet(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
 #if VALIDATE_USAGE
             if (ComputePipeline == null) throw new VeldridException($"A compute Pipeline must be active before {nameof(SetComputeResourceSet)} can be called.");
@@ -465,7 +454,7 @@ namespace Veldrid
                 }
             }
 #endif
-            SetComputeResourceSetCore(slot, rs, dynamicOffsetsCount, ref dynamicOffsets);
+            SetComputeResourceSetCore(slot, rs, dynamicOffsets);
         }
 
         /// <summary>
@@ -1234,18 +1223,16 @@ namespace Veldrid
         /// </summary>
         /// <param name="slot"></param>
         /// <param name="rs"></param>
-        /// <param name="dynamicOffsets"></param>
-        /// <param name="dynamicOffsetsCount"></param>
-        protected abstract void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets);
+        /// <param name="dynamicOffsets">One byte offset per dynamic binding, in binding order; the span carries its own length.</param>
+        protected abstract void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets);
 
         // TODO: private protected
         /// <summary>
         /// </summary>
         /// <param name="slot"></param>
         /// <param name="set"></param>
-        /// <param name="dynamicOffsetsCount"></param>
-        /// <param name="dynamicOffsets"></param>
-        protected abstract void SetComputeResourceSetCore(uint slot, ResourceSet set, uint dynamicOffsetsCount, ref uint dynamicOffsets);
+        /// <param name="dynamicOffsets">One byte offset per dynamic binding, in binding order; the span carries its own length.</param>
+        protected abstract void SetComputeResourceSetCore(uint slot, ResourceSet set, ReadOnlySpan<uint> dynamicOffsets);
 
         /// <summary>
         ///     Performs API-specific handling of the <see cref="Veldrid.Framebuffer" /> resource.

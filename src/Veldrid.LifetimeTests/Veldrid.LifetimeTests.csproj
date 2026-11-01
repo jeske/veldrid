@@ -8,7 +8,7 @@
     <AssemblyName>Veldrid.LifetimeTests</AssemblyName>
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>12.0</LangVersion>
+    <LangVersion>13.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -293,25 +293,18 @@ namespace Veldrid.OpenGL.NoAllocEntryList
                     case set_resource_set_entry_id:
                         var srse = Unsafe.ReadUnaligned<NoAllocSetResourceSetEntry>(entryBasePtr);
                         var rs = srse.ResourceSet.Get(resourceList);
-                        uint* dynamicOffsetsPtr = srse.DynamicOffsetCount > NoAllocSetResourceSetEntry.MAX_INLINE_DYNAMIC_OFFSETS
-                            ? (uint*)srse.DynamicOffsetsBlock.Data
-                            : srse.DynamicOffsetsInline;
+                        // The recorded entry knows its own count; the executor receives a length-carrying view of exactly that many offsets.
+                        var recordedDynamicOffsets = srse.DynamicOffsetCount > NoAllocSetResourceSetEntry.MAX_INLINE_DYNAMIC_OFFSETS
+                            ? new ReadOnlySpan<uint>(srse.DynamicOffsetsBlock.Data, (int)srse.DynamicOffsetCount)
+                            : new ReadOnlySpan<uint>(srse.DynamicOffsetsInline, (int)srse.DynamicOffsetCount);
 
                         if (srse.IsGraphics)
                         {
-                            executor.SetGraphicsResourceSet(
-                                srse.Slot,
-                                rs,
-                                srse.DynamicOffsetCount,
-                                ref Unsafe.AsRef<uint>(dynamicOffsetsPtr));
+                            executor.SetGraphicsResourceSet(srse.Slot, rs, recordedDynamicOffsets);
                         }
                         else
                         {
-                            executor.SetComputeResourceSet(
-                                srse.Slot,
-                                rs,
-                                srse.DynamicOffsetCount,
-                                ref Unsafe.AsRef<uint>(dynamicOffsetsPtr));
+                            executor.SetComputeResourceSet(srse.Slot, rs, recordedDynamicOffsets);
                         }
 
                         currentOffset += set_resource_set_entry_size;
@@ -485,14 +478,14 @@ namespace Veldrid.OpenGL.NoAllocEntryList
             AddEntry(set_pipeline_entry_id, ref entry);
         }
 
-        public void SetGraphicsResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetCount, ref uint dynamicOffsets)
+        public void SetGraphicsResourceSet(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
-            setResourceSet(slot, rs, dynamicOffsetCount, ref dynamicOffsets, true);
+            setResourceSet(slot, rs, dynamicOffsets, true);
         }
 
-        public void SetComputeResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetCount, ref uint dynamicOffsets)
+        public void SetComputeResourceSet(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
-            setResourceSet(slot, rs, dynamicOffsetCount, ref dynamicOffsets, false);
+            setResourceSet(slot, rs, dynamicOffsets, false);
         }
 
         public void SetScissorRect(uint index, uint x, uint y, uint width, uint height)
@@ -596,20 +589,20 @@ namespace Veldrid.OpenGL.NoAllocEntryList
             stagingBlocks.Clear();
         }
 
-        private void setResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetCount, ref uint dynamicOffsets, bool isGraphics)
+        private void setResourceSet(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets, bool isGraphics)
         {
             NoAllocSetResourceSetEntry entry;
 
-            if (dynamicOffsetCount > NoAllocSetResourceSetEntry.MAX_INLINE_DYNAMIC_OFFSETS)
+            if (dynamicOffsets.Length > NoAllocSetResourceSetEntry.MAX_INLINE_DYNAMIC_OFFSETS)
             {
-                var block = memoryPool.GetStagingBlock(dynamicOffsetCount * sizeof(uint));
+                var block = memoryPool.GetStagingBlock((uint)dynamicOffsets.Length * sizeof(uint));
                 stagingBlocks.Add(block);
-                for (uint i = 0; i < dynamicOffsetCount; i++) *((uint*)block.Data + i) = Unsafe.Add(ref dynamicOffsets, (int)i);
+                dynamicOffsets.CopyTo(new Span<uint>(block.Data, dynamicOffsets.Length));
 
                 entry = new NoAllocSetResourceSetEntry(slot, track(rs), isGraphics, block);
             }
             else
-                entry = new NoAllocSetResourceSetEntry(slot, track(rs), isGraphics, dynamicOffsetCount, ref dynamicOffsets);
+                entry = new NoAllocSetResourceSetEntry(slot, track(rs), isGraphics, dynamicOffsets);
 
             AddEntry(set_resource_set_entry_id, ref entry);
         }

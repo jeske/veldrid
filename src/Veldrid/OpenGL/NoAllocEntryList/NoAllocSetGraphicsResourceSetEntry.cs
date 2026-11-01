@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
 
 namespace Veldrid.OpenGL.NoAllocEntryList
 {
@@ -17,14 +17,14 @@ namespace Veldrid.OpenGL.NoAllocEntryList
             uint slot,
             Tracked<ResourceSet> rs,
             bool isGraphics,
-            uint dynamicOffsetCount,
-            ref uint dynamicOffsets)
+            ReadOnlySpan<uint> dynamicOffsets)
         {
+            // Caller guarantees dynamicOffsets.Length <= MAX_INLINE_DYNAMIC_OFFSETS (larger sets take the StagingBlock ctor).
             Slot = slot;
             ResourceSet = rs;
             IsGraphics = isGraphics;
-            DynamicOffsetCount = dynamicOffsetCount;
-            for (int i = 0; i < dynamicOffsetCount; i++) DynamicOffsetsInline[i] = Unsafe.Add(ref dynamicOffsets, i);
+            DynamicOffsetCount = (uint)dynamicOffsets.Length;
+            for (int i = 0; i < dynamicOffsets.Length; i++) DynamicOffsetsInline[i] = dynamicOffsets[i];
 
             DynamicOffsetsBlock = default;
         }

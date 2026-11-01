@@ -134,14 +134,14 @@ namespace Veldrid.OpenGL
             CurrentCommands.SetFramebuffer(fb);
         }
 
-        protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetCount, ref uint dynamicOffsets)
+        protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
-            CurrentCommands.SetGraphicsResourceSet(slot, rs, dynamicOffsetCount, ref dynamicOffsets);
+            CurrentCommands.SetGraphicsResourceSet(slot, rs, dynamicOffsets);
         }
 
-        protected override void SetComputeResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetCount, ref uint dynamicOffsets)
+        protected override void SetComputeResourceSetCore(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
-            CurrentCommands.SetComputeResourceSet(slot, rs, dynamicOffsetCount, ref dynamicOffsets);
+            CurrentCommands.SetComputeResourceSet(slot, rs, dynamicOffsets);
         }
 
         protected override void CopyBufferCore(

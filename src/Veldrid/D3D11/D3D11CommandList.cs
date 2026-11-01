@@ -227,21 +227,21 @@ namespace Veldrid.D3D11
             submittedStagingBuffers.Clear();
         }
 
-        protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
+        protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
-            if (graphicsResourceSets[slot].Equals(rs, dynamicOffsetsCount, ref dynamicOffsets)) return;
+            if (graphicsResourceSets[slot].Equals(rs, dynamicOffsets)) return;
 
             graphicsResourceSets[slot].Offsets.Dispose();
-            graphicsResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsetsCount, ref dynamicOffsets);
+            graphicsResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsets);
             activateResourceSet(slot, graphicsResourceSets[slot], true);
         }
 
-        protected override void SetComputeResourceSetCore(uint slot, ResourceSet set, uint dynamicOffsetsCount, ref uint dynamicOffsets)
+        protected override void SetComputeResourceSetCore(uint slot, ResourceSet set, ReadOnlySpan<uint> dynamicOffsets)
         {
-            if (computeResourceSets[slot].Equals(set, dynamicOffsetsCount, ref dynamicOffsets)) return;
+            if (computeResourceSets[slot].Equals(set, dynamicOffsets)) return;
 
             computeResourceSets[slot].Offsets.Dispose();
-            computeResourceSets[slot] = new BoundResourceSetInfo(set, dynamicOffsetsCount, ref dynamicOffsets);
+            computeResourceSets[slot] = new BoundResourceSetInfo(set, dynamicOffsets);
             activateResourceSet(slot, computeResourceSets[slot], false);
         }
 

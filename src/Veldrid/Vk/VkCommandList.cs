@@ -696,23 +696,23 @@ namespace Veldrid.Vk
             if (fb is VkSwapchainFramebuffer scFb) addStagingResourceRef(scFb.Swapchain.RefCount);
         }
 
-        protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
+        protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
-            if (!currentGraphicsResourceSets[slot].Equals(rs, dynamicOffsetsCount, ref dynamicOffsets))
+            if (!currentGraphicsResourceSets[slot].Equals(rs, dynamicOffsets))
             {
                 currentGraphicsResourceSets[slot].Offsets.Dispose();
-                currentGraphicsResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsetsCount, ref dynamicOffsets);
+                currentGraphicsResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsets);
                 graphicsResourceSetsChanged[slot] = true;
                 Util.AssertSubtype<ResourceSet, VkResourceSet>(rs);
             }
         }
 
-        protected override void SetComputeResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
+        protected override void SetComputeResourceSetCore(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
-            if (!currentComputeResourceSets[slot].Equals(rs, dynamicOffsetsCount, ref dynamicOffsets))
+            if (!currentComputeResourceSets[slot].Equals(rs, dynamicOffsets))
             {
                 currentComputeResourceSets[slot].Offsets.Dispose();
-                currentComputeResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsetsCount, ref dynamicOffsets);
+                currentComputeResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsets);
                 computeResourceSetsChanged[slot] = true;
                 Util.AssertSubtype<ResourceSet, VkResourceSet>(rs);
             }

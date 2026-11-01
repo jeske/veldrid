@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Buffers;
-using System.Runtime.CompilerServices;
 
 namespace Veldrid
 {
+    /// <summary>Owned copy of a bound set's dynamic offsets: inline for the common small case, pooled above that. Filled from a
+    /// length-carrying span so the copy is bounds-checked by construction.</summary>
     internal unsafe struct SmallFixedOrDynamicArray : IDisposable
     {
         private const int max_fixed_values = 5;
@@ -17,18 +18,21 @@ namespace Veldrid
             return Count > max_fixed_values ? Data[i] : fixedData[i];
         }
 
-        public SmallFixedOrDynamicArray(uint count, ref uint data)
+        public SmallFixedOrDynamicArray(ReadOnlySpan<uint> data)
         {
-            if (count > max_fixed_values)
-                Data = ArrayPool<uint>.Shared.Rent((int)count);
+            if (data.Length > max_fixed_values)
+            {
+                Data = ArrayPool<uint>.Shared.Rent(data.Length);
+                data.CopyTo(Data);
+            }
             else
             {
-                for (int i = 0; i < count; i++) fixedData[i] = Unsafe.Add(ref data, i);
+                for (int i = 0; i < data.Length; i++) fixedData[i] = data[i];
 
                 Data = null;
             }
 
-            Count = count;
+            Count = (uint)data.Length;
         }
 
         public void Dispose()

@@ -445,22 +445,22 @@ namespace Veldrid.OpenGL
             }
         }
 
-        public void SetGraphicsResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetCount, ref uint dynamicOffsets)
+        public void SetGraphicsResourceSet(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
-            if (!graphicsResourceSets[slot].Equals(rs, dynamicOffsetCount, ref dynamicOffsets))
+            if (!graphicsResourceSets[slot].Equals(rs, dynamicOffsets))
             {
                 graphicsResourceSets[slot].Offsets.Dispose();
-                graphicsResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsetCount, ref dynamicOffsets);
+                graphicsResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsets);
                 newGraphicsResourceSets[slot] = true;
             }
         }
 
-        public void SetComputeResourceSet(uint slot, ResourceSet rs, uint dynamicOffsetCount, ref uint dynamicOffsets)
+        public void SetComputeResourceSet(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
-            if (!computeResourceSets[slot].Equals(rs, dynamicOffsetCount, ref dynamicOffsets))
+            if (!computeResourceSets[slot].Equals(rs, dynamicOffsets))
             {
                 computeResourceSets[slot].Offsets.Dispose();
-                computeResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsetCount, ref dynamicOffsets);
+                computeResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsets);
                 newComputeResourceSets[slot] = true;
             }
         }

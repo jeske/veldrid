@@ -515,12 +515,12 @@ namespace Veldrid.MTL
             ObjectiveCRuntime.release(rpDesc.NativePtr);
         }
 
-        protected override void SetComputeResourceSetCore(uint slot, ResourceSet set, uint dynamicOffsetCount, ref uint dynamicOffsets)
+        protected override void SetComputeResourceSetCore(uint slot, ResourceSet set, ReadOnlySpan<uint> dynamicOffsets)
         {
-            if (!computeResourceSets[slot].Equals(set, dynamicOffsetCount, ref dynamicOffsets))
+            if (!computeResourceSets[slot].Equals(set, dynamicOffsets))
             {
                 computeResourceSets[slot].Offsets.Dispose();
-                computeResourceSets[slot] = new BoundResourceSetInfo(set, dynamicOffsetCount, ref dynamicOffsets);
+                computeResourceSets[slot] = new BoundResourceSetInfo(set, dynamicOffsets);
                 computeResourceSetsActive[slot] = false;
             }
         }
@@ -547,12 +547,12 @@ namespace Veldrid.MTL
             currentFramebufferEverActive = false;
         }
 
-        protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetCount, ref uint dynamicOffsets)
+        protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, ReadOnlySpan<uint> dynamicOffsets)
         {
-            if (!graphicsResourceSets[slot].Equals(rs, dynamicOffsetCount, ref dynamicOffsets))
+            if (!graphicsResourceSets[slot].Equals(rs, dynamicOffsets))
             {
                 graphicsResourceSets[slot].Offsets.Dispose();
-                graphicsResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsetCount, ref dynamicOffsets);
+                graphicsResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsets);
                 graphicsResourceSetsActive[slot] = false;
             }
         }

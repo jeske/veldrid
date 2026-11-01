@@ -276,26 +276,23 @@ namespace Veldrid
 
         // ───────────────────────── V7d: one ResourceSet bound across pipelines of DIFFERENT bundles ─────────────────────────
         //
-        // A set built from shape A carries A's bundle's compiled layout AND A's flat binding map (the absolute D3D11 register /
-        // Metal argument index the cross-compiler assigned to every (set, binding)). Pipeline B binds that set using B's compiled
-        // shader. Vulkan requires the two descriptor-set layouts to be identical; D3D11 / Metal additionally require the two flat
-        // maps to be identical, or resource N lands in a register B's code never reads (the "declared 1..6, reads 1 and 6, the
-        // compiler flattened 6 to slot 2" bug class). With identical declarations a deterministic compiler produces identical maps,
-        // so a difference is a contract violation to SURFACE (a shader not declaring the full set, or a compiler eliding a declared
-        // resource), never something to remap around.
+        // THE GOAL of the Veldrid / Veldrid.SPIRV / .vdshader system (user, 2026-11-01): the user's C# data lands at the GLSL
+        // (set, binding) they asked for, NO MATTER what the platform shader compiler does. Names + (set, binding) are the contract;
+        // the backend register a compiler assigns to that binding is an implementation detail resolved PER PIPELINE at bind time
+        // (D3D11CommandList / MTLCommandList translate through the pipeline's own layout, never the set's).
+        //
+        // So a set built from shape A may be bound on shape B's pipeline iff both shaders DECLARE that descriptor set identically:
+        // same names, kinds, stages and options at the same bindings (Vulkan's descriptor-set-layout compatibility rule). A shader
+        // that reads two of six resources still declares all six, or its set-1 layout is not the material set's and this refuses it.
 
         public const string Rule_V7d_SharedSetBinding = "V7d";
 
         /// <summary>
-        ///     V7d: may a set created from <paramref name="setLayout"/> / <paramref name="setFlatMap"/> (the set's bundle) be bound at
-        ///     descriptor set <paramref name="set"/> of a pipeline compiled from <paramref name="pipelineLayout"/> /
-        ///     <paramref name="pipelineFlatMap"/>? Elements must be identical by name, kind, stages and options, and every named
-        ///     binding must have the same flat index in both bundles (both absent is also identical). Pure over data.
+        ///     V7d: may a set created against <paramref name="setLayout"/> (the compiled layout of the set's bundle) be bound at
+        ///     descriptor set <paramref name="set"/> of a pipeline whose bundle compiled <paramref name="pipelineLayout"/>? Every binding
+        ///     must be declared identically on both sides - name, kind, stages, options - including which bindings are unused. Pure over data.
         /// </summary>
-        public static void VerifySharedSetBinding(uint set,
-            ResourceLayoutDescription pipelineLayout, VdShaderBindingEntry[] pipelineFlatMap,
-            ResourceLayoutDescription setLayout, VdShaderBindingEntry[] setFlatMap,
-            List<ShaderContractViolation> violations)
+        public static void VerifySharedSetBinding(uint set, ResourceLayoutDescription pipelineLayout, ResourceLayoutDescription setLayout, List<ShaderContractViolation> violations)
         {
             var mine = pipelineLayout.Elements ?? [];
             var theirs = setLayout.Elements ?? [];
@@ -308,33 +305,13 @@ namespace Veldrid
             for (int b = 0; b < mine.Length; b++)
             {
                 var p = mine[b]; var s = theirs[b];
-                string name = string.IsNullOrEmpty(p.Name) ? (string.IsNullOrEmpty(s.Name) ? $"binding {b}" : s.Name) : p.Name;
                 if (p.Name != s.Name || p.Kind != s.Kind || p.Stages != s.Stages || p.Options != s.Options)
-                {
-                    violations.Add(new ShaderContractViolation(Rule_V7d_SharedSetBinding, $"{where} binding {b}", $"pipeline bundle: {Describe(p)}", $"set's bundle: {Describe(s)}", "a shared set requires identical declarations at every binding"));
-                    continue;
-                }
-                if (string.IsNullOrEmpty(p.Name)) continue;
-                var pe = FlatEntry(pipelineFlatMap, set, (uint)b);
-                var se = FlatEntry(setFlatMap, set, (uint)b);
-                if (pe is null && se is null) continue;
-                if (pe is null || se is null)
-                    violations.Add(new ShaderContractViolation(Rule_V7d_SharedSetBinding, name, pe is null ? "pipeline bundle: no flat binding entry" : $"pipeline bundle: flat {pe.FlatIndex}", se is null ? "set's bundle: no flat binding entry" : $"set's bundle: flat {se.FlatIndex}", "one bundle flattened this binding and the other did not - a declared resource was elided or not declared"));
-                else if (pe.FlatIndex != se.FlatIndex || pe.Kind != se.Kind || pe.Stages != se.Stages)
-                    violations.Add(new ShaderContractViolation(Rule_V7d_SharedSetBinding, name, $"pipeline bundle: {pe.Kind} {pe.Stages} flat {pe.FlatIndex}", $"set's bundle: {se.Kind} {se.Stages} flat {se.FlatIndex}", "the cross-compiler assigned different absolute registers to the same (set, binding) - the set's resources would land where this shader does not read them"));
+                    violations.Add(new ShaderContractViolation(Rule_V7d_SharedSetBinding, $"{where} binding {b}", $"pipeline bundle: {Describe(p)}", $"set's bundle: {Describe(s)}", "a shared set requires identical declarations at every binding (a shader that reads part of a set still declares all of it)"));
             }
         }
 
         private static string Describe(ResourceLayoutElementDescription e)
             => string.IsNullOrEmpty(e.Name) ? "(unused)" : $"{e.Name} {e.Kind} {e.Stages}{(e.Options != ResourceLayoutElementOptions.None ? " " + e.Options : "")}";
-
-        private static VdShaderBindingEntry FlatEntry(VdShaderBindingEntry[] map, uint set, uint binding)
-        {
-            if (map is null) return null;
-            foreach (var e in map)
-                if (e.Set == set && e.Binding == binding) return e;
-            return null;
-        }
 
         /// <summary>
         /// V7c: a C# struct against a compiled block - EVERY C# field has a GLSL member of the same NAME at the same std140 offset and

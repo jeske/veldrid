@@ -736,7 +736,12 @@ namespace Veldrid.MTL
         {
             Debug.Assert(renderEncoderActive);
             var mtlRs = Util.AssertSubtype<ResourceSet, MtlResourceSet>(brsi.Set);
-            var layout = mtlRs.Layout;
+            // THE binding rule: a resource declared at GLSL (set, binding) lands at the Metal argument index THIS pipeline's compiled
+            // shader reads. Only the pipeline's own layout knows that index (SPIRV-Cross numbers buffer/texture/sampler indices per kind
+            // across ALL sets of one shader). The set's layout belongs to the shape the set was created from - identical declarations
+            // (verified at bind), possibly different indices. Resources come from the set; the translation comes from the pipeline.
+            var pipelineLayouts = graphicsPipeline?.ResourceLayouts;
+            var layout = pipelineLayouts != null && slot < pipelineLayouts.Length && pipelineLayouts[slot] != null ? pipelineLayouts[slot] : mtlRs.Layout;
             uint dynamicOffsetIndex = 0;
             bool bundleControlled = graphicsPipeline.ResourceBindingModel == ResourceBindingModel.ShaderBundleControlled;
 
@@ -832,7 +837,9 @@ namespace Veldrid.MTL
         {
             Debug.Assert(computeEncoderActive);
             var mtlRs = Util.AssertSubtype<ResourceSet, MtlResourceSet>(brsi.Set);
-            var layout = mtlRs.Layout;
+            // Register translation from THIS pipeline's layout at this set index (see activateGraphicsResourceSet).
+            var pipelineLayouts = computePipeline?.ResourceLayouts;
+            var layout = pipelineLayouts != null && slot < pipelineLayouts.Length && pipelineLayouts[slot] != null ? pipelineLayouts[slot] : mtlRs.Layout;
             uint dynamicOffsetIndex = 0;
 
             for (int i = 0; i < mtlRs.Resources.Length; i++)

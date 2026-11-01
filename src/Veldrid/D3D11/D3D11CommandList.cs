@@ -442,10 +442,18 @@ namespace Veldrid.D3D11
         private void activateResourceSet(uint slot, BoundResourceSetInfo brsi, bool graphics)
         {
             var d3d11Rs = Util.AssertSubtype<ResourceSet, D3D11ResourceSet>(brsi.Set);
-            var layout = d3d11Rs.Layout;
+            // THE binding rule: a resource declared at GLSL (set, binding) lands where THIS pipeline's compiled shader reads it. Only the
+            // pipeline's own layout knows that register (SPIRV-Cross numbers D3D11 registers per kind across ALL sets of one shader, so
+            // the same (set, binding) can be b1 in one shader and b2 in another). The set's layout is the layout of whatever shape the
+            // set was CREATED from; its declarations are identical (ShaderPipelineShape verifies that at bind), its registers may not be.
+            // Legacy (non-explicit) layouts compute cross-set bases from the pipeline's layouts for the same reason.
+            var pipelineLayouts = graphics ? graphicsPipeline?.ResourceLayouts : computePipeline?.ResourceLayouts;
+            var layout = pipelineLayouts != null && slot < pipelineLayouts.Length && pipelineLayouts[slot] != null
+                ? pipelineLayouts[slot]
+                : d3d11Rs.Layout;
 
             // When HasExplicitBindingSlots is true, the slot values are absolute global registers
-            // from the shader compiler — no base offset needed. Otherwise, compute cross-set offsets.
+            // from THIS pipeline's shader compiler output — no base offset needed. Otherwise, compute cross-set offsets.
             int cbBase = layout.HasExplicitBindingSlots ? 0 : getConstantBufferBase(slot, graphics);
             int uaBase = layout.HasExplicitBindingSlots ? 0 : getUnorderedAccessBase(slot, graphics);
             int textureBase = layout.HasExplicitBindingSlots ? 0 : getTextureBase(slot, graphics);

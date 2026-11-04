@@ -81,11 +81,17 @@ internal sealed class ShapeCommandBindings
         }
     }
 
-    // The refusal carries the verifier's per-binding violations (V7d names the binding and both bundles' registers), not a summary.
+    // PERFORMANCE CONTRACT: this runs on resource-set binds AND draw validation, potentially many times per frame.
+    // Successful validation must allocate ZERO managed bytes: no temporary lists, diagnostic strings, LINQ iterators or closures.
+    // First check with no collector. Only when that check fails, rerun the SAME rules with a collector to obtain the full
+    // per-binding diagnostics, then throw. Paying twice on invalid usage is intentional; paying for diagnostics on every valid
+    // draw is not. Do not "simplify" this into ResourceSetBindingViolations(...).Count == 0: even an empty List allocates.
+    // Keep validation enabled on the hot path; this is not permission to skip checks or weaken the contract for performance.
     private static void ThrowIfSetRefused(ShaderPipelineShape owner, ResourceSet set, uint index)
     {
+        if (owner.AcceptsResourceSet(set, index)) return;
+        // Cold failure path: allocate diagnostics now, never before the boolean check.
         var violations = owner.ResourceSetBindingViolations(set, index);
-        if (violations.Count == 0) return;
         violations.Insert(0, new ShaderContractViolation("BIND", $"set {index}", $"created for {set.VerifiedShape?.GetType().Name ?? "(no shape)"}", $"selected pipeline {owner.GetType().Name}", "a set binds only to a pipeline whose shader declares that set identically (layout and flat registers)"));
         throw new ShaderContractException(owner.BundleName, violations);
     }

@@ -402,21 +402,33 @@ namespace Veldrid
         ///     binding is NOT part of the rule: D3D11 / Metal translate (set, binding) through the PIPELINE's layout at bind time.
         ///     Any declaration difference => refused, with the binding named.
         /// </summary>
+        // Diagnostic pass ONLY. Command recording must call AcceptsResourceSet first and enter here only after rejection.
+        // Allocating a list for a successful bind/draw caused repeatable SilkyNvg per-frame allocation-budget regressions.
         internal List<ShaderContractViolation> ResourceSetBindingViolations(ResourceSet rs, uint set)
         {
             var violations = new List<ShaderContractViolation>();
-            if (rs.VerifiedShape is null)
-            { violations.Add(new ShaderContractViolation("BIND", $"set {set}", "resource set without a verified shape", "a set from ResourceSetDescription(layout, slot bindings)", "only verified sets can be bound")); return violations; }
-            if (set >= compiledLayouts.Length)
-            { violations.Add(new ShaderContractViolation("BIND", $"set {set}", $"{GetType().Name} declares {compiledLayouts.Length} set(s)", $"set index {set}", "the selected pipeline has no such descriptor set")); return violations; }
-            if (ReferenceEquals(rs.VerifiedShape, this)) return violations;
-            if (rs.VerifiedSetIndex != set)
-            { violations.Add(new ShaderContractViolation("BIND", $"set {set}", $"set was created for descriptor set {rs.VerifiedSetIndex}", $"bound at descriptor set {set}", "a set binds only at the descriptor set it was created for")); return violations; }
-            ShaderContractVerifier.VerifySharedSetBinding(set, compiledLayouts[set], rs.VerifiedShape.CompiledLayoutFor(rs.VerifiedSetIndex), violations);
+            CheckResourceSetBinding(rs, set, violations);
             return violations;
         }
 
-        internal bool AcceptsResourceSet(ResourceSet rs, uint set) => ResourceSetBindingViolations(rs, set).Count == 0;
+        // INTENT: one implementation of the binding rules, with two execution modes. A null collector is the hot-path
+        // boolean check and must allocate ZERO bytes, including on rejection. A non-null collector is the cold diagnostic
+        // rerun and may allocate detailed failures. Keep diagnostic construction inside conditional collector calls:
+        // violations?.Add(...) does not evaluate its arguments when null; precomputing interpolated strings would allocate.
+        // Do not duplicate the rules in a separate fast validator: acceptance and diagnostic results must never drift.
+        private bool CheckResourceSetBinding(ResourceSet rs, uint set, List<ShaderContractViolation> violations)
+        {
+            if (rs.VerifiedShape is null)
+            { violations?.Add(new ShaderContractViolation("BIND", $"set {set}", "resource set without a verified shape", "a set from ResourceSetDescription(layout, slot bindings)", "only verified sets can be bound")); return false; }
+            if (set >= compiledLayouts.Length)
+            { violations?.Add(new ShaderContractViolation("BIND", $"set {set}", $"{GetType().Name} declares {compiledLayouts.Length} set(s)", $"set index {set}", "the selected pipeline has no such descriptor set")); return false; }
+            if (rs.VerifiedSetIndex != set)
+            { violations?.Add(new ShaderContractViolation("BIND", $"set {set}", $"set was created for descriptor set {rs.VerifiedSetIndex}", $"bound at descriptor set {set}", "a set binds only at the descriptor set it was created for")); return false; }
+            if (ReferenceEquals(rs.VerifiedShape, this)) return true;
+            return ShaderContractVerifier.CheckSharedSetBinding(set, compiledLayouts[set], rs.VerifiedShape.CompiledLayoutFor(rs.VerifiedSetIndex), violations);
+        }
+
+        internal bool AcceptsResourceSet(ResourceSet rs, uint set) => CheckResourceSetBinding(rs, set, null);
 
         // No overridable descriptor hook: validation must see the actual fields. Generated descriptors (deferred) must preserve this invariant.
         private ShapeDescriptor Describe() => ShapeDescriptorBuilder.FromReflection(GetType());

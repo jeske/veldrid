@@ -313,21 +313,35 @@ namespace Veldrid
         ///     must be declared identically on both sides - name, kind, stages, options - including which bindings are unused. Pure over data.
         /// </summary>
         public static void VerifySharedSetBinding(uint set, ResourceLayoutDescription pipelineLayout, ResourceLayoutDescription setLayout, List<ShaderContractViolation> violations)
+            => CheckSharedSetBinding(set, pipelineLayout, setLayout, violations);
+
+        // HOT-PATH ZERO-ALLOCATION CONTRACT: resource sets are checked at bind time and again on draws. With a null
+        // collector, this routine checks the same rules using only array access/comparisons and returns false at the first
+        // mismatch. It must not create lists, strings, enumerators, closures or formatted diagnostics, even on rejection.
+        // The caller reruns with a collector ONLY after failure; that cold pass accumulates every per-binding mismatch.
+        // In particular, never hoist $"set {set}" out of the failure-reporting branch: that allocated on successful checks.
+        // Both modes intentionally share this implementation so optimization cannot weaken validation or change its rules.
+        internal static bool CheckSharedSetBinding(uint set, ResourceLayoutDescription pipelineLayout, ResourceLayoutDescription setLayout, List<ShaderContractViolation> violations)
         {
             var mine = pipelineLayout.Elements ?? [];
             var theirs = setLayout.Elements ?? [];
-            string where = $"set {set}";
             if (mine.Length != theirs.Length)
             {
-                violations.Add(new ShaderContractViolation(Rule_V7d_SharedSetBinding, where, $"pipeline bundle: {mine.Length} bindings", $"set's bundle: {theirs.Length} bindings", "a shared set requires both shaders to declare the same bindings of that set"));
-                return;
+                violations?.Add(new ShaderContractViolation(Rule_V7d_SharedSetBinding, $"set {set}", $"pipeline bundle: {mine.Length} bindings", $"set's bundle: {theirs.Length} bindings", "a shared set requires both shaders to declare the same bindings of that set"));
+                return false;
             }
+            bool valid = true;
             for (int b = 0; b < mine.Length; b++)
             {
                 var p = mine[b]; var s = theirs[b];
                 if (p.Name != s.Name || p.Kind != s.Kind || p.Stages != s.Stages || p.Options != s.Options)
-                    violations.Add(new ShaderContractViolation(Rule_V7d_SharedSetBinding, $"{where} binding {b}", $"pipeline bundle: {Describe(p)}", $"set's bundle: {Describe(s)}", "a shared set requires identical declarations at every binding (a shader that reads part of a set still declares all of it)"));
+                {
+                    if (violations is null) return false;
+                    valid = false;
+                    violations.Add(new ShaderContractViolation(Rule_V7d_SharedSetBinding, $"set {set} binding {b}", $"pipeline bundle: {Describe(p)}", $"set's bundle: {Describe(s)}", "a shared set requires identical declarations at every binding (a shader that reads part of a set still declares all of it)"));
+                }
             }
+            return valid;
         }
 
         private static string Describe(ResourceLayoutElementDescription e)

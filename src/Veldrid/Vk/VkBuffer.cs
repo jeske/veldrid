@@ -11,6 +11,7 @@ namespace Veldrid.Vk
 
         public override uint SizeInBytes { get; }
         public override BufferUsage Usage { get; }
+        public override uint StructureByteStride { get; }
 
         public Vulkan.VkBuffer DeviceBuffer => deviceBuffer;
         public VkMemoryBlock Memory => memory;
@@ -34,11 +35,12 @@ namespace Veldrid.Vk
         private bool destroyed;
         private string name;
 
-        public VkBuffer(VkGraphicsDevice gd, uint sizeInBytes, BufferUsage usage, string callerMember = null)
+        public VkBuffer(VkGraphicsDevice gd, uint sizeInBytes, BufferUsage usage, uint structureByteStride, string callerMember = null)
         {
             this.gd = gd;
             SizeInBytes = sizeInBytes;
             Usage = usage;
+            StructureByteStride = structureByteStride;
 
             var vkUsage = VkBufferUsageFlags.TransferSrc | VkBufferUsageFlags.TransferDst;
             if ((usage & BufferUsage.VertexBuffer) == BufferUsage.VertexBuffer) vkUsage |= VkBufferUsageFlags.VertexBuffer;

@@ -6,6 +6,7 @@ namespace Veldrid.MTL
     {
         public override uint SizeInBytes { get; }
         public override BufferUsage Usage { get; }
+        public override uint StructureByteStride { get; }
 
         public uint ActualCapacity { get; }
 
@@ -32,6 +33,7 @@ namespace Veldrid.MTL
         public MtlBuffer(ref BufferDescription bd, MtlGraphicsDevice gd)
         {
             SizeInBytes = bd.SizeInBytes;
+            StructureByteStride = bd.StructureByteStride;
             uint roundFactor = (4 - SizeInBytes % 4) % 4;
             ActualCapacity = SizeInBytes + roundFactor;
             Usage = bd.Usage;

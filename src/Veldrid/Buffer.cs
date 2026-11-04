@@ -20,6 +20,13 @@ namespace Veldrid
         public abstract BufferUsage Usage { get; }
 
         /// <summary>
+        ///     The <see cref="BufferDescription.StructureByteStride"/> this buffer was created with (0 for non-structured / raw buffers).
+        ///     Fixed at creation. V10: a <c>StorageBufferSlot&lt;TElement&gt;</c> binds a buffer only when this equals its verified element stride,
+        ///     so the stride the shader was compiled for and the stride the buffer was created with can never silently disagree.
+        /// </summary>
+        public abstract uint StructureByteStride { get; }
+
+        /// <summary>
         ///     Whether this buffer was created with <see cref="BufferDescription.AllowUpdateBufferOutsideCommandList" />,
         ///     i.e. whether <see cref="GraphicsDevice.UpdateBufferOutsideCommandList(DeviceBuffer, uint, IntPtr, uint)" />
         ///     is permitted on it. Fixed at creation. See that field for the ordering semantics being acknowledged.

@@ -16,18 +16,10 @@ namespace Veldrid.MTL
         public uint NonVertexBufferCount { get; }
 
         /// <summary>
-        /// The Metal buffer slot where vertex buffers start.
-        /// When <see cref="HasExplicitBindingSlots"/> is true, this is a fixed high slot (30)
-        /// that doesn't conflict with shader-declared buffer indices.
-        /// Otherwise, it follows the legacy Veldrid layout scheme.
+        /// The Metal buffer slot where vertex buffers start: the fixed high slot <see cref="ExplicitBindingVertexBufferSlot"/> (30),
+        /// above every compiler-assigned buffer index.
         /// </summary>
         public uint VertexBufferBaseSlot { get; }
-
-        /// <summary>
-        /// When true, all resource layouts in this pipeline have explicit binding slots from the shader compiler.
-        /// The command list must use absolute slot values (no base offset computation).
-        /// </summary>
-        public bool HasExplicitBindingSlots { get; }
 
         public MTLCullMode CullMode { get; }
         public MTLWinding FrontFace { get; }
@@ -66,25 +58,9 @@ namespace Veldrid.MTL
                 NonVertexBufferCount += ResourceLayouts[i].BufferCount;
             }
 
-            // Detect if any layout has explicit binding slots from the shader compiler.
-            // If ANY layout has them, we treat the whole pipeline as compiler-aligned.
-            HasExplicitBindingSlots = false;
-            for (int i = 0; i < ResourceLayouts.Length; i++)
-            {
-                if (ResourceLayouts[i].HasExplicitBindingSlots)
-                {
-                    HasExplicitBindingSlots = true;
-                    break;
-                }
-            }
-
-            // When layouts have explicit binding slots from the shader compiler,
-            // force ShaderBundleControlled mode regardless of what was requested.
-            // The shader compiler is the source of truth.
-            if (HasExplicitBindingSlots)
-                ResourceBindingModel = ResourceBindingModel.ShaderBundleControlled;
-            else
-                ResourceBindingModel = description.ResourceBindingModel ?? gd.ResourceBindingModel;
+            // V9: every layout is built from the compiled bundle's flat binding map, so the pipeline is always ShaderBundleControlled -
+            // the shader compiler is the source of truth; whatever model was requested is irrelevant.
+            ResourceBindingModel = ResourceBindingModel.ShaderBundleControlled;
 
             CullMode = MtlFormats.VdToMtlCullMode(description.RasterizerState.CullMode);
             FrontFace = MtlFormats.VdVoMtlFrontFace(description.RasterizerState.FrontFace);
@@ -120,22 +96,9 @@ namespace Veldrid.MTL
             var vdVertexLayouts = description.ShaderSet.VertexLayouts;
             var vertexDescriptor = mtlDesc.vertexDescriptor;
 
-            // Determine where vertex buffers go in the Metal buffer argument table.
-            // When explicit binding slots are in use, vertex buffers go to slot 30 (top of the table)
-            // to avoid conflicting with compiler-assigned uniform buffer slots.
-            // Otherwise, use the legacy Veldrid layout scheme.
-            if (HasExplicitBindingSlots)
-            {
-                VertexBufferBaseSlot = ExplicitBindingVertexBufferSlot;
-            }
-            else if (ResourceBindingModel == ResourceBindingModel.Improved)
-            {
-                VertexBufferBaseSlot = NonVertexBufferCount;
-            }
-            else
-            {
-                VertexBufferBaseSlot = 0;
-            }
+            // Vertex buffers go to slot 30 (top of the Metal buffer argument table) so they never collide with the compiler-assigned
+            // uniform/storage buffer indices (V9: every layout is compiler-aligned).
+            VertexBufferBaseSlot = ExplicitBindingVertexBufferSlot;
 
             for (uint i = 0; i < vdVertexLayouts.Length; i++)
             {

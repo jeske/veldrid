@@ -9,6 +9,7 @@ namespace Veldrid.D3D11
     internal class D3D11Buffer : DeviceBuffer
     {
         public override uint SizeInBytes { get; }
+        public override uint StructureByteStride => structureByteStride;
 
         public override BufferUsage Usage { get; }
 

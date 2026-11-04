@@ -235,12 +235,57 @@ namespace Veldrid
         public ShapeResourceBinding With(Sampler sampler) => BindingOf(sampler);
     }
 
-    /// <summary>A storage (SSBO) buffer slot; read-only or read-write per the shader.</summary>
-    public sealed class StorageBufferSlot : ShapeSlot
+    /// <summary>
+    /// V10: a storage (<c>buffer</c>) block slot, typed by the C# struct that is its unit of layout verification (rule V7e, checked at
+    /// <see cref="ShaderPipelineShape.Bind{TShape}"/>): for a block that is ONLY a runtime array (<c>buffer Counters { uint Counts[]; }</c>,
+    /// <c>buffer Instances { InstanceData Items[]; }</c>) <typeparamref name="TElement"/> is the ARRAY ELEMENT and its size must equal the
+    /// compiled std430 array stride (members by name for a struct element); for a block with no runtime array it is the WHOLE block, verified
+    /// like a uniform struct. A block with fixed members AND a runtime array is refused - split it into two buffers. Read-only vs read-write
+    /// is the shader's declaration (the bundle's resource kind); the slot accepts either.
+    /// </summary>
+    public sealed class StorageBufferSlot<TElement> : ShapeSlot where TElement : unmanaged
     {
+        internal VdShaderStorageBlock Compiled { get; set; }
         internal override ResourceKind[] AcceptedKinds => [ResourceKind.StructuredBufferReadOnly, ResourceKind.StructuredBufferReadWrite];
-        /// <summary>Bind a buffer created with structured-buffer usage.</summary>
-        public ShapeResourceBinding With(DeviceBuffer buffer) => BindingOf(buffer);
+
+        /// <summary>The verified byte stride of one <typeparamref name="TElement"/> (= the std430 array stride, or the whole-block size).</summary>
+        public uint ElementStrideBytes => Compiled is null ? throw NotBound() : (Compiled.HasRuntimeArray ? Compiled.RuntimeArrayStrideBytes : Compiled.FixedSizeBytes);
+
+        /// <summary>
+        /// Create a structured buffer of <paramref name="elementCount"/> elements with THIS slot's verified stride. <paramref name="usage"/> must
+        /// include a structured-buffer flag (read-only or read-write to match the shader); Dynamic / Staging may be added by the caller.
+        /// </summary>
+        public DeviceBuffer CreateBuffer(uint elementCount, BufferUsage usage)
+        {
+            EnsureOwned();
+            RequireStructuredUsage(usage);
+            if (elementCount == 0) throw new ArgumentOutOfRangeException(nameof(elementCount));
+            return Owner.BoundFactory.CreateBuffer(new BufferDescription(checked(elementCount * ElementStrideBytes), usage, ElementStrideBytes));
+        }
+
+        /// <summary>
+        /// Bind a buffer created with structured-buffer usage. Its structure stride must be this slot's verified stride (a stride of 0 - a raw
+        /// buffer - is refused: the shader indexes elements of <see cref="ElementStrideBytes"/> bytes).
+        /// </summary>
+        public ShapeResourceBinding With(DeviceBuffer buffer)
+        {
+            ArgumentNullException.ThrowIfNull(buffer);
+            RequireStructuredUsage(buffer.Usage);
+            uint stride = buffer.StructureByteStride;
+            if (stride != ElementStrideBytes)
+                throw new ShaderContractException(Owner?.BundleName ?? Name, [new ShaderContractViolation(ShaderContractVerifier.Rule_V7e_StorageStructs, Name,
+                    $"buffer stride {stride} B", $"verified element stride {ElementStrideBytes} B ({typeof(TElement).Name})",
+                    "a storage buffer binds only with the stride the shader was compiled for - create it through this slot's CreateBuffer or with that StructureByteStride")]);
+            return BindingOf(buffer);
+        }
+
+        private static void RequireStructuredUsage(BufferUsage usage)
+        {
+            if ((usage & (BufferUsage.StructuredBufferReadOnly | BufferUsage.StructuredBufferReadWrite)) == 0)
+                throw new ArgumentException($"A StorageBufferSlot buffer needs BufferUsage.StructuredBufferReadOnly or StructuredBufferReadWrite (got {usage}).", nameof(usage));
+        }
+
+        private InvalidOperationException NotBound() => new($"StorageBufferSlot '{Name}' is not bound (shape not created through ShaderPipelineShape.Bind).");
     }
 
     /// <summary>A storage image slot.</summary>
@@ -290,7 +335,7 @@ namespace Veldrid
     // ───────────────────────────────── the descriptor: verification INPUT as data ─────────────────────────────────
 
     /// <summary>One resource slot as declared by the shape (built by reflection today; a generator may supply it statically later).</summary>
-    public sealed record ShapeSlotDescriptor(string Name, Type SlotType, ResourceKind[] AcceptedKinds, Type StructType);
+    public sealed record ShapeSlotDescriptor(string Name, Type SlotType, ResourceKind[] AcceptedKinds, Type StructType, Type StorageElementType = null);
     /// <summary>One vertex input as declared: the struct's fields in offset order become the elements.</summary>
     public sealed record ShapeVertexInputDescriptor(string FieldName, Type VertexType, bool PerInstance, VertexLayoutDescription Layout);
     /// <summary>Everything the verifier needs about a shape, without GPU objects.</summary>
@@ -457,6 +502,12 @@ namespace Veldrid
                         var block = bundle.Interface.UniformBlocks.First(b => b.Name == slotDesc.Name);
                         slotDesc.SlotType.GetProperty("Compiled", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(slot, block);
                     }
+                    if (slotDesc.StorageElementType != null)
+                    {
+                        // V10: VerifyShape already proved the block exists and matches TElement (V7e).
+                        var block = bundle.Interface.StorageBlocks.First(b => b.Name == slotDesc.Name);
+                        slotDesc.SlotType.GetProperty("Compiled", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(slot, block);
+                    }
                     field.SetValue(this, slot);
                     boundFields.Add((field, slot));
                     slots.Add(slot);
@@ -525,7 +576,9 @@ namespace Veldrid
                 {
                     var probe = (ShapeSlot)Activator.CreateInstance(ft)!;
                     Type structType = ft.IsGenericType && ft.GetGenericTypeDefinition() == typeof(UniformBlock<>) ? ft.GetGenericArguments()[0] : null;
-                    slots.Add(new ShapeSlotDescriptor(field.Name, ft, probe.AcceptedKinds, structType));
+                    // V10: a storage slot carries its element/whole-block struct for V7e, kept apart from the uniform struct (V7c).
+                    Type storageType = ft.IsGenericType && ft.GetGenericTypeDefinition() == typeof(StorageBufferSlot<>) ? ft.GetGenericArguments()[0] : null;
+                    slots.Add(new ShapeSlotDescriptor(field.Name, ft, probe.AcceptedKinds, structType, storageType));
                 }
                 else if (ft.IsGenericType && ft.GetGenericTypeDefinition() == typeof(VertexInput<>))
                 {

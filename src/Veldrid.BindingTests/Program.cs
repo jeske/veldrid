@@ -44,7 +44,7 @@ internal static class Program
             Test_TwoSets_CBAndTexture(gd);
             Test_ThreeSets_MixedResources(gd);
             Test_ExplicitBindings_SkipBaseOffset(gd);
-            Test_OldPath_UsesSequentialCounters(gd);
+            Test_V9_NoMap_Throws(gd);
         }
         finally
         {
@@ -86,7 +86,6 @@ internal static class Program
             ref layoutDesc, 0, entries);
 
         AssertSlot("SingleSet_SingleCB: ViewBuf", layout, 0, expectedSlot: 0);
-        AssertExplicit("SingleSet_SingleCB", layout, expectedExplicit: true);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -121,8 +120,6 @@ internal static class Program
         AssertSlot("TwoSets: ViewBuf", layout0, 0, expectedSlot: 0);
         AssertSlot("TwoSets: Heightmap", layout1, 0, expectedSlot: 2);
         AssertSlot("TwoSets: HeightmapSampler", layout1, 1, expectedSlot: 2);
-        AssertExplicit("TwoSets: layout0", layout0, expectedExplicit: true);
-        AssertExplicit("TwoSets: layout1", layout1, expectedExplicit: true);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -192,10 +189,9 @@ internal static class Program
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Test: Verify that explicit bindings result in base offset = 0
-    // When HasExplicitBindingSlots is true, the command list should NOT
-    // add cross-set offsets. We verify this by checking that a layout in
-    // set 2 still reports its raw flatIndex slots (not offset by set 0+1 counts).
+    // Test: a layout in set 2 reports its raw flatIndex slots (not offset by set 0+1 counts).
+    // V9: the command list binds exactly this register; there is no cross-set base any more (the helpers that
+    // computed one are deleted), so the layout's slot IS the register the shader was compiled with.
     // ─────────────────────────────────────────────────────────────────────
     static void Test_ExplicitBindings_SkipBaseOffset(GraphicsDevice gd)
     {
@@ -215,14 +211,13 @@ internal static class Program
         // If base offset were applied, this would be wrong (it would get offset by set 0+1 tex counts)
         // But the layout itself just stores 5 — the command list is what skips the offset.
         AssertSlot("ExplicitSkipBase: Tex in set 2", layout, 0, expectedSlot: 5);
-        AssertExplicit("ExplicitSkipBase", layout, expectedExplicit: true);
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Test: Old path (no binding entries) still uses sequential counters
-    // This confirms the legacy behavior hasn't regressed.
+    // V9 (2026-11-04): there is NO counting path any more. A D3D11 layout is built from the compiled bundle's flat binding map only;
+    // a set with resources and no map, or an element without an entry, is a ShaderContractException (rule V9) - never a guessed slot.
     // ─────────────────────────────────────────────────────────────────────
-    static void Test_OldPath_UsesSequentialCounters(GraphicsDevice gd)
+    static void Test_V9_NoMap_Throws(GraphicsDevice gd)
     {
         var desc = new ResourceLayoutDescription(
             new ResourceLayoutElementDescription("CB1", ResourceKind.UniformBuffer, ShaderStages.Vertex),
@@ -231,15 +226,40 @@ internal static class Program
             new ResourceLayoutElementDescription("Tex2", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
             new ResourceLayoutElementDescription("Samp1", ResourceKind.Sampler, ShaderStages.Fragment));
 
-        var layout = (D3D11ResourceLayout)gd.ResourceFactory.CreateResourceLayout(ref desc);
+        // (a) no entries at all
+        AssertThrowsV9("V9: no map entries", () => gd.ResourceFactory.CreateResourceLayout(ref desc, 0, Array.Empty<VdShaderBindingEntry>()));
 
-        // Sequential per-type: CB gets 0,1; Tex gets 0,1; Sampler gets 0
-        AssertSlot("OldPath: CB1",   layout, 0, expectedSlot: 0);
-        AssertSlot("OldPath: Tex1",  layout, 1, expectedSlot: 0);
-        AssertSlot("OldPath: CB2",   layout, 2, expectedSlot: 1);
-        AssertSlot("OldPath: Tex2",  layout, 3, expectedSlot: 1);
-        AssertSlot("OldPath: Samp1", layout, 4, expectedSlot: 0);
-        AssertExplicit("OldPath", layout, expectedExplicit: false);
+        // (b) a map that covers four of the five elements - the fifth must not be counted into existence
+        var partial = new VdShaderBindingEntry[]
+        {
+            new() { Name = "CB1",  Set = 0, Binding = 0, Kind = ResourceKind.UniformBuffer,   Stages = ShaderStages.Vertex,   FlatIndex = 0 },
+            new() { Name = "Tex1", Set = 0, Binding = 1, Kind = ResourceKind.TextureReadOnly, Stages = ShaderStages.Fragment, FlatIndex = 0 },
+            new() { Name = "CB2",  Set = 0, Binding = 2, Kind = ResourceKind.UniformBuffer,   Stages = ShaderStages.Fragment, FlatIndex = 1 },
+            new() { Name = "Tex2", Set = 0, Binding = 3, Kind = ResourceKind.TextureReadOnly, Stages = ShaderStages.Fragment, FlatIndex = 1 },
+        };
+        AssertThrowsV9("V9: element without an entry (Samp1)", () => gd.ResourceFactory.CreateResourceLayout(ref desc, 0, partial));
+    }
+
+    static void AssertThrowsV9(string testName, Action action)
+    {
+        try
+        {
+            action();
+            Console.WriteLine($"  ✗ {testName}: no exception (EXPECTED ShaderContractException V9)");
+            failCount++;
+            failures.Add($"{testName}: no exception");
+        }
+        catch (ShaderContractException ex) when (ex.Message.Contains("[V9]"))
+        {
+            Console.WriteLine($"  ✓ {testName}: ShaderContractException V9");
+            passCount++;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  ✗ {testName}: {ex.GetType().Name}: {ex.Message.Split('\n')[0]} (EXPECTED ShaderContractException V9)");
+            failCount++;
+            failures.Add($"{testName}: wrong exception {ex.GetType().Name}");
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -262,18 +282,4 @@ internal static class Program
         }
     }
 
-    static void AssertExplicit(string testName, D3D11ResourceLayout layout, bool expectedExplicit)
-    {
-        if (layout.HasExplicitBindingSlots == expectedExplicit)
-        {
-            Console.WriteLine($"  ✓ {testName}: HasExplicitBindingSlots={layout.HasExplicitBindingSlots}");
-            passCount++;
-        }
-        else
-        {
-            Console.WriteLine($"  ✗ {testName}: HasExplicitBindingSlots={layout.HasExplicitBindingSlots} (EXPECTED {expectedExplicit})");
-            failCount++;
-            failures.Add($"{testName}: HasExplicitBindingSlots={layout.HasExplicitBindingSlots}, expected={expectedExplicit}");
-        }
-    }
 }

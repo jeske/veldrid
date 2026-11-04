@@ -5,6 +5,8 @@ const.ShaderContractVerifier.Rule_V7a_VertexInputs: string "V7a"
 const.ShaderContractVerifier.Rule_V7b_ResourceLayouts: string "V7b"
 const.ShaderContractVerifier.Rule_V7c_UniformStructs: string "V7c"
 const.ShaderContractVerifier.Rule_V7d_SharedSetBinding: string "V7d"
+const.ShaderContractVerifier.Rule_V7e_StorageStructs: string "V7e"
+const.ShaderContractVerifier.Rule_V9_FlatBindingMap: string "V9"
 const.VeldridShaderBundle.CurrentFormatVersion: int 2
 default.PrecompiledShaderResult..ctor.bundleName: object null
 default.PrecompiledShaderResult..ctor.flatBindingMap: object null
@@ -14,6 +16,7 @@ default.ResourceFactory.CreateFromBundle.basePath: object null
 default.ResourceFactory.CreateFromBundle.fileResolver: object null
 default.ResourceFactory.CreateFromBundle.fileResolver: object null
 default.ShaderSetDescription..ctor.specializations: object null
+default.ShapeSlotDescriptor..ctor.StorageElementType: object null
 default.VeldridShaderBundle.GetVertexFragmentShaderData.basePath: object null
 default.VeldridShaderBundle.GetVertexFragmentShaderData.fileResolver: object null
 enum.BlendFactor.BlendFactor: 10
@@ -843,6 +846,7 @@ method.ShaderContractVerifier.ThrowIfViolated: void(ref ComputePipelineDescripti
 method.ShaderContractVerifier.ThrowIfViolated: void(ref GraphicsPipelineDescription description)
 method.ShaderContractVerifier.VerifyShape: List`1<ShaderContractViolation>(ShapeDescriptor shape, string bundleName, VdShaderInterface itf, ResourceLayoutDescription[] compiledLayouts)
 method.ShaderContractVerifier.VerifySharedSetBinding: void(uint set, ResourceLayoutDescription pipelineLayout, ResourceLayoutDescription setLayout, List`1<ShaderContractViolation> violations)
+method.ShaderContractVerifier.VerifyStorageStructAgainstBlock: void(Type elementType, VdShaderStorageBlock block, List`1<ShaderContractViolation> violations)
 method.ShaderContractVerifier.VerifyStructAgainstBlock: void(Type structType, VdShaderUniformBlock block, List`1<ShaderContractViolation> violations)
 method.ShaderContractViolation..ctor: void(string Rule, string Name, string SideA, string SideB, string Detail)
 method.ShaderContractViolation.Deconstruct: void(ref string Rule, ref string Name, ref string SideA, ref string SideB, ref string Detail)
@@ -881,9 +885,9 @@ method.ShapeDescriptor.op_Equality: bool(ShapeDescriptor left, ShapeDescriptor r
 method.ShapeDescriptor.op_Inequality: bool(ShapeDescriptor left, ShapeDescriptor right)
 method.ShapeDescriptorBuilder.FromReflection: ShapeDescriptor(Type shapeType)
 method.ShapeDescriptorBuilder.VertexLayoutFor: VertexLayoutDescription(Type vertexType, bool perInstance)
-method.ShapeSlotDescriptor..ctor: void(string Name, Type SlotType, ResourceKind[] AcceptedKinds, Type StructType)
+method.ShapeSlotDescriptor..ctor: void(string Name, Type SlotType, ResourceKind[] AcceptedKinds, Type StructType, Type StorageElementType)
 method.ShapeSlotDescriptor.<Clone>$: ShapeSlotDescriptor()
-method.ShapeSlotDescriptor.Deconstruct: void(ref string Name, ref Type SlotType, ref ResourceKind[] AcceptedKinds, ref Type StructType)
+method.ShapeSlotDescriptor.Deconstruct: void(ref string Name, ref Type SlotType, ref ResourceKind[] AcceptedKinds, ref Type StructType, ref Type StorageElementType)
 method.ShapeSlotDescriptor.Equals: bool(ShapeSlotDescriptor other)
 method.ShapeSlotDescriptor.Equals: bool(object obj)
 method.ShapeSlotDescriptor.GetHashCode: int()
@@ -914,8 +918,9 @@ method.SpecializationConstant.GetHashCode: int()
 method.StencilBehaviorDescription..ctor: void(StencilOperation fail, StencilOperation pass, StencilOperation depthFail, ComparisonKind comparison)
 method.StencilBehaviorDescription.Equals: bool(StencilBehaviorDescription other)
 method.StencilBehaviorDescription.GetHashCode: int()
-method.StorageBufferSlot..ctor: void()
-method.StorageBufferSlot.With: ShapeResourceBinding(DeviceBuffer buffer)
+method.StorageBufferSlot`1..ctor: void()
+method.StorageBufferSlot`1.CreateBuffer: DeviceBuffer(uint elementCount, BufferUsage usage)
+method.StorageBufferSlot`1.With: ShapeResourceBinding(DeviceBuffer buffer)
 method.StorageImageSlot..ctor: void()
 method.StorageImageSlot.With: ShapeResourceBinding(TextureView view)
 method.Swapchain.Dispose: void()
@@ -975,6 +980,7 @@ method.VdShaderBindingEntry..ctor: void()
 method.VdShaderInterface..ctor: void()
 method.VdShaderResourceElement..ctor: void()
 method.VdShaderResourceLayout..ctor: void()
+method.VdShaderStorageBlock..ctor: void()
 method.VdShaderUniformBlock..ctor: void()
 method.VdShaderUniformMember..ctor: void()
 method.VdShaderVarying..ctor: void()
@@ -1040,6 +1046,7 @@ property.DeviceBuffer.AllowUpdateBufferOutsideCommandList: bool { get; }
 property.DeviceBuffer.IsDisposed: bool { get; }
 property.DeviceBuffer.Name: string { get; set; }
 property.DeviceBuffer.SizeInBytes: uint { get; }
+property.DeviceBuffer.StructureByteStride: uint { get; }
 property.DeviceBuffer.Usage: BufferUsage { get; }
 property.Fence.IsDisposed: bool { get; }
 property.Fence.Name: string { get; set; }
@@ -1171,6 +1178,7 @@ property.ShapeSlot.Set: uint { get; }
 property.ShapeSlotDescriptor.AcceptedKinds: ResourceKind[] { get; set; }
 property.ShapeSlotDescriptor.Name: string { get; set; }
 property.ShapeSlotDescriptor.SlotType: Type { get; set; }
+property.ShapeSlotDescriptor.StorageElementType: Type { get; set; }
 property.ShapeSlotDescriptor.StructType: Type { get; set; }
 property.ShapeVertexInputDescriptor.FieldName: string { get; set; }
 property.ShapeVertexInputDescriptor.Layout: VertexLayoutDescription { get; set; }
@@ -1182,6 +1190,7 @@ property.StagingBufferPoolTelemetry.EvictedTotalBytes: long { get; }
 property.StagingBufferPoolTelemetry.EvictedTotalCount: long { get; }
 property.StagingBufferPoolTelemetry.PooledBytes: long { get; }
 property.StagingBufferPoolTelemetry.PooledCount: long { get; }
+property.StorageBufferSlot`1.ElementStrideBytes: uint { get; }
 property.Swapchain.CompositorBackgroundColor: Nullable`1<RgbaFloat> { get; set; }
 property.Swapchain.Framebuffer: Framebuffer { get; }
 property.Swapchain.IsDisposed: bool { get; }
@@ -1225,6 +1234,7 @@ property.VdShaderBindingEntry.Name: string { get; set; }
 property.VdShaderBindingEntry.Set: uint { get; set; }
 property.VdShaderBindingEntry.Stages: ShaderStages { get; set; }
 property.VdShaderInterface.FragmentInputs: VdShaderVarying[] { get; set; }
+property.VdShaderInterface.StorageBlocks: VdShaderStorageBlock[] { get; set; }
 property.VdShaderInterface.UniformBlocks: VdShaderUniformBlock[] { get; set; }
 property.VdShaderInterface.VertexInputs: VdShaderVertexInput[] { get; set; }
 property.VdShaderInterface.VertexOutputs: VdShaderVarying[] { get; set; }
@@ -1232,6 +1242,18 @@ property.VdShaderResourceElement.Kind: ResourceKind { get; set; }
 property.VdShaderResourceElement.Name: string { get; set; }
 property.VdShaderResourceElement.Stages: ShaderStages { get; set; }
 property.VdShaderResourceLayout.Elements: VdShaderResourceElement[] { get; set; }
+property.VdShaderStorageBlock.Binding: uint { get; set; }
+property.VdShaderStorageBlock.FixedSizeBytes: uint { get; set; }
+property.VdShaderStorageBlock.HasRuntimeArray: bool { get; set; }
+property.VdShaderStorageBlock.Members: VdShaderUniformMember[] { get; set; }
+property.VdShaderStorageBlock.Name: string { get; set; }
+property.VdShaderStorageBlock.ReadOnly: bool { get; set; }
+property.VdShaderStorageBlock.RuntimeArrayElementMembers: VdShaderUniformMember[] { get; set; }
+property.VdShaderStorageBlock.RuntimeArrayElementType: string { get; set; }
+property.VdShaderStorageBlock.RuntimeArrayName: string { get; set; }
+property.VdShaderStorageBlock.RuntimeArrayStrideBytes: uint { get; set; }
+property.VdShaderStorageBlock.Set: uint { get; set; }
+property.VdShaderStorageBlock.Stages: ShaderStages { get; set; }
 property.VdShaderUniformBlock.Binding: uint { get; set; }
 property.VdShaderUniformBlock.Members: VdShaderUniformMember[] { get; set; }
 property.VdShaderUniformBlock.Name: string { get; set; }
@@ -1704,7 +1726,7 @@ type.SpecializationConstant: struct
 type.StagingBufferPoolTelemetry: static class
 type.StencilBehaviorDescription: struct
 type.StencilOperation: enum
-type.StorageBufferSlot: sealed class
+type.StorageBufferSlot`1: sealed class
 type.StorageImageSlot: sealed class
 type.Swapchain: abstract class
 type.SwapchainDescription: struct
@@ -1726,6 +1748,7 @@ type.VdShaderBindingEntry: sealed class
 type.VdShaderInterface: sealed class
 type.VdShaderResourceElement: sealed class
 type.VdShaderResourceLayout: sealed class
+type.VdShaderStorageBlock: sealed class
 type.VdShaderUniformBlock: sealed class
 type.VdShaderUniformMember: sealed class
 type.VdShaderVarying: sealed class

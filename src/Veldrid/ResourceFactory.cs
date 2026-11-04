@@ -611,13 +611,15 @@ namespace Veldrid
                 throw new InvalidOperationException("The shape was bound on a different device.");
             uint set = description.VerifiedSetIndex;
             var map = shape.Bundle.FlatBindingMap?.Where(e => e.Set == set).ToArray();
+            // V9: backends that flatten (set, binding) to absolute registers (D3D11, Metal) build the layout from the map and THROW when a set
+            // with resources has no entries (their CreateResourceLayoutCore). Vulkan / OpenGL use (set, binding) natively - no map, no counting.
             return map is { Length: > 0 } ? CreateResourceLayout(ref description, set, map) : CreateResourceLayoutCore(ref description);
         }
 
-        /// <summary>Veldrid-internal raw layout creation (no shape): used only by backend-owned helpers.</summary>
-        internal ResourceLayout CreateResourceLayoutRaw(ref ResourceLayoutDescription description) => CreateResourceLayoutCore(ref description);
-
-        /// <summary>Backend hook: creates the layout from a resolved description.</summary>
+        /// <summary>
+        /// Backend hook: creates the layout from a resolved description WITHOUT a flat binding map. Vulkan / OpenGL implement it natively;
+        /// D3D11 / Metal throw <see cref="ShaderContractException"/> (V9) unless the set is empty.
+        /// </summary>
         /// <param name="description">The resolved description.</param>
         /// <returns>The backend layout.</returns>
         protected abstract ResourceLayout CreateResourceLayoutCore(ref ResourceLayoutDescription description);

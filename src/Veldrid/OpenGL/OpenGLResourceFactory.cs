@@ -91,7 +91,8 @@ namespace Veldrid.OpenGL
             return new OpenGLBuffer(
                 gd,
                 description.SizeInBytes,
-                description.Usage);
+                description.Usage,
+                description.StructureByteStride);
         }
     }
 }

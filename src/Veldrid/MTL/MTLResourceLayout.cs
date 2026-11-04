@@ -1,5 +1,9 @@
 namespace Veldrid.MTL
 {
+    /// <summary>
+    /// Metal argument-table indices for one resource layout. ONE way to build it (V9): every element's buffer(N)/texture(N)/sampler(N)
+    /// index is the <see cref="VdShaderBindingEntry.FlatIndex"/> the shader compiler assigned per stage - absolute, never offset at draw time.
+    /// </summary>
     internal class MtlResourceLayout : ResourceLayout
     {
         private readonly ResourceBindingInfo[] bindingInfosByVdIndex;
@@ -7,14 +11,6 @@ namespace Veldrid.MTL
         public uint BufferCount { get; }
         public uint TextureCount { get; }
         public uint SamplerCount { get; }
-
-        /// <summary>
-        /// When true, this layout has explicit binding slot assignments from the shader compiler.
-        /// The slot values are absolute (the compiler is the source of truth) and must NOT be offset
-        /// by baseBuffer/baseTexture/baseSampler at draw time.
-        /// This is true for both precompiled bundles and runtime-compiled shaders that provide a binding map.
-        /// </summary>
-        public bool HasExplicitBindingSlots { get; }
 
 #if !VALIDATE_USAGE
         public ResourceKind[] ResourceKinds { get; }
@@ -28,84 +24,8 @@ namespace Veldrid.MTL
         public ResourceLayoutDescription Description { get; }
 #endif
 
-        /// <summary>
-        /// Standard constructor: computes sequential slot indices (legacy Veldrid behavior).
-        /// Used when no binding map is available.
-        /// </summary>
-        public MtlResourceLayout(ref ResourceLayoutDescription description, MtlGraphicsDevice gd)
-            : base(ref description)
-        {
-#if !VALIDATE_USAGE
-            Description = description;
-#endif
-
-            var elements = description.Elements;
-#if !VALIDATE_USAGE
-            ResourceKinds = new ResourceKind[elements.Length];
-            for (int i = 0; i < elements.Length; i++)
-            {
-                ResourceKinds[i] = elements[i].Kind;
-            }
-#endif
-
-            bindingInfosByVdIndex = new ResourceBindingInfo[elements.Length];
-            HasExplicitBindingSlots = false;
-
-            uint bufferIndex = 0;
-            uint texIndex = 0;
-            uint samplerIndex = 0;
-
-            for (int i = 0; i < bindingInfosByVdIndex.Length; i++)
-            {
-                uint slot;
-
-                switch (elements[i].Kind)
-                {
-                    case ResourceKind.UniformBuffer:
-                        slot = bufferIndex++;
-                        break;
-
-                    case ResourceKind.StructuredBufferReadOnly:
-                        slot = bufferIndex++;
-                        break;
-
-                    case ResourceKind.StructuredBufferReadWrite:
-                        slot = bufferIndex++;
-                        break;
-
-                    case ResourceKind.TextureReadOnly:
-                        slot = texIndex++;
-                        break;
-
-                    case ResourceKind.TextureReadWrite:
-                        slot = texIndex++;
-                        break;
-
-                    case ResourceKind.Sampler:
-                        slot = samplerIndex++;
-                        break;
-
-                    default: throw Illegal.Value<ResourceKind>();
-                }
-
-                bindingInfosByVdIndex[i] = new ResourceBindingInfo(
-                    slot,
-                    elements[i].Stages,
-                    elements[i].Kind,
-                    (elements[i].Options & ResourceLayoutElementOptions.DynamicBinding) != 0);
-            }
-
-            BufferCount = bufferIndex;
-            TextureCount = texIndex;
-            SamplerCount = samplerIndex;
-        }
-
-        /// <summary>
-        /// Compiler-aligned constructor: uses the flat binding map from the shader compiler as the source of truth.
-        /// Slot assignments come directly from <see cref="VdShaderBindingEntry.FlatIndex"/> — the exact
-        /// Metal buffer(N)/texture(N)/sampler(N) indices baked into the compiled shader.
-        /// Used for both precompiled bundles and runtime-compiled shaders that provide a binding map.
-        /// </summary>
+        /// <summary>Compiler-aligned constructor (the only one, V9): Metal buffer(N)/texture(N)/sampler(N) indices from the bundle's flat binding map.</summary>
+        /// <exception cref="ShaderContractException">V9: an element of the set has no binding-map entry.</exception>
         public MtlResourceLayout(
             ref ResourceLayoutDescription description,
             MtlGraphicsDevice gd,
@@ -127,7 +47,7 @@ namespace Veldrid.MTL
 #endif
 
             bindingInfosByVdIndex = new ResourceBindingInfo[elements.Length];
-            HasExplicitBindingSlots = true;
+            bindingEntries ??= System.Array.Empty<VdShaderBindingEntry>();
 
             uint bufferCount = 0;
             uint texCount = 0;
@@ -163,25 +83,20 @@ namespace Veldrid.MTL
                     }
                 }
 
-                // If only one stage was found, use its slot for both (common case: resource only in one stage)
+                // If only one stage was found, use its slot for both (common case: resource only in one stage).
                 if (foundVertex && !foundFragment)
                     fragmentSlot = vertexSlot;
                 else if (foundFragment && !foundVertex)
                     vertexSlot = fragmentSlot;
                 else if (!foundVertex && !foundFragment)
                 {
-                    // Fallback: no binding entry found for this element.
-                    // This shouldn't happen with a well-formed bundle, but handle gracefully.
-                    uint fallbackSlot = element.Kind switch
-                    {
-                        ResourceKind.UniformBuffer or ResourceKind.StructuredBufferReadOnly
-                            or ResourceKind.StructuredBufferReadWrite => bufferCount,
-                        ResourceKind.TextureReadOnly or ResourceKind.TextureReadWrite => texCount,
-                        ResourceKind.Sampler => samplerCount,
-                        _ => throw Illegal.Value<ResourceKind>()
-                    };
-                    vertexSlot = fallbackSlot;
-                    fragmentSlot = fallbackSlot;
+                    // V9: no entry = the compiler never placed this resource; nothing may be counted or guessed.
+                    throw new ShaderContractException(description.VerifiedShape?.BundleName ?? "(no bundle)",
+                    [
+                        new ShaderContractViolation(ShaderContractVerifier.Rule_V9_FlatBindingMap, $"set {setIndex} binding {i} ({element.Name})",
+                            $"{element.Kind}", "no flat binding map entry",
+                            "the Metal argument-table index of every resource comes from the compiled bundle's flat binding map; nothing is counted or guessed"),
+                    ]);
                 }
 
                 // Track counts for compatibility (used by pipeline for NonVertexBufferCount etc.)

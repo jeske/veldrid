@@ -44,7 +44,16 @@ namespace Veldrid.D3D11
 
         protected override ResourceLayout CreateResourceLayoutCore(ref ResourceLayoutDescription description)
         {
-            return new D3D11ResourceLayout(ref description);
+            // V9: D3D11 flattens (set, binding) to absolute registers, so a layout WITHOUT the compiled bundle's flat binding map cannot be
+            // built - there is nothing to count from. ResourceFactory.CreateResourceLayout reaches this only when the shape's bundle has no
+            // map entries for the set, which on D3D11 means a malformed bundle (or a set declared with no resources that still got a layout).
+            if (description.Elements.Length == 0) return new D3D11ResourceLayout(ref description, 0, System.Array.Empty<VdShaderBindingEntry>());
+            throw new ShaderContractException(description.VerifiedShape?.BundleName ?? "(no bundle)",
+            [
+                new ShaderContractViolation(ShaderContractVerifier.Rule_V9_FlatBindingMap, $"set {description.VerifiedSetIndex}",
+                    $"{description.Elements.Length} resource(s)", "no flat binding map entries for this set",
+                    "a D3D11 resource layout is built from the compiled bundle's flat binding map only; the bundle carries none for this set"),
+            ]);
         }
 
         internal override ResourceLayout CreateResourceLayout(
@@ -52,12 +61,8 @@ namespace Veldrid.D3D11
             uint setIndex,
             VdShaderBindingEntry[] bindingEntries)
         {
-            if (bindingEntries != null && bindingEntries.Length > 0)
-            {
-                return new D3D11ResourceLayout(ref description, setIndex, bindingEntries);
-            }
-
-            return new D3D11ResourceLayout(ref description);
+            // The layout constructor throws V9 per element that has no entry; an empty map with resources fails on its first element.
+            return new D3D11ResourceLayout(ref description, setIndex, bindingEntries);
         }
 
         protected override ResourceSet CreateResourceSetCore(ref ResourceSetDescription description)

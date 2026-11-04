@@ -28,7 +28,15 @@ namespace Veldrid.MTL
 
         protected override ResourceLayout CreateResourceLayoutCore(ref ResourceLayoutDescription description)
         {
-            return new MtlResourceLayout(ref description, gd);
+            // V9: Metal flattens (set, binding) to argument-table indices, so a layout WITHOUT the compiled bundle's flat binding map cannot be
+            // built. Reached only when the shape's bundle has no map entries for the set - a malformed bundle unless the set has no resources.
+            if (description.Elements.Length == 0) return new MtlResourceLayout(ref description, gd, 0, System.Array.Empty<VdShaderBindingEntry>());
+            throw new ShaderContractException(description.VerifiedShape?.BundleName ?? "(no bundle)",
+            [
+                new ShaderContractViolation(ShaderContractVerifier.Rule_V9_FlatBindingMap, $"set {description.VerifiedSetIndex}",
+                    $"{description.Elements.Length} resource(s)", "no flat binding map entries for this set",
+                    "a Metal resource layout is built from the compiled bundle's flat binding map only; the bundle carries none for this set"),
+            ]);
         }
 
         internal override ResourceLayout CreateResourceLayout(
@@ -36,12 +44,8 @@ namespace Veldrid.MTL
             uint setIndex,
             VdShaderBindingEntry[] bindingEntries)
         {
-            if (bindingEntries != null && bindingEntries.Length > 0)
-            {
-                return new MtlResourceLayout(ref description, gd, setIndex, bindingEntries);
-            }
-
-            return new MtlResourceLayout(ref description, gd);
+            // The layout constructor throws V9 per element that has no entry.
+            return new MtlResourceLayout(ref description, gd, setIndex, bindingEntries);
         }
 
         protected override ResourceSet CreateResourceSetCore(ref ResourceSetDescription description)

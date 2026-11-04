@@ -9,6 +9,7 @@ namespace Veldrid.OpenGL
     {
         public override uint SizeInBytes { get; }
         public override BufferUsage Usage { get; }
+        public override uint StructureByteStride { get; }
 
         public uint Buffer => buffer;
 
@@ -33,10 +34,11 @@ namespace Veldrid.OpenGL
         private string name;
         private bool nameChanged;
 
-        public OpenGLBuffer(OpenGLGraphicsDevice gd, uint sizeInBytes, BufferUsage usage)
+        public OpenGLBuffer(OpenGLGraphicsDevice gd, uint sizeInBytes, BufferUsage usage, uint structureByteStride)
         {
             this.gd = gd;
             SizeInBytes = sizeInBytes;
+            StructureByteStride = structureByteStride;
             dynamic = (usage & BufferUsage.Dynamic) == BufferUsage.Dynamic;
             Usage = usage;
         }

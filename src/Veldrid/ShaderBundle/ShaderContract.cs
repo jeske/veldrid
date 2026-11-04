@@ -63,6 +63,17 @@ namespace Veldrid
         public const string Rule_V7c_UniformStructs = "V7c";
         public const string Rule_V7_ShaderSet = "V7";
         public const string Rule_Identifier = "ID";
+        /// <summary>
+        /// V9 (2026-11-04): on a backend that flattens (set, binding) to absolute registers (D3D11, Metal) the register of EVERY resource comes from
+        /// the bundle's flat binding map, written by the shader compiler. A set with resources and no map entry, an element without an entry, or a
+        /// fragment-stage UAV register below the pipeline's colour-attachment count is a violation - never a counted fallback.
+        /// </summary>
+        public const string Rule_V9_FlatBindingMap = "V9";
+        /// <summary>
+        /// V7e (V10, 2026-11-04): a <c>StorageBufferSlot&lt;TElement&gt;</c> struct against its compiled std430 storage block - element size == array
+        /// stride (or whole-block size), members by name/offset/size both ways; a bound buffer's structure stride == the verified stride.
+        /// </summary>
+        public const string Rule_V7e_StorageStructs = "V7e";
 
         // ───────────────────────── D10: shape <-> bundle, both directions, by NAME ─────────────────────────
 
@@ -94,10 +105,6 @@ namespace Veldrid
                     var e = elements[binding];
                     if (string.IsNullOrEmpty(e.Name)) continue;
                     compiledNames.Add(e.Name);
-                    if (e.Kind is ResourceKind.StructuredBufferReadOnly or ResourceKind.StructuredBufferReadWrite)
-                        violations.Add(new ShaderContractViolation("UNSUPPORTED_LAYOUT", e.Name,
-                            "storage buffer", "storage member/array-stride reflection not implemented",
-                            "storage binding is refused until its C# layout can be verified; resource kind alone is insufficient"));
                     if (!IsLegalCSharpIdentifier(e.Name))
                         violations.Add(new ShaderContractViolation(Rule_Identifier, e.Name, $"GLSL resource at set {set} binding {binding}", "not a legal C# identifier", "rename the GLSL variable so it can be a shape field"));
                     if (!slotsByName.TryGetValue(e.Name, out var slot))
@@ -126,6 +133,19 @@ namespace Veldrid
                 VerifyStructAgainstBlock(slot.StructType, block, violations);
             }
 
+            // Storage structs (V7e, V10). A bundle compiled before V10 has no storageBlocks: that is a METADATA violation ("recompile"), never a guess.
+            foreach (var slot in shape.Slots.Where(s => s.StorageElementType != null))
+            {
+                var block = (itf.StorageBlocks ?? []).FirstOrDefault(b => string.Equals(b.Name, slot.Name, StringComparison.Ordinal));
+                if (block is null)
+                {
+                    violations.Add(new ShaderContractViolation("METADATA", slot.Name, "storage slot", "missing compiled storage block layout",
+                        "cannot verify a storage element struct without its compiled std430 layout - recompile the bundle with Veldrid.SPIRV >= V10 (native ABI 3)"));
+                    continue;
+                }
+                VerifyStorageStructAgainstBlock(slot.StorageElementType, block, violations);
+            }
+
             // Vertex inputs (V7a by construction): field order = slot order; locations run across slots.
             VerifyVertexInputs(shape.VertexInputs.Select(v => v.Layout).ToArray(), itf.VertexInputs, violations);
             foreach (var vi in itf.VertexInputs)
@@ -137,7 +157,7 @@ namespace Veldrid
         private static string SlotTypeFor(ResourceKind kind) => kind switch
         {
             ResourceKind.UniformBuffer => "UniformBlock<T>", ResourceKind.TextureReadOnly => "TextureSlot", ResourceKind.Sampler => "SamplerSlot",
-            ResourceKind.StructuredBufferReadOnly or ResourceKind.StructuredBufferReadWrite => "StorageBufferSlot", ResourceKind.TextureReadWrite => "StorageImageSlot", _ => kind.ToString(),
+            ResourceKind.StructuredBufferReadOnly or ResourceKind.StructuredBufferReadWrite => "StorageBufferSlot<TElement>", ResourceKind.TextureReadWrite => "StorageImageSlot", _ => kind.ToString(),
         };
 
         /// <summary>C# identifier rule (letters/digits/underscore, not starting with a digit, not a keyword). The GLSL name must be usable verbatim as a field name.</summary>
@@ -346,6 +366,63 @@ namespace Veldrid
             foreach (var member in block.Members)
                 if (!fields.Any(f => string.Equals(f.Name, member.Name, StringComparison.Ordinal)))
                     violations.Add(new ShaderContractViolation(Rule_V7c_UniformStructs, $"{glslBlockName}.{member.Name}", $"C# {structName}: no such field", $"shader {member.Type} @ {member.OffsetBytes}", "every GLSL member must have a struct field of the same name"));
+        }
+
+        /// <summary>
+        /// V7e (V10): a <c>StorageBufferSlot&lt;TElement&gt;</c> struct against a compiled storage block. A block that is ONLY a runtime array:
+        /// <paramref name="elementType"/> is the array element - its size must equal the std430 array stride and, for a struct element, its
+        /// fields must match the element members by name/offset/size both ways. A block with no runtime array: <paramref name="elementType"/>
+        /// is the whole block - size equals the declared block size, fields match the members by name (same law as V7c, std430 placement).
+        /// Fixed members plus a runtime array is refused: there is no single C# struct that is that block - split it into two buffers.
+        /// </summary>
+        public static void VerifyStorageStructAgainstBlock(Type elementType, VdShaderStorageBlock block, List<ShaderContractViolation> violations)
+        {
+            string typeName = elementType.Name; string blockName = block.Name;
+            if (!elementType.IsValueType)
+            {
+                violations.Add(new ShaderContractViolation(Rule_V7e_StorageStructs, blockName, $"C# {typeName} is a class", "storage block", "StorageBufferSlot<TElement> requires an unmanaged struct"));
+                return;
+            }
+            if (block.HasRuntimeArray && (block.Members?.Length ?? 0) > 0)
+            {
+                violations.Add(new ShaderContractViolation(Rule_V7e_StorageStructs, blockName, $"C# {typeName}", $"shader block: {block.Members.Length} fixed member(s) + runtime array {block.RuntimeArrayName}[]",
+                    "a storage block with fixed members AND a runtime array has no single element struct - split the header and the array into two buffers"));
+                return;
+            }
+            int size = Marshal.SizeOf(elementType);
+            if (block.HasRuntimeArray)
+            {
+                if (size != block.RuntimeArrayStrideBytes)
+                    violations.Add(new ShaderContractViolation(Rule_V7e_StorageStructs, $"{blockName}.{block.RuntimeArrayName}[]", $"C# {typeName}: {size} bytes", $"shader element {block.RuntimeArrayElementType}: stride {block.RuntimeArrayStrideBytes} bytes (std430)",
+                        "the element struct size must equal the compiled array stride"));
+                // A struct element: members by name. A scalar / vector element (uint, vec4): the size check above is the whole contract.
+                if (block.RuntimeArrayElementMembers is { Length: > 0 })
+                    VerifyFieldsAgainstMembers(elementType, $"{blockName}.{block.RuntimeArrayName}[]", block.RuntimeArrayElementMembers, violations);
+            }
+            else
+            {
+                if (size != block.FixedSizeBytes)
+                    violations.Add(new ShaderContractViolation(Rule_V7e_StorageStructs, blockName, $"C# {typeName}: {size} bytes", $"shader block: {block.FixedSizeBytes} bytes (std430)", "struct size must equal the compiled block size"));
+                VerifyFieldsAgainstMembers(elementType, blockName, block.Members ?? [], violations);
+            }
+        }
+
+        private static void VerifyFieldsAgainstMembers(Type structType, string where, VdShaderUniformMember[] members, List<ShaderContractViolation> violations)
+        {
+            var fields = structType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var membersByName = members.ToDictionary(m => m.Name, StringComparer.Ordinal);
+            foreach (var field in fields)
+            {
+                int offset = (int)Marshal.OffsetOf(structType, field.Name);
+                int fieldSize = Marshal.SizeOf(field.FieldType);
+                if (!membersByName.TryGetValue(field.Name, out var member))
+                { violations.Add(new ShaderContractViolation(Rule_V7e_StorageStructs, $"{where}.{field.Name}", $"C# field {structType.Name}.{field.Name}", "shader: no such member", "struct field NAME must equal the GLSL member name")); continue; }
+                if (offset != member.OffsetBytes || fieldSize != member.SizeBytes)
+                    violations.Add(new ShaderContractViolation(Rule_V7e_StorageStructs, $"{where}.{field.Name}", $"C# @ {offset} ({fieldSize} B)", $"shader {member.Type} @ {member.OffsetBytes} ({member.SizeBytes} B)", "field placement must equal the std430 member placement"));
+            }
+            foreach (var member in members)
+                if (!fields.Any(f => string.Equals(f.Name, member.Name, StringComparison.Ordinal)))
+                    violations.Add(new ShaderContractViolation(Rule_V7e_StorageStructs, $"{where}.{member.Name}", $"C# {structType.Name}: no such field", $"shader {member.Type} @ {member.OffsetBytes}", "every GLSL member must have a struct field of the same name"));
         }
     }
 }

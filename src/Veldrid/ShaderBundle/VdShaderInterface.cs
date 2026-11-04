@@ -24,6 +24,10 @@ namespace Veldrid
         /// <summary>Uniform blocks with std140 member placement, merged across stages (one entry per set/binding).</summary>
         [JsonPropertyName("uniformBlocks")]
         public VdShaderUniformBlock[] UniformBlocks { get; set; } = [];
+
+        /// <summary>V10: storage blocks with std430 member placement, merged across stages (one entry per set/binding). Empty in bundles compiled before V10.</summary>
+        [JsonPropertyName("storageBlocks")]
+        public VdShaderStorageBlock[] StorageBlocks { get; set; } = [];
     }
 
     /// <summary>One compiled vertex input.</summary>
@@ -64,5 +68,34 @@ namespace Veldrid
         [JsonPropertyName("type")] public string Type { get; set; }
         [JsonPropertyName("offsetBytes")] public uint OffsetBytes { get; set; }
         [JsonPropertyName("sizeBytes")] public uint SizeBytes { get; set; }
+    }
+
+    /// <summary>
+    /// V10: one storage (<c>buffer</c>) block as compiled, std430, merged across stages. The verifier (V7e) checks a
+    /// <c>StorageBufferSlot&lt;TElement&gt;</c> against it: a block that is ONLY a runtime array binds an element struct whose size is
+    /// <see cref="RuntimeArrayStrideBytes"/> (members by name within the element); a block with no runtime array binds a whole-block
+    /// struct of <see cref="FixedSizeBytes"/> (members by name, like a uniform block). Fixed members PLUS a runtime array is refused.
+    /// </summary>
+    public sealed class VdShaderStorageBlock
+    {
+        [JsonPropertyName("name")] public string Name { get; set; }
+        [JsonPropertyName("set")] public uint Set { get; set; }
+        [JsonPropertyName("binding")] public uint Binding { get; set; }
+        [JsonPropertyName("stages")] [JsonConverter(typeof(JsonStringEnumConverter<ShaderStages>))] public ShaderStages Stages { get; set; }
+        /// <summary>Declared <c>readonly buffer</c> (NonWritable) - the bundle's resource kind is StructuredBufferReadOnly.</summary>
+        [JsonPropertyName("readOnly")] public bool ReadOnly { get; set; }
+        /// <summary>Bytes of the fixed members, i.e. where a runtime array starts; the declared block size when there is none.</summary>
+        [JsonPropertyName("fixedSizeBytes")] public uint FixedSizeBytes { get; set; }
+        /// <summary>The fixed members (a trailing runtime array is NOT listed here).</summary>
+        [JsonPropertyName("members")] public VdShaderUniformMember[] Members { get; set; } = [];
+        [JsonPropertyName("hasRuntimeArray")] public bool HasRuntimeArray { get; set; }
+        /// <summary>GLSL member name of the runtime array (<c>Counts</c> in <c>uint Counts[];</c>).</summary>
+        [JsonPropertyName("runtimeArrayName")] public string RuntimeArrayName { get; set; }
+        /// <summary>GLSL spelling of the element type: <c>uint</c>, <c>vec4</c>, <c>InstanceData</c> ...</summary>
+        [JsonPropertyName("runtimeArrayElementType")] public string RuntimeArrayElementType { get; set; }
+        /// <summary>std430 array stride = the C# element struct's Marshal.SizeOf.</summary>
+        [JsonPropertyName("runtimeArrayStrideBytes")] public uint RuntimeArrayStrideBytes { get; set; }
+        /// <summary>For a struct element: its members with offsets WITHIN the element. Empty for scalar / vector elements.</summary>
+        [JsonPropertyName("runtimeArrayElementMembers")] public VdShaderUniformMember[] RuntimeArrayElementMembers { get; set; } = [];
     }
 }

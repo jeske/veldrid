@@ -80,6 +80,27 @@ namespace Veldrid.D3D11
             ResourceLayouts = new D3D11ResourceLayout[genericLayouts.Length];
             for (int i = 0; i < ResourceLayouts.Length; i++) ResourceLayouts[i] = Util.AssertSubtype<ResourceLayout, D3D11ResourceLayout>(genericLayouts[i]);
 
+            // V9: a pixel-shader UAV register must be >= the number of colour attachments (D3D11 binds UAVs after the RTVs in one call;
+            // fxc already refused anything below the SHADER's output count). The register is the compiler's, from the flat binding map -
+            // this is a stated rule checked against THIS pipeline's framebuffer layout, not an offset applied at bind time.
+            int colourAttachmentCount = description.Outputs.ColorAttachments?.Length ?? 0;
+            for (int li = 0; li < ResourceLayouts.Length; li++)
+            {
+                var layout = ResourceLayouts[li];
+                for (int ei = 0; ei < layout.Description.Elements.Length; ei++)
+                {
+                    var rbi = layout.GetDeviceSlotIndex(ei);
+                    bool isUav = rbi.Kind == ResourceKind.StructuredBufferReadWrite || rbi.Kind == ResourceKind.TextureReadWrite;
+                    if (!isUav || (rbi.Stages & ShaderStages.Fragment) == 0 || rbi.Slot >= colourAttachmentCount) continue;
+                    throw new ShaderContractException(description.ResourceLayouts[li].Description.VerifiedShape?.BundleName ?? "(no bundle)",
+                    [
+                        new ShaderContractViolation(ShaderContractVerifier.Rule_V9_FlatBindingMap, $"set {li} binding {ei} ({layout.Description.Elements[ei].Name})",
+                            $"fragment UAV register u{rbi.Slot}", $"{colourAttachmentCount} colour attachment(s)",
+                            "a pixel-shader UAV register must be >= the pipeline's colour attachment count; the shader was compiled for fewer outputs than this framebuffer has"),
+                    ]);
+                }
+            }
+
             Debug.Assert(vsBytecode != null || ComputeShader != null);
 
             if (vsBytecode != null && description.ShaderSet.VertexLayouts.Length > 0)

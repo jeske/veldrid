@@ -86,7 +86,7 @@
 
         protected override DeviceBuffer CreateBufferCore(ref BufferDescription description)
         {
-            return new VkBuffer(gd, description.SizeInBytes, description.Usage);
+            return new VkBuffer(gd, description.SizeInBytes, description.Usage, description.StructureByteStride);
         }
     }
 }

@@ -446,18 +446,11 @@ namespace Veldrid.D3D11
             // pipeline's own layout knows that register (SPIRV-Cross numbers D3D11 registers per kind across ALL sets of one shader, so
             // the same (set, binding) can be b1 in one shader and b2 in another). The set's layout is the layout of whatever shape the
             // set was CREATED from; its declarations are identical (ShaderPipelineShape verifies that at bind), its registers may not be.
-            // Legacy (non-explicit) layouts compute cross-set bases from the pipeline's layouts for the same reason.
+            // V9: every register is the compiler's flat-binding-map value, absolute and global - no cross-set base is ever added.
             var pipelineLayouts = graphics ? graphicsPipeline?.ResourceLayouts : computePipeline?.ResourceLayouts;
             var layout = pipelineLayouts != null && slot < pipelineLayouts.Length && pipelineLayouts[slot] != null
                 ? pipelineLayouts[slot]
                 : d3d11Rs.Layout;
-
-            // When HasExplicitBindingSlots is true, the slot values are absolute global registers
-            // from THIS pipeline's shader compiler output — no base offset needed. Otherwise, compute cross-set offsets.
-            int cbBase = layout.HasExplicitBindingSlots ? 0 : getConstantBufferBase(slot, graphics);
-            int uaBase = layout.HasExplicitBindingSlots ? 0 : getUnorderedAccessBase(slot, graphics);
-            int textureBase = layout.HasExplicitBindingSlots ? 0 : getTextureBase(slot, graphics);
-            int samplerBase = layout.HasExplicitBindingSlots ? 0 : getSamplerBase(slot, graphics);
 
             var resources = d3d11Rs.Resources;
             uint dynamicOffsetIndex = 0;
@@ -480,14 +473,14 @@ namespace Veldrid.D3D11
                     case ResourceKind.UniformBuffer:
                     {
                         var range = getBufferRange(resource, bufferOffset);
-                        bindUniformBuffer(range, cbBase + rbi.Slot, rbi.Stages);
+                        bindUniformBuffer(range, rbi.Slot, rbi.Stages);
                         break;
                     }
 
                     case ResourceKind.StructuredBufferReadOnly:
                     {
                         var range = getBufferRange(resource, bufferOffset);
-                        bindStorageBufferView(range, textureBase + rbi.Slot, rbi.Stages);
+                        bindStorageBufferView(range, rbi.Slot, rbi.Stages);
                         break;
                     }
 
@@ -495,7 +488,7 @@ namespace Veldrid.D3D11
                     {
                         var range = getBufferRange(resource, bufferOffset);
                         var uav = range.Buffer.GetUnorderedAccessView(range.Offset, range.Size);
-                        bindUnorderedAccessView(null, range.Buffer, uav, uaBase + rbi.Slot, rbi.Stages, slot);
+                        bindUnorderedAccessView(null, range.Buffer, uav, rbi.Slot, rbi.Stages, slot);
                         break;
                     }
 
@@ -503,19 +496,19 @@ namespace Veldrid.D3D11
                         var texView = Util.GetTextureView(gd, resource);
                         var d3d11TexView = Util.AssertSubtype<TextureView, D3D11TextureView>(texView);
                         unbindUavTexture(d3d11TexView.Target);
-                        bindTextureView(d3d11TexView, textureBase + rbi.Slot, rbi.Stages, slot);
+                        bindTextureView(d3d11TexView, rbi.Slot, rbi.Stages, slot);
                         break;
 
                     case ResourceKind.TextureReadWrite:
                         var rwTexView = Util.GetTextureView(gd, resource);
                         var d3d11RwTexView = Util.AssertSubtype<TextureView, D3D11TextureView>(rwTexView);
                         unbindSrvTexture(d3d11RwTexView.Target);
-                        bindUnorderedAccessView(d3d11RwTexView.Target, null, d3d11RwTexView.UnorderedAccessView, uaBase + rbi.Slot, rbi.Stages, slot);
+                        bindUnorderedAccessView(d3d11RwTexView.Target, null, d3d11RwTexView.UnorderedAccessView, rbi.Slot, rbi.Stages, slot);
                         break;
 
                     case ResourceKind.Sampler:
                         var sampler = Util.AssertSubtype<IBindableResource, D3D11Sampler>(resource);
-                        bindSampler(sampler, samplerBase + rbi.Slot, rbi.Stages);
+                        bindSampler(sampler, rbi.Slot, rbi.Stages);
                         break;
 
                     default: throw Illegal.Value<ResourceKind>();
@@ -589,62 +582,6 @@ namespace Veldrid.D3D11
                 btis.Clear();
                 poolBoundTextureList(btis);
             }
-        }
-
-        private int getConstantBufferBase(uint slot, bool graphics)
-        {
-            var layouts = graphics ? graphicsPipeline.ResourceLayouts : computePipeline.ResourceLayouts;
-            int ret = 0;
-
-            for (int i = 0; i < slot; i++)
-            {
-                Debug.Assert(layouts[i] != null);
-                ret += layouts[i].UniformBufferCount;
-            }
-
-            return ret;
-        }
-
-        private int getUnorderedAccessBase(uint slot, bool graphics)
-        {
-            var layouts = graphics ? graphicsPipeline.ResourceLayouts : computePipeline.ResourceLayouts;
-            int ret = 0;
-
-            for (int i = 0; i < slot; i++)
-            {
-                Debug.Assert(layouts[i] != null);
-                ret += layouts[i].StorageBufferCount;
-            }
-
-            return ret;
-        }
-
-        private int getTextureBase(uint slot, bool graphics)
-        {
-            var layouts = graphics ? graphicsPipeline.ResourceLayouts : computePipeline.ResourceLayouts;
-            int ret = 0;
-
-            for (int i = 0; i < slot; i++)
-            {
-                Debug.Assert(layouts[i] != null);
-                ret += layouts[i].TextureCount;
-            }
-
-            return ret;
-        }
-
-        private int getSamplerBase(uint slot, bool graphics)
-        {
-            var layouts = graphics ? graphicsPipeline.ResourceLayouts : computePipeline.ResourceLayouts;
-            int ret = 0;
-
-            for (int i = 0; i < slot; i++)
-            {
-                Debug.Assert(layouts[i] != null);
-                ret += layouts[i].SamplerCount;
-            }
-
-            return ret;
         }
 
         private void preDrawCommand()
@@ -934,16 +871,16 @@ namespace Veldrid.D3D11
                 list.Add(new BoundTextureInfo { Slot = slot, Stages = stages, ResourceSet = resourceSet });
             }
 
-            int baseSlot = 0;
-            if (!compute && fragmentBoundSamplers != null) baseSlot = Framebuffer.ColorTargets.Count;
-            int actualSlot = baseSlot + slot;
-
-            if (buffer != null) trackBoundUavBuffer(buffer, actualSlot, compute);
+            // V9: `slot` IS the u# register the shader compiler assigned (flat binding map). Nothing is added here - the old
+            // "+ Framebuffer.ColorTargets.Count" was a second guess stacked on the compiler's answer. The compiler already starts
+            // pixel-shader UAVs above the shader's output count (fxc requires it), and D3D11Pipeline checks that against the
+            // pipeline's colour attachments at creation.
+            if (buffer != null) trackBoundUavBuffer(buffer, slot, compute);
 
             if (compute)
-                DeviceContext.CSSetUnorderedAccessView(actualSlot, uav);
+                DeviceContext.CSSetUnorderedAccessView(slot, uav);
             else
-                DeviceContext.OMSetUnorderedAccessView(actualSlot, uav!);
+                DeviceContext.OMSetUnorderedAccessView(slot, uav!);
         }
 
         private void trackBoundUavBuffer(DeviceBuffer buffer, int slot, bool compute)

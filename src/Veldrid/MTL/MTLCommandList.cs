@@ -903,15 +903,15 @@ namespace Veldrid.MTL
         private void bindBuffer(DeviceBufferRange range, uint set, uint slot, ShaderStages stages)
         {
             var mtlBuffer = Util.AssertSubtype<DeviceBuffer, MtlBuffer>(range.Buffer);
-            uint baseBuffer = getBufferBase(set, stages != ShaderStages.Compute);
+            // V9: slot IS the compiler's buffer(N) index for the stage (flat binding map; activateGraphicsResourceSet passes the per-stage
+            // slot). No base offset, no vertex-buffer-count offset - the compiler is the source of truth.
+            UIntPtr index = slot;
 
             if (stages == ShaderStages.Compute)
             {
-                UIntPtr index = slot + baseBuffer;
-
                 if (!boundComputeBuffers.TryGetValue(index, out var boundBuffer) || !range.Equals(boundBuffer))
                 {
-                    cce.setBuffer(mtlBuffer.DeviceBuffer, range.Offset, slot + baseBuffer);
+                    cce.setBuffer(mtlBuffer.DeviceBuffer, range.Offset, index);
                     boundComputeBuffers[index] = range;
                 }
             }
@@ -919,23 +919,6 @@ namespace Veldrid.MTL
             {
                 if ((stages & ShaderStages.Vertex) == ShaderStages.Vertex)
                 {
-                    UIntPtr index;
-                    if (graphicsPipeline.ResourceBindingModel == ResourceBindingModel.ShaderBundleControlled)
-                    {
-                        // ShaderBundleControlled: slot IS the absolute Metal buffer index from the compiler.
-                        // No base offset, no vertexBufferCount offset. The binding map is the source of truth.
-                        index = slot;
-                    }
-                    else if (graphicsPipeline.ResourceBindingModel == ResourceBindingModel.Improved)
-                    {
-                        index = slot + baseBuffer;
-                    }
-                    else
-                    {
-                        // Legacy Default mode: uniform buffers come after vertex buffers.
-                        index = slot + vertexBufferCount + baseBuffer;
-                    }
-
                     if (!boundVertexBuffers.TryGetValue(index, out var boundBuffer) || boundBuffer.Buffer != range.Buffer)
                     {
                         rce.setVertexBuffer(mtlBuffer.DeviceBuffer, range.Offset, index);
@@ -950,19 +933,6 @@ namespace Veldrid.MTL
 
                 if ((stages & ShaderStages.Fragment) == ShaderStages.Fragment)
                 {
-                    UIntPtr index;
-                    if (graphicsPipeline.ResourceBindingModel == ResourceBindingModel.ShaderBundleControlled)
-                    {
-                        // ShaderBundleControlled: fragmentSlot IS the absolute Metal buffer index.
-                        // The fragmentSlot is passed as the slot parameter when called from
-                        // activateGraphicsResourceSet with the correct per-stage slot.
-                        index = slot;
-                    }
-                    else
-                    {
-                        index = slot + baseBuffer;
-                    }
-
                     if (!boundFragmentBuffers.TryGetValue(index, out var boundBuffer) || boundBuffer.Buffer != range.Buffer)
                     {
                         rce.setFragmentBuffer(mtlBuffer.DeviceBuffer, range.Offset, index);
@@ -979,8 +949,8 @@ namespace Veldrid.MTL
 
         private void bindTexture(MtlTextureView mtlTexView, uint set, uint slot, ShaderStages stages)
         {
-            uint baseTexture = getTextureBase(set, stages != ShaderStages.Compute);
-            UIntPtr index = slot + baseTexture;
+            // V9: slot IS the compiler's texture(N) index (flat binding map); nothing is added.
+            UIntPtr index = slot;
 
             if (stages == ShaderStages.Compute && (!boundComputeTextures.TryGetValue(index, out var computeTexture) || computeTexture.NativePtr != mtlTexView.TargetDeviceTexture.NativePtr))
             {
@@ -1005,8 +975,8 @@ namespace Veldrid.MTL
 
         private void bindSampler(MtlSampler mtlSampler, uint set, uint slot, ShaderStages stages)
         {
-            uint baseSampler = getSamplerBase(set, stages != ShaderStages.Compute);
-            UIntPtr index = slot + baseSampler;
+            // V9: slot IS the compiler's sampler(N) index (flat binding map); nothing is added.
+            UIntPtr index = slot;
 
             if (stages == ShaderStages.Compute && (!boundComputeSamplers.TryGetValue(index, out var computeSampler) || computeSampler.NativePtr != mtlSampler.DeviceSampler.NativePtr))
             {
@@ -1027,63 +997,6 @@ namespace Veldrid.MTL
                 rce.setFragmentSamplerState(mtlSampler.DeviceSampler, index);
                 boundFragmentSamplers[index] = mtlSampler.DeviceSampler;
             }
-        }
-
-        private uint getBufferBase(uint set, bool graphics)
-        {
-            var pipeline = graphics ? graphicsPipeline : null;
-
-            // When explicit binding slots are in use, the slot values in ResourceBindingInfo
-            // are absolute (assigned by the shader compiler). No base offset needed.
-            if (pipeline != null && pipeline.HasExplicitBindingSlots)
-                return 0;
-
-            var layouts = graphics ? graphicsPipeline.ResourceLayouts : computePipeline.ResourceLayouts;
-            uint ret = 0;
-
-            for (int i = 0; i < set; i++)
-            {
-                Debug.Assert(layouts[i] != null);
-                ret += layouts[i].BufferCount;
-            }
-
-            return ret;
-        }
-
-        private uint getTextureBase(uint set, bool graphics)
-        {
-            // When explicit binding slots are in use, the slot values are absolute.
-            if (graphics && graphicsPipeline != null && graphicsPipeline.HasExplicitBindingSlots)
-                return 0;
-
-            var layouts = graphics ? graphicsPipeline.ResourceLayouts : computePipeline.ResourceLayouts;
-            uint ret = 0;
-
-            for (int i = 0; i < set; i++)
-            {
-                Debug.Assert(layouts[i] != null);
-                ret += layouts[i].TextureCount;
-            }
-
-            return ret;
-        }
-
-        private uint getSamplerBase(uint set, bool graphics)
-        {
-            // When explicit binding slots are in use, the slot values are absolute.
-            if (graphics && graphicsPipeline != null && graphicsPipeline.HasExplicitBindingSlots)
-                return 0;
-
-            var layouts = graphics ? graphicsPipeline.ResourceLayouts : computePipeline.ResourceLayouts;
-            uint ret = 0;
-
-            for (int i = 0; i < set; i++)
-            {
-                Debug.Assert(layouts[i] != null);
-                ret += layouts[i].SamplerCount;
-            }
-
-            return ret;
         }
 
         private bool ensureRenderPass()

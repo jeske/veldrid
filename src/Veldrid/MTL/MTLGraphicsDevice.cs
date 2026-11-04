@@ -258,6 +258,11 @@ namespace Veldrid.MTL
 
         internal MTLComputePipelineState GetUnalignedBufferCopyPipeline()
         {
+            // TODO(V9): the ONE remaining hand-written shader in Veldrid. It bypasses ResourceFactory entirely (raw MtlShader + raw
+            // MTLComputePipelineDescriptor), so it is not on the layout/binding path V9 unified - but the rule is "every shader is a
+            // .vdshader built by Veldrid.SPIRV". Convert once ShaderBundlePipeline has a compute path (AN_Monsters spec
+            // _SPECS_Other3DApps/202 P0.b): compile the Metal copy_bytes kernel as an embedded compute bundle and create it through
+            // ResourceFactory.CreateFromBundle + CreateComputePipeline like every other shader.
             lock (unalignedBufferCopyPipelineLock)
             {
                 if (unalignedBufferCopyPipeline.IsNull)

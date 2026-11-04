@@ -258,11 +258,15 @@ namespace Veldrid.MTL
 
         internal MTLComputePipelineState GetUnalignedBufferCopyPipeline()
         {
-            // TODO(V9): the ONE remaining hand-written shader in Veldrid. It bypasses ResourceFactory entirely (raw MtlShader + raw
-            // MTLComputePipelineDescriptor), so it is not on the layout/binding path V9 unified - but the rule is "every shader is a
-            // .vdshader built by Veldrid.SPIRV". Convert once ShaderBundlePipeline has a compute path (AN_Monsters spec
-            // _SPECS_Other3DApps/202 P0.b): compile the Metal copy_bytes kernel as an embedded compute bundle and create it through
-            // ResourceFactory.CreateFromBundle + CreateComputePipeline like every other shader.
+            // DEFERRED TO AN OSX SESSION (AN_Monsters spec _SPECS_Other3DApps/204 OQ2, user decision Nov 4 2026): the ONE remaining
+            // hand-written shader in Veldrid. It bypasses ResourceFactory entirely (raw MtlShader from a prebuilt .metallib + raw
+            // MTLComputePipelineDescriptor), so it is not on the verified layout/binding path - but the rule is "every shader is a
+            // .vdshader built by Veldrid.SPIRV". The compute bundle path now EXISTS (204 C1/C2: ShaderBundlePipeline compute sources,
+            // CompileCompute verified + carrying its interface, ResourceFactory.CreateFromBundle compute branch, shape-verified
+            // CreateComputePipeline). INTENT: rewrite UnalignedBufferCopy.metal as GLSL (`copy_bytes`: two storage buffers + a uniform
+            // block of offsets/sizes), compile it as an embedded compute bundle, create it through CreateFromBundle + CreateComputePipeline
+            // like every other shader, and delete MTL_UnalignedBufferCopy_*.metallib. Not done here because it cannot be executed or
+            // compared against the prebuilt .metallib without a Metal device; converting blind is exactly the unverified change we avoid.
             lock (unalignedBufferCopyPipelineLock)
             {
                 if (unalignedBufferCopyPipeline.IsNull)

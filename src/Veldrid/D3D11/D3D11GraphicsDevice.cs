@@ -152,15 +152,17 @@ namespace Veldrid.D3D11
             IsDebugEnabled = (flags & DeviceCreationFlags.Debug) != 0;
 
             Features = new GraphicsDeviceFeatures(
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
+                computeShader: true,
+                geometryShader: true,
+                tessellationShaders: true,
+                multipleViewports: true,
+                samplerLodBias: true,
+                drawBaseVertex: true,
+                drawBaseInstance: true,
+                drawIndirect: true,
+                // V11 (AN_Monsters spec 204 T3): a GPU-authored indirect record's FirstInstance is NOT visible to gl_InstanceIndex on D3D11
+                // (SV_InstanceID excludes it and the host cannot fill SPIRV_Cross_VertexInfo from a buffer it cannot read). Was wrongly true.
+                drawIndirectBaseInstance: false,
                 true,
                 true,
                 true,

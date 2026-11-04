@@ -17,6 +17,8 @@ default.ResourceFactory.CreateFromBundle.fileResolver: object null
 default.ResourceFactory.CreateFromBundle.fileResolver: object null
 default.ShaderSetDescription..ctor.specializations: object null
 default.ShapeSlotDescriptor..ctor.StorageElementType: object null
+default.VeldridShaderBundle.GetComputeShaderData.basePath: object null
+default.VeldridShaderBundle.GetComputeShaderData.fileResolver: object null
 default.VeldridShaderBundle.GetVertexFragmentShaderData.basePath: object null
 default.VeldridShaderBundle.GetVertexFragmentShaderData.fileResolver: object null
 enum.BlendFactor.BlendFactor: 10
@@ -995,6 +997,7 @@ method.VeldridShaderBundle.ComputeSha256: string(byte[] data)
 method.VeldridShaderBundle.Deserialize: VeldridShaderBundle(string json)
 method.VeldridShaderBundle.DeserializeFromFile: VeldridShaderBundle(string path)
 method.VeldridShaderBundle.GetBackendKey: string(GraphicsBackend backend)
+method.VeldridShaderBundle.GetComputeShaderData: ValueTuple`2<byte[], string>(GraphicsBackend backend, Func`2<string, byte[]> fileResolver, string basePath)
 method.VeldridShaderBundle.GetResourceLayouts: ResourceLayoutDescription[]()
 method.VeldridShaderBundle.GetVertexFragmentShaderData: ValueTuple`4<byte[], byte[], string, string>(GraphicsBackend backend, Func`2<string, byte[]> fileResolver, string basePath)
 method.VeldridShaderBundle.RequireCurrentFormat: void()
@@ -1234,6 +1237,7 @@ property.VdShaderBindingEntry.Name: string { get; set; }
 property.VdShaderBindingEntry.Set: uint { get; set; }
 property.VdShaderBindingEntry.Stages: ShaderStages { get; set; }
 property.VdShaderInterface.FragmentInputs: VdShaderVarying[] { get; set; }
+property.VdShaderInterface.HlslVertexInfoRegister: Nullable`1<uint> { get; set; }
 property.VdShaderInterface.StorageBlocks: VdShaderStorageBlock[] { get; set; }
 property.VdShaderInterface.UniformBlocks: VdShaderUniformBlock[] { get; set; }
 property.VdShaderInterface.VertexInputs: VdShaderVertexInput[] { get; set; }
@@ -1279,6 +1283,7 @@ property.VeldridShaderBundle.FlatBindingMap: VdShaderBindingEntry[] { get; set; 
 property.VeldridShaderBundle.FragmentSource: string { get; set; }
 property.VeldridShaderBundle.InputHash: string { get; set; }
 property.VeldridShaderBundle.Interface: VdShaderInterface { get; set; }
+property.VeldridShaderBundle.IsCompute: bool { get; }
 property.VeldridShaderBundle.Purpose: string { get; set; }
 property.VeldridShaderBundle.ResourceLayoutDescriptions: VdShaderResourceLayout[] { get; set; }
 property.VeldridShaderBundle.ShaderName: string { get; set; }

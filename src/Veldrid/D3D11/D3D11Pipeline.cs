@@ -23,6 +23,15 @@ namespace Veldrid.D3D11
         public new D3D11ResourceLayout[] ResourceLayouts { get; }
         public int[] VertexStrides { get; }
 
+        /// <summary>
+        /// V11 (AN_Monsters spec 204 T2): the <c>b#</c> register of the vertex stage's host-filled <c>SPIRV_Cross_VertexInfo</c> cbuffer
+        /// (base vertex + base instance), from the bundle's compiled interface (<see cref="VdShaderInterface.HlslVertexInfoRegister"/>);
+        /// -1 when the vertex shader reads neither <c>gl_VertexIndex</c> nor <c>gl_InstanceIndex</c>. <see cref="D3D11CommandList"/> writes the
+        /// two bases there before every draw of this pipeline (D3D11's SV_VertexID / SV_InstanceID exclude them; SPIR-V's include them).
+        /// Read ONLY from the bundle - the host never predicts a register (V9).
+        /// </summary>
+        public int HlslVertexInfoRegister { get; } = -1;
+
         public override bool IsComputePipeline { get; }
 
         public override bool IsDisposed => disposed;
@@ -44,6 +53,8 @@ namespace Veldrid.D3D11
                     var d3d11VertexShader = (D3D11Shader)stages[i];
                     VertexShader = (ID3D11VertexShader)d3d11VertexShader.DeviceShader;
                     vsBytecode = d3d11VertexShader.Bytecode;
+                    uint? vertexInfoRegister = ShaderInterfaceRegistry.TryGetBundle(stages[i])?.Interface?.HlslVertexInfoRegister;
+                    HlslVertexInfoRegister = vertexInfoRegister.HasValue ? (int)vertexInfoRegister.Value : -1;
                 }
 
                 if (stages[i].Stage == ShaderStages.Geometry) GeometryShader = (ID3D11GeometryShader)((D3D11Shader)stages[i]).DeviceShader;

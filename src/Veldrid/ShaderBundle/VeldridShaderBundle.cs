@@ -174,6 +174,40 @@ namespace Veldrid
         }
 
         /// <summary>
+        /// True when this bundle is a COMPUTE bundle (spec AN_Monsters/204): its backend data carries compute shader data and no vertex
+        /// stage. Decided from the data, not from <see cref="ComputeSource"/> (which is informational and may be absent).
+        /// </summary>
+        [JsonIgnore]
+        public bool IsCompute
+        {
+            get
+            {
+                foreach (var data in Backends.Values)
+                {
+                    if (!string.IsNullOrEmpty(data.ComputeShaderData) || !string.IsNullOrEmpty(data.ComputeShaderFile)) return true;
+                    if (!string.IsNullOrEmpty(data.VertexShaderData) || !string.IsNullOrEmpty(data.VertexShaderFile)) return false;
+                }
+                return false;
+            }
+        }
+
+        /// <summary>The compute shader bytes and entry point for <paramref name="backend"/> (see <see cref="GetVertexFragmentShaderData"/> for the resolver rules).</summary>
+        public (byte[] computeBytes, string computeEntry) GetComputeShaderData(GraphicsBackend backend, Func<string, byte[]> fileResolver = null, string basePath = null)
+        {
+            string key = GetBackendKey(backend);
+            if (!Backends.TryGetValue(key, out var data))
+                throw new VeldridException(
+                    $"Shader bundle '{ShaderName}' does not contain data for backend '{key}'. " +
+                    $"Available backends: {string.Join(", ", Backends.Keys)}");
+            byte[] csBytes = ResolveShaderBytes(data.ComputeShaderFile, data.ComputeShaderData, fileResolver, basePath);
+            if (csBytes == null)
+                throw new VeldridException(
+                    $"Shader bundle '{ShaderName}' backend '{key}' has no compute shader data " +
+                    "(neither inline nor external file specified).");
+            return (csBytes, data.ComputeEntryPoint ?? "main");
+        }
+
+        /// <summary>
         /// Gets the <see cref="ResourceLayoutDescription"/>[] for creating <see cref="ResourceLayout"/> objects.
         /// These layouts are the authoritative source of truth — they guarantee correct resource binding
         /// on every backend because they were produced by the cross-compiler at the same time as the shader bytecode.

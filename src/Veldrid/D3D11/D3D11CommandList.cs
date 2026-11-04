@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using SharpGen.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Vortice;
 using Vortice.Direct3D11;
 using Vortice.Mathematics;
@@ -95,6 +96,55 @@ namespace Veldrid.D3D11
         private ID3D11PixelShader pixelShader;
 
         private D3D11Pipeline graphicsPipeline;
+
+        // ── V11 (AN_Monsters spec 204 T2): SPIRV-Cross's host-filled `cbuffer SPIRV_Cross_VertexInfo { int BaseVertex; int BaseInstance; }` ──
+        // D3D11's SV_VertexID / SV_InstanceID EXCLUDE the draw's base vertex / base instance; SPIR-V's gl_VertexIndex / gl_InstanceIndex
+        // INCLUDE them. The cross-compiler adds this cbuffer to the vertex stage of any shader that reads either builtin and records its
+        // register in the bundle (D3D11Pipeline.HlslVertexInfoRegister). Before EVERY draw of such a pipeline the two bases must be in it:
+        // the first draw after a pipeline switch always writes (a fresh buffer's contents are undefined, so zero bases need writing too);
+        // later draws write only when the bases change. One 16-byte dynamic cbuffer per command list; UpdateBuffer records in command order.
+        private D3D11Buffer vertexInfoBuffer;
+        private bool vertexInfoBoundForPipeline;
+        private int vertexInfoLastBaseVertex;
+        private uint vertexInfoLastBaseInstance;
+
+        /// <summary>Mirror of SPIRV-Cross's <c>SPIRV_Cross_VertexInfo</c> cbuffer (two ints, padded to the 16-byte cbuffer minimum).</summary>
+        [StructLayout(LayoutKind.Sequential)]
+        private struct HlslVertexInfoCBuffer
+        {
+            public int SPIRV_Cross_BaseVertex;
+            public int SPIRV_Cross_BaseInstance;
+            public int _pad0, _pad1;
+        }
+
+        /// <summary>Write + bind the VertexInfo cbuffer for the current graphics pipeline if its vertex shader has one. Called by every Draw*Core.</summary>
+        private void bindVertexInfoForDraw(int baseVertex, uint baseInstance)
+        {
+            int register = graphicsPipeline?.HlslVertexInfoRegister ?? -1;
+            if (register < 0) return;
+
+            bool needsWrite = !vertexInfoBoundForPipeline || vertexInfoLastBaseVertex != baseVertex || vertexInfoLastBaseInstance != baseInstance;
+            if (!needsWrite) return;
+
+            vertexInfoBuffer ??= Util.AssertSubtype<DeviceBuffer, D3D11Buffer>(gd.ResourceFactory.CreateBuffer(
+                new BufferDescription((uint)Unsafe.SizeOf<HlslVertexInfoCBuffer>(), BufferUsage.UniformBuffer | BufferUsage.Dynamic)));
+            var values = new HlslVertexInfoCBuffer { SPIRV_Cross_BaseVertex = baseVertex, SPIRV_Cross_BaseInstance = unchecked((int)baseInstance) };
+            UpdateBuffer(vertexInfoBuffer, 0, ref values);
+
+            // Bind at EXACTLY the compiler's register (V9). bindUniformBuffer's per-slot cache keeps it bound across draws; a resource
+            // set can never occupy this register because the compiler chose it beyond every application cbuffer.
+            bindUniformBuffer(new D3D11BufferRange(vertexInfoBuffer, 0, vertexInfoBuffer.SizeInBytes), register, ShaderStages.Vertex);
+            vertexInfoBoundForPipeline = true;
+            vertexInfoLastBaseVertex = baseVertex;
+            vertexInfoLastBaseInstance = baseInstance;
+        }
+
+        /// <summary>
+        /// Indirect draws (<see cref="DrawIndirectCore"/> / <see cref="DrawIndexedIndirectCore"/>) read their bases from the GPU buffer, where the
+        /// host cannot see them: the cbuffer is written with ZERO bases so a shader that reads an index builtin sees exactly SV_*ID. This is why
+        /// <see cref="GraphicsDeviceFeatures.DrawIndirectBaseInstance"/> is false on D3D11 - records must carry FirstInstance = 0 / VertexOffset = 0.
+        /// </summary>
+        private void bindVertexInfoForIndirectDraw() => bindVertexInfoForDraw(baseVertex: 0, baseInstance: 0);
 
         private BoundResourceSetInfo[] graphicsResourceSets = new BoundResourceSetInfo[1];
 
@@ -248,6 +298,7 @@ namespace Veldrid.D3D11
         protected override void DrawIndirectCore(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
         {
             preDrawCommand();
+            bindVertexInfoForIndirectDraw();
 
             var d3d11Buffer = Util.AssertSubtype<DeviceBuffer, D3D11Buffer>(indirectBuffer);
             int currentOffset = (int)offset;
@@ -262,6 +313,7 @@ namespace Veldrid.D3D11
         protected override void DrawIndexedIndirectCore(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
         {
             preDrawCommand();
+            bindVertexInfoForIndirectDraw();
 
             var d3d11Buffer = Util.AssertSubtype<DeviceBuffer, D3D11Buffer>(indirectBuffer);
             int currentOffset = (int)offset;
@@ -377,6 +429,7 @@ namespace Veldrid.D3D11
         private void resetManagedState()
         {
             numVertexBindings = 0;
+            vertexInfoBoundForPipeline = false;
             Util.ClearArray(vertexBindings);
             Util.ClearArray(vertexStrides);
             Util.ClearArray(vertexOffsets);
@@ -1014,6 +1067,7 @@ namespace Veldrid.D3D11
             {
                 var d3dPipeline = Util.AssertSubtype<Pipeline, D3D11Pipeline>(pipeline);
                 graphicsPipeline = d3dPipeline;
+                vertexInfoBoundForPipeline = false;   // V11: the new pipeline's VertexInfo cbuffer (if any) must be written + bound before its first draw
                 clearSets(graphicsResourceSets); // Invalidate resource set bindings -- they may be invalid.
                 Util.ClearArray(invalidatedGraphicsResourceSets);
 
@@ -1128,6 +1182,8 @@ namespace Veldrid.D3D11
         private protected override void DrawCore(uint vertexCount, uint instanceCount, uint vertexStart, uint instanceStart)
         {
             preDrawCommand();
+            // V11: a bufferless draw has no vertex buffer, so the base vertex SPIR-V's gl_VertexIndex includes is vertexStart.
+            bindVertexInfoForDraw(baseVertex: (int)vertexStart, baseInstance: instanceStart);
 
             if (instanceCount == 1 && instanceStart == 0)
                 DeviceContext.Draw((int)vertexCount, (int)vertexStart);
@@ -1138,6 +1194,7 @@ namespace Veldrid.D3D11
         private protected override void DrawIndexedCore(uint indexCount, uint instanceCount, uint indexStart, int vertexOffset, uint instanceStart)
         {
             preDrawCommand();
+            bindVertexInfoForDraw(baseVertex: vertexOffset, baseInstance: instanceStart);
 
             Debug.Assert(ib != null);
             if (instanceCount == 1 && instanceStart == 0)

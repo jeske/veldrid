@@ -28,6 +28,21 @@ namespace Veldrid
         /// <summary>V10: storage blocks with std430 member placement, merged across stages (one entry per set/binding). Empty in bundles compiled before V10.</summary>
         [JsonPropertyName("storageBlocks")]
         public VdShaderStorageBlock[] StorageBlocks { get; set; } = [];
+
+        /// <summary>
+        /// V11 (AN_Monsters spec 204 T1/T2; evidence 202 F13): the Direct3D11 constant-buffer register (<c>b#</c>) of SPIRV-Cross's
+        /// <c>cbuffer SPIRV_Cross_VertexInfo { int SPIRV_Cross_BaseVertex; int SPIRV_Cross_BaseInstance; }</c>, which the cross-compiler
+        /// emits into the VERTEX stage when the GLSL reads <c>gl_VertexIndex</c> or <c>gl_InstanceIndex</c>. D3D11's <c>SV_VertexID</c> /
+        /// <c>SV_InstanceID</c> EXCLUDE the draw's base vertex / base instance (<c>vertexOffset</c>, <c>instanceStart</c>) while SPIR-V's
+        /// <c>VertexIndex</c> / <c>InstanceIndex</c> INCLUDE them, so the D3D11 backend fills this cbuffer with the two bases before every
+        /// draw of a pipeline whose vertex shader has it (<c>D3D11CommandList</c>), and the shader adds them. The register is the next free
+        /// <c>b#</c> after the shader's own uniform buffers, chosen by the compiler and recorded here (V9: the host never predicts a register).
+        /// Null = the vertex stage reads neither builtin (nothing to fill). GPU-authored indirect record bases (<c>FirstInstance</c>) are
+        /// NOT reachable this way on D3D11 - see <see cref="GraphicsDeviceFeatures.DrawIndirectBaseInstance"/>.
+        /// </summary>
+        [JsonPropertyName("hlslVertexInfoRegister")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public uint? HlslVertexInfoRegister { get; set; }
     }
 
     /// <summary>One compiled vertex input.</summary>

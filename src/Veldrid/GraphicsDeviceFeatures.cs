@@ -53,7 +53,11 @@
 
         /// <summary>
         ///     Indicates whether indirect draw structures stored in an Indirect DeviceBuffer can contain
-        ///     a non-zero FirstInstance value.
+        ///     a non-zero FirstInstance value AND have the shader observe it through gl_InstanceIndex.
+        ///     FALSE on Direct3D11 (V11, AN_Monsters spec 204 T3): SV_InstanceID excludes StartInstanceLocation and the host cannot read a
+        ///     GPU-authored record to fill SPIRV_Cross_VertexInfo, so a shader reading gl_InstanceIndex sees the per-draw index only; records
+        ///     drawn on D3D11 must carry FirstInstance = 0 (and VertexOffset = 0 for gl_VertexIndex). Direct draws with a non-zero
+        ///     instanceStart / vertexOffset ARE correct on D3D11 (see <see cref="DrawBaseInstance"/>; the host fills the cbuffer).
         /// </summary>
         public bool DrawIndirectBaseInstance { get; }
 

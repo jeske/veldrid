@@ -514,6 +514,25 @@ namespace Veldrid
             System.Func<string, byte[]> fileResolver = null,
             string basePath = null)
         {
+            // Spec AN_Monsters/204 Q0 finding: this method always built a vertex+fragment pair, so a COMPUTE bundle could not be loaded
+            // at all. A compute bundle yields ONE Shader (Shaders[0]) - the shape CreateComputePipeline expects - registered like any other.
+            if (bundle.IsCompute)
+            {
+                var (computeBytes, computeEntry) = bundle.GetComputeShaderData(BackendType, fileResolver, basePath);
+                var csDesc = new ShaderDescription(ShaderStages.Compute, computeBytes, computeEntry);
+#pragma warning disable CS0618
+                var computeShaders = new[] { CreateShader(ref csDesc) };
+#pragma warning restore CS0618
+                var computeResult = new PrecompiledShaderResult(
+                    computeShaders,
+                    bundle.GetResourceLayouts(),
+                    bundle.FlatBindingMap,
+                    bundle.Interface,
+                    bundle.ShaderName);
+                ShaderInterfaceRegistry.Register(computeShaders[0], computeResult);
+                return computeResult;
+            }
+
             var (vertexBytes, fragmentBytes, vertexEntry, fragmentEntry) =
                 bundle.GetVertexFragmentShaderData(BackendType, fileResolver, basePath);
 

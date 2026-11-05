@@ -75,6 +75,13 @@ namespace Veldrid
         /// </summary>
         public const string Rule_V7e_StorageStructs = "V7e";
 
+        /// <summary>
+        /// V7f (AN_Monsters _BUGFIX/70): on D3D11 a storage-buffer slot binds only a RAW buffer (<see cref="BufferDescription.RawBuffer"/>). SPIRV-Cross
+        /// emits every GLSL <c>buffer</c> block as an HLSL <c>(RW)ByteAddressBuffer</c>; a STRUCTURED view bound to that declaration is undefined
+        /// behaviour (observed: dynamic-index loads return zeros, constant-index loads and raw stores work - so a write-then-readback test passes).
+        /// </summary>
+        public const string Rule_V7f_StorageRawOnD3D11 = "V7f";
+
         // ───────────────────────── D10: shape <-> bundle, both directions, by NAME ─────────────────────────
 
         /// <summary>

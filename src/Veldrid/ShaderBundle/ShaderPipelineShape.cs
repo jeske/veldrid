@@ -252,20 +252,23 @@ namespace Veldrid
         public uint ElementStrideBytes => Compiled is null ? throw NotBound() : (Compiled.HasRuntimeArray ? Compiled.RuntimeArrayStrideBytes : Compiled.FixedSizeBytes);
 
         /// <summary>
-        /// Create a structured buffer of <paramref name="elementCount"/> elements with THIS slot's verified stride. <paramref name="usage"/> must
+        /// Create a storage buffer of <paramref name="elementCount"/> elements with THIS slot's verified stride. <paramref name="usage"/> must
         /// include a structured-buffer flag (read-only or read-write to match the shader); Dynamic / Staging may be added by the caller.
+        /// The buffer is created RAW (<see cref="BufferDescription.RawBuffer"/>) with the stride recorded: SPIRV-Cross declares every storage block
+        /// as an HLSL <c>(RW)ByteAddressBuffer</c>, which only a raw view satisfies on D3D11 (V7f); the other backends ignore the flag.
         /// </summary>
         public DeviceBuffer CreateBuffer(uint elementCount, BufferUsage usage)
         {
             EnsureOwned();
             RequireStructuredUsage(usage);
             if (elementCount == 0) throw new ArgumentOutOfRangeException(nameof(elementCount));
-            return Owner.BoundFactory.CreateBuffer(new BufferDescription(checked(elementCount * ElementStrideBytes), usage, ElementStrideBytes));
+            return Owner.BoundFactory.CreateBuffer(new BufferDescription(checked(elementCount * ElementStrideBytes), usage, ElementStrideBytes, rawBuffer: true));
         }
 
         /// <summary>
         /// Bind a buffer created with structured-buffer usage. Its structure stride must be this slot's verified stride (a stride of 0 - a raw
-        /// buffer - is refused: the shader indexes elements of <see cref="ElementStrideBytes"/> bytes).
+        /// buffer without a recorded stride - is refused: the shader indexes elements of <see cref="ElementStrideBytes"/> bytes), and on D3D11
+        /// the buffer must be RAW (V7f) - create it through <see cref="CreateBuffer"/>.
         /// </summary>
         public ShapeResourceBinding With(DeviceBuffer buffer)
         {
@@ -276,6 +279,10 @@ namespace Veldrid
                 throw new ShaderContractException(Owner?.BundleName ?? Name, [new ShaderContractViolation(ShaderContractVerifier.Rule_V7e_StorageStructs, Name,
                     $"buffer stride {stride} B", $"verified element stride {ElementStrideBytes} B ({typeof(TElement).Name})",
                     "a storage buffer binds only with the stride the shader was compiled for - create it through this slot's CreateBuffer or with that StructureByteStride")]);
+            if (Owner?.BoundFactory?.BackendType == GraphicsBackend.Direct3D11 && !buffer.IsRawBuffer)
+                throw new ShaderContractException(Owner.BundleName, [new ShaderContractViolation(ShaderContractVerifier.Rule_V7f_StorageRawOnD3D11, Name,
+                    "structured (non-raw) buffer", "the compiled HLSL reads this block as a ByteAddressBuffer (raw view)",
+                    "on D3D11 a storage buffer must be created with BufferDescription.RawBuffer = true (this slot's CreateBuffer does) - a structured view bound to a ByteAddressBuffer returns zeros for dynamic-index loads")]);
             return BindingOf(buffer);
         }
 

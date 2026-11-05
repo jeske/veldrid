@@ -10,6 +10,7 @@ namespace Veldrid.D3D11
     {
         public override uint SizeInBytes { get; }
         public override uint StructureByteStride => structureByteStride;
+        public override bool IsRawBuffer => rawBuffer;
 
         public override BufferUsage Usage { get; }
 

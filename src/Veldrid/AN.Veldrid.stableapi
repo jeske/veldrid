@@ -6,6 +6,7 @@ const.ShaderContractVerifier.Rule_V7b_ResourceLayouts: string "V7b"
 const.ShaderContractVerifier.Rule_V7c_UniformStructs: string "V7c"
 const.ShaderContractVerifier.Rule_V7d_SharedSetBinding: string "V7d"
 const.ShaderContractVerifier.Rule_V7e_StorageStructs: string "V7e"
+const.ShaderContractVerifier.Rule_V7f_StorageRawOnD3D11: string "V7f"
 const.ShaderContractVerifier.Rule_V9_FlatBindingMap: string "V9"
 const.VeldridShaderBundle.CurrentFormatVersion: int 2
 default.PrecompiledShaderResult..ctor.bundleName: object null
@@ -1047,6 +1048,7 @@ property.CommandList.IsDisposed: bool { get; }
 property.CommandList.Name: string { get; set; }
 property.DeviceBuffer.AllowUpdateBufferOutsideCommandList: bool { get; }
 property.DeviceBuffer.IsDisposed: bool { get; }
+property.DeviceBuffer.IsRawBuffer: bool { get; }
 property.DeviceBuffer.Name: string { get; set; }
 property.DeviceBuffer.SizeInBytes: uint { get; }
 property.DeviceBuffer.StructureByteStride: uint { get; }

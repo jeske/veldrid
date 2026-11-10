@@ -284,7 +284,7 @@ pass at the first DRAW (clears are deferred into the load-op). D3D11's `WaitForI
 - [x] 7.6 `CommandList.Begin/End` -> `BeginCore/EndCore` refactor (5.4) - pure refactor, no behaviour change, tests still green.
 - [x] 7.7 `GpuTiming` automatic layer (section 4, 5.4; `src/Veldrid/GpuTiming.cs`) + `GpuTimingAutoTests` (7 cases x 2 backends).
 - [x] 7.8 Regenerate `AN.Veldrid.stableapi` (C4); this doc's status. Hand off to `95_GpuTiming.md` (next: publish to LocalNuGet).
-- [ ] 7.9 Publish `ArtificialNecessity.Veldrid` to LocalNuGet (`cmd/publish-local`), bump AN_Monsters / AN_FluidUI.
+- [x] 7.9 Published `ArtificialNecessity.Veldrid 5.261110.144751` to LocalNuGet (Nov 10, together with the GpuOrderingBarrier/WaitForGpuIdle split). Bumping AN_Monsters / AN_FluidUI is the kit half's first step.
 
 ## 7b. Client guidance - what consumers must do to get per-pass rows
 

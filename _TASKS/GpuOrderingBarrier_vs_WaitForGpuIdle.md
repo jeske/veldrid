@@ -129,9 +129,9 @@ Rule of thumb per call site - ask "what breaks if the CPU does NOT wait here?":
 - [x] 6.4 Fork call-site migration (4.1); `ResolveWithRetry` asserts `Ready` on the FIRST resolve after `WaitForGpuIdle` (regression detector for D3).
 - [x] 6.5 Tests: `GpuSyncVerbTests` (5 x 2). ContractTests 137/137 x 4 serial.
 - [x] 6.6 `AN.Veldrid.stableapi` regenerated. Publish to LocalNuGet: with the timestamp work (7.9 there).
-- [ ] 6.7 File client obligations: `AN_Monsters/_SPECS_RenderKit/95_GpuTiming.md` (append) and `AN_FluidUI/_TASKS/GpuTiming_GameCompositor.md` (append) with the 4.2 tables.
+- [x] 6.7 File client obligations: `AN_Monsters/_SPECS_RenderKit/95_GpuTiming.md` (append) and `AN_FluidUI/_TASKS/GpuTiming_GameCompositor.md` (append) with the 4.2 tables.
 
-Status: **IMPLEMENTED Nov 10 2026** except 6.7 (client migration tables) and publish. Binding gaps for section 7 recorded in
+Status: **IMPLEMENTED Nov 10 2026** and PUBLISHED as `ArtificialNecessity.Veldrid 5.261110.144751` (LocalNuGet); client migration tables appended to `AN_Monsters/_SPECS_RenderKit/95_GpuTiming.md` section 8 and `AN_FluidUI/_TASKS/GpuTiming_GameCompositor.md`. Binding gaps for section 7 recorded in
 `_BUGFIX/BUGFIX_ppyVk_Binding_Gaps_For_GpuSync_Semantics.md` (STATUS: UNRESOLVED).
 
 ## 7. Open questions / follow-ups

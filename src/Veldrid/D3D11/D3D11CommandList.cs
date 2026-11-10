@@ -196,7 +196,7 @@ namespace Veldrid.D3D11
 
         #endregion
 
-        public override void Begin()
+        private protected override void BeginCore()
         {
             commandList?.Dispose();
             commandList = null;
@@ -212,7 +212,7 @@ namespace Veldrid.D3D11
             begun = true;
         }
 
-        public override void End()
+        private protected override void EndCore()
         {
             if (commandList != null) throw new VeldridException("Invalid use of End().");
 

@@ -35,7 +35,7 @@ namespace Veldrid.OpenGL
 
         #endregion
 
-        public override void Begin()
+        private protected override void BeginCore()
         {
             ClearCachedState();
             CurrentCommands?.Dispose();
@@ -49,7 +49,7 @@ namespace Veldrid.OpenGL
             CurrentCommands.Dispatch(groupCountX, groupCountY, groupCountZ);
         }
 
-        public override void End()
+        private protected override void EndCore()
         {
             CurrentCommands.End();
         }

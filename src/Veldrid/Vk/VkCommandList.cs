@@ -141,7 +141,7 @@ namespace Veldrid.Vk
             RefCount.Decrement();
         }
 
-        public override void Begin()
+        private protected override void BeginCore()
         {
             if (commandBufferBegun)
             {
@@ -184,7 +184,7 @@ namespace Veldrid.Vk
             vkCmdDispatch(CommandBuffer, groupCountX, groupCountY, groupCountZ);
         }
 
-        public override void End()
+        private protected override void EndCore()
         {
             if (!commandBufferBegun) throw new VeldridException("CommandBuffer must have been started before End() may be called.");
 

@@ -114,7 +114,7 @@ namespace Veldrid.MTL
             return ret;
         }
 
-        public override void Begin()
+        private protected override void BeginCore()
         {
             if (cb.NativePtr != IntPtr.Zero)
             {
@@ -145,7 +145,7 @@ namespace Veldrid.MTL
                 computePipeline.ThreadsPerThreadgroup);
         }
 
-        public override void End()
+        private protected override void EndCore()
         {
             ensureNoBlitEncoder();
             ensureNoComputeEncoder();

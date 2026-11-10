@@ -67,7 +67,10 @@ namespace Veldrid
         ///     Begin must only be called if it has not been previously called, if <see cref="End" /> has been called,
         ///     or if <see cref="GraphicsDevice.SubmitCommands(CommandList)" /> has been called on this instance.
         /// </summary>
-        public abstract void Begin();
+        public void Begin()
+        {
+            BeginCore();
+        }
 
         /// <summary>
         ///     Completes this list of graphics commands, putting it into an executable state for a <see cref="GraphicsDevice" />.
@@ -75,7 +78,22 @@ namespace Veldrid
         ///     It is an error to call this function in succession, unless <see cref="Begin" /> has been called in between
         ///     invocations.
         /// </summary>
-        public abstract void End();
+        public void End()
+        {
+            EndCore();
+        }
+
+        /// <summary>
+        ///     Backend half of <see cref="Begin"/>: acquire/reset the native command buffer and clear cached state. The public method is
+        ///     non-virtual so cross-backend bookkeeping (the automatic <see cref="GraphicsDevice.GpuTiming"/> layer) hooks it in one place.
+        /// </summary>
+        private protected abstract void BeginCore();
+
+        /// <summary>
+        ///     Backend half of <see cref="End"/>: close any open pass/encoder and finish the native command buffer. Same single-hook rationale
+        ///     as <see cref="BeginCore"/>.
+        /// </summary>
+        private protected abstract void EndCore();
 
         /// <summary>
         ///     Sets the active <see cref="Pipeline" /> used for rendering.

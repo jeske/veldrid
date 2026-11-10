@@ -322,7 +322,7 @@ While landing the tests, `Veldrid.ContractTests` crashed intermittently with `Ac
 | 2 | **RAW Vortice** `Begin(disjoint)/End(ts)/End(ts)/End(disjoint)` + `GetData`, no Veldrid pool code | yes | **intermittent AV** (2/4) |
 
 The RAW row is the decisive one: the crash reproduces with canonical D3D11 query usage and none of this fork's code, so it is a runtime/UMD
-limitation: **two D3D11 devices on two threads must not concurrently record query-bearing deferred command lists.** Consequences:
+limitation: **two D3D11 devices on two threads must not concurrently BUILD query-bearing deferred command lists.** "Build" = the CPU-side recording of calls into the deferred context followed by `FinishCommandList` (Veldrid `CommandList.End()`), which is where the AV occurs; it is CPU-only work that happens BEFORE `ExecuteCommandList` (Veldrid `SubmitCommands`), and the submit path was never on the crashing stack. The nowrite row isolates the ingredient to the queries themselves: `FinishCommandList` is where the UMD assigns a recording's query objects to its internal query-heap slots, so a non-thread-safe process-wide structure there fits every row of the table.** Consequences:
 - `Veldrid.ContractTests`: every class that issues timestamp queries is in `GpuTimestampTestCollection` (`DisableParallelization`), so xUnit runs
   them serially. Full suite 127/127 x3 after the change; before it the host crashed on most runs.
 - Production: one `GraphicsDevice` per process (AN_Monsters, FluidUI GameCompositor) is unaffected. A process that creates several D3D11 devices

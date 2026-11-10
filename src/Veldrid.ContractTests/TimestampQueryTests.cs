@@ -287,7 +287,7 @@ public sealed class TimestampQueryTests
 
 /// <summary>
 ///     Every test class that issues D3D11 timestamp queries belongs to this collection so xUnit runs them SERIALLY. Reason (Nov 10 2026, NVIDIA
-///     RTX 4080 / 32.0.16.2101): two D3D11 devices on two threads, each recording query-bearing deferred command lists with heavy copies,
+///     RTX 4080 / 32.0.16.2101): two D3D11 devices on two threads, each building (CPU-side recording + FinishCommandList, i.e. CommandList.End(), BEFORE any submit) query-bearing deferred command lists with heavy copies,
 ///     intermittently AccessViolate inside <c>ID3D11DeviceContext::FinishCommandList</c>. Reproduced with RAW Vortice queries (no Veldrid pool
 ///     code) in the same configuration; one device, or no queries, never crashed. It is a driver/runtime limitation
 ///     (<c>_TASKS/GpuTimestampQueries.md</c> section 8). Serial execution also keeps the timing-ratio tests honest.

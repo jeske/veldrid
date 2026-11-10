@@ -137,7 +137,7 @@ namespace Veldrid.D3D11
                 else if (previous == SlotState.Resolved) resolvedSlotCount--;
 
                 // Never re-issue an ID3D11Query whose previous result was not fetched with GetData (abandoned, or discarded by the automatic
-                // layer). Observed Nov 10 2026 on NVIDIA RTX 4080 / 32.0.16.2101: two devices on two threads each re-End()ing unfetched
+                // layer). Observed Nov 10 2026 on NVIDIA RTX 4080 / 32.0.16.2101: two devices on two threads each building (CPU-side recording + FinishCommandList, before any submit) command lists that re-End() unfetched
                 // timestamp queries across many pending command lists -> AccessViolation inside FinishCommandList; a single device, or
                 // GetData between issues, never crashed (ContractTests TempParallelD3D11Probe bisect). Renaming keeps every query object on the
                 // canonical issue -> GetData -> issue cycle; the pending command list holds its own COM reference on the old object.

@@ -119,6 +119,16 @@
         /// </summary>
         public bool ShaderFloat64 { get; }
 
+        /// <summary>
+        ///     Indicates whether GPU timestamp queries are available: <see cref="ResourceFactory.CreateTimestampQueryPool(uint)"/>,
+        ///     <see cref="CommandList.WriteTimestamp(TimestampQueryPool, uint)"/>, <see cref="GraphicsDevice.TryResolveTimestamps"/> and the
+        ///     automatic <see cref="GraphicsDevice.GpuTiming"/> layer. TRUE on Direct3D11 and on Vulkan when the graphics queue family reports
+        ///     non-zero <c>timestampValidBits</c>; FALSE on Metal and OpenGL in this cut (<c>_TASKS/GpuTimestampQueries.md</c>). When false,
+        ///     <c>WriteTimestamp</c> is a no-op, <c>TryResolveTimestamps</c> returns <see cref="TimestampResolveResult.NotReady"/> and
+        ///     <c>CreateTimestampQueryPool</c> throws.
+        /// </summary>
+        public bool TimestampQueries { get; }
+
         internal GraphicsDeviceFeatures(
             bool computeShader,
             bool geometryShader,
@@ -138,7 +148,8 @@
             bool subsetTextureView,
             bool commandListDebugMarkers,
             bool bufferRangeBinding,
-            bool shaderFloat64)
+            bool shaderFloat64,
+            bool timestampQueries)
         {
             ComputeShader = computeShader;
             GeometryShader = geometryShader;
@@ -159,6 +170,7 @@
             CommandListDebugMarkers = commandListDebugMarkers;
             BufferRangeBinding = bufferRangeBinding;
             ShaderFloat64 = shaderFloat64;
+            TimestampQueries = timestampQueries;
         }
     }
 }

@@ -1206,6 +1206,40 @@ namespace Veldrid
             InsertDebugMarkerCore(name);
         }
 
+        /// <summary>
+        ///     Records a GPU timestamp into <paramref name="pool"/>[<paramref name="index"/>] at this point in the command list. End-of-pipe
+        ///     semantics: the value is taken once every command recorded before it has finished executing. Read it back later with
+        ///     <see cref="GraphicsDevice.TryResolveTimestamps"/>. No-op when <see cref="GraphicsDeviceFeatures.TimestampQueries"/> is false.
+        ///     <para>
+        ///         Reusing a slot abandons its unresolved value (see <see cref="TimestampQueryPool.AbandonedWriteCount"/>). The first write into
+        ///         a pool whose slots are not fresh resets the whole pool at this point, which is only legal OUTSIDE a render pass: under
+        ///         <c>VALIDATE_USAGE</c> doing so after <see cref="SetFramebuffer"/> has started a pass throws on every backend
+        ///         (<c>_TASKS/GpuTimestampQueries.md</c> 5.3).
+        ///     </para>
+        /// </summary>
+        /// <param name="pool">The pool receiving the value.</param>
+        /// <param name="index">Slot in <c>[0, pool.Capacity)</c>.</param>
+        public void WriteTimestamp(TimestampQueryPool pool, uint index)
+        {
+            if (!features.TimestampQueries) return;
+#if VALIDATE_USAGE
+            if (pool == null) throw new ArgumentNullException(nameof(pool));
+            if (pool.IsDisposed) throw new VeldridException($"TimestampQueryPool '{pool.Name}' has been disposed.");
+            if (index >= pool.Capacity)
+            {
+                throw new VeldridException(
+                    $"WriteTimestamp index {index} is out of range for TimestampQueryPool '{pool.Name}' (Capacity {pool.Capacity}).");
+            }
+#endif
+            WriteTimestampCore(pool, index);
+        }
+
+        /// <summary>
+        ///     Backend hook for <see cref="WriteTimestamp(TimestampQueryPool, uint)"/>; feature and range checks have already run. Must apply
+        ///     the implicit-reset rule of <c>_TASKS/GpuTimestampQueries.md</c> 5.3.
+        /// </summary>
+        private protected abstract void WriteTimestampCore(TimestampQueryPool pool, uint index);
+
         internal void ClearCachedState()
         {
             Framebuffer = null;

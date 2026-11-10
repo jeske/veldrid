@@ -163,6 +163,10 @@ namespace Veldrid.Vk
             vkBeginCommandBuffer(CommandBuffer, ref beginInfo);
             commandBufferBegun = true;
 
+            // Lazy query resets for slots the host resolved since the last Begin() on any list - here, before any render pass can be
+            // active, is the one place a vkCmdResetQueryPool is always legal (_TASKS/GpuTimestampQueries.md 5.3 rule 2).
+            recordPendingTimestampResets();
+
             ClearCachedState();
             currentFramebuffer = null;
             currentGraphicsPipeline = null;
@@ -1346,6 +1350,53 @@ namespace Veldrid.Vk
 
             func(CommandBuffer, &markerInfo);
         }
+
+        #region Timestamp queries (_TASKS/GpuTimestampQueries.md 5.2 / 5.3)
+
+        /// <summary>
+        ///     Called from <see cref="Begin"/> right after <c>vkBeginCommandBuffer</c>, i.e. guaranteed OUTSIDE any render pass: records the
+        ///     <c>vkCmdResetQueryPool</c> for every slot the host resolved since the last Begin() on any command list. Queue order makes this safe -
+        ///     those slots' values were already read, and the command list that will rewrite them executes after this reset.
+        /// </summary>
+        private void recordPendingTimestampResets()
+        {
+            var pools = gd.TimestampPoolsSnapshot;   // lock-free; empty array when the app never created a pool
+            for (int i = 0; i < pools.Length; i++)
+            {
+                if (pools[i].HasSlotsAwaitingReset) pools[i].RecordPendingResets(CommandBuffer);
+            }
+        }
+
+        private protected override void WriteTimestampCore(TimestampQueryPool pool, uint index)
+        {
+            var vkPool = Util.AssertSubtype<TimestampQueryPool, VkTimestampQueryPool>(pool);
+            var previous = vkPool.MarkWritten(index);
+
+            if (previous != VkTimestampQueryPool.SlotState.Fresh)
+            {
+                // The slot holds a pending (abandoned) or resolved value: Vulkan needs a reset before the write, and a reset is only legal
+                // outside a render pass. Identical rule on D3D11 for parity (D3D11TimestampQueryPool).
+                if (activeRenderPass != VkRenderPass.Null)
+                {
+                    vkPool.RestoreState(index, previous);
+#if VALIDATE_USAGE
+                    throw new VeldridException(
+                        $"WriteTimestamp: slot {index} of TimestampQueryPool '{pool.Name}' is being reused inside a render pass " +
+                        $"(previous state {previous}). A reused slot must be reset first, which is only legal outside a render pass: " +
+                        "resolve the pool before the next CommandList.Begin() (the reset is then recorded automatically), write the first " +
+                        "timestamp of this pool before SetFramebuffer/draws, or use a deeper ring of pools.");
+#else
+                    return;
+#endif
+                }
+
+                vkCmdResetQueryPool(CommandBuffer, vkPool.DeviceQueryPool, index, 1);
+            }
+
+            vkCmdWriteTimestamp(CommandBuffer, VkPipelineStageFlags.BottomOfPipe, vkPool.DeviceQueryPool, index);
+        }
+
+        #endregion
 
         private class StagingResourceInfo
         {

@@ -711,6 +711,31 @@ namespace Veldrid
         public abstract Fence CreateFence(bool signaled);
 
         /// <summary>
+        ///     Creates a <see cref="TimestampQueryPool"/> with <paramref name="capacity"/> GPU timestamp slots. Requires
+        ///     <see cref="GraphicsDeviceFeatures.TimestampQueries"/>.
+        /// </summary>
+        /// <param name="capacity">Number of slots; must be at least 1.</param>
+        /// <returns>A new <see cref="TimestampQueryPool"/>.</returns>
+        /// <exception cref="VeldridException">Timestamp queries are not supported on this device, or <paramref name="capacity"/> is 0.</exception>
+        public TimestampQueryPool CreateTimestampQueryPool(uint capacity)
+        {
+#if VALIDATE_USAGE
+            if (!Features.TimestampQueries)
+            {
+                throw new VeldridException(
+                    "GPU timestamp queries are not supported on this device (GraphicsDeviceFeatures.TimestampQueries is false). " +
+                    "Check the feature before creating a TimestampQueryPool; WriteTimestamp is a no-op and TryResolveTimestamps returns NotReady on such devices.");
+            }
+
+            if (capacity == 0) throw new VeldridException("A TimestampQueryPool must have at least one slot.");
+#endif
+            return CreateTimestampQueryPoolCore(capacity);
+        }
+
+        /// <summary>Backend hook for <see cref="CreateTimestampQueryPool(uint)"/>; the feature check and argument validation have already run.</summary>
+        private protected abstract TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity);
+
+        /// <summary>
         ///     Creates a new <see cref="Swapchain" />.
         /// </summary>
         /// <param name="description">The desired properties of the created object.</param>

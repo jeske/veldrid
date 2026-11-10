@@ -330,6 +330,53 @@ namespace Veldrid
         public abstract void ResetFence(Fence fence);
 
         /// <summary>
+        ///     Reads back GPU timestamps written by <see cref="CommandList.WriteTimestamp(TimestampQueryPool, uint)"/>. NEVER blocks.
+        ///     <list type="bullet">
+        ///         <item><see cref="TimestampResolveResult.Ready"/>: every slot in <c>[first, first + count)</c> is available; <paramref name="ticks"/>
+        ///         receives raw device-absolute GPU ticks (already masked to the valid bit width) and <paramref name="ticksPerSecond"/> converts
+        ///         them (<c>seconds = ticks / ticksPerSecond</c>).</item>
+        ///         <item><see cref="TimestampResolveResult.NotReady"/>: at least one slot has not been written by the GPU yet (or its command list
+        ///         was never submitted, or the device does not support timestamps). Ask again next frame.</item>
+        ///         <item><see cref="TimestampResolveResult.Disjoint"/> (Direct3D11 only): the GPU clock changed during the window; discard the range.</item>
+        ///     </list>
+        /// </summary>
+        /// <param name="pool">The pool to read.</param>
+        /// <param name="first">First slot index.</param>
+        /// <param name="count">Number of consecutive slots; <paramref name="ticks"/> must have at least this many elements.</param>
+        /// <param name="ticks">Receives one value per slot on <see cref="TimestampResolveResult.Ready"/>; untouched otherwise.</param>
+        /// <param name="ticksPerSecond">The tick frequency on <see cref="TimestampResolveResult.Ready"/>; 0 otherwise.</param>
+        public TimestampResolveResult TryResolveTimestamps(TimestampQueryPool pool, uint first, uint count, Span<ulong> ticks, out double ticksPerSecond)
+        {
+            ticksPerSecond = 0;
+            if (!Features.TimestampQueries) return TimestampResolveResult.NotReady;
+#if VALIDATE_USAGE
+            if (pool == null) throw new ArgumentNullException(nameof(pool));
+            if (pool.IsDisposed) throw new VeldridException($"TimestampQueryPool '{pool.Name}' has been disposed.");
+            if (count == 0) throw new VeldridException("TryResolveTimestamps count must be at least 1.");
+            if ((ulong)first + count > pool.Capacity)
+            {
+                throw new VeldridException(
+                    $"TryResolveTimestamps range [{first}, {first + count}) exceeds TimestampQueryPool '{pool.Name}' Capacity {pool.Capacity}.");
+            }
+
+            if (ticks.Length < count)
+            {
+                throw new VeldridException(
+                    $"TryResolveTimestamps needs a ticks span of at least {count} elements for this range; {ticks.Length} were supplied.");
+            }
+#endif
+            return TryResolveTimestampsCore(pool, first, count, ticks, out ticksPerSecond);
+        }
+
+        /// <summary>Backend hook for <see cref="TryResolveTimestamps"/>; feature and range checks have already run. Must not block.</summary>
+        private protected abstract TimestampResolveResult TryResolveTimestampsCore(
+            TimestampQueryPool pool,
+            uint first,
+            uint count,
+            Span<ulong> ticks,
+            out double ticksPerSecond);
+
+        /// <summary>
         ///     Swaps the buffers of the main swapchain and presents the rendered image to the screen.
         ///     This is equivalent to passing <see cref="MainSwapchain" /> to <see cref="SwapBuffers(Swapchain)" />.
         ///     This method can only be called if this GraphicsDevice was created with a main Swapchain.

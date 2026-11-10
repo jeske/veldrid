@@ -1,8 +1,6 @@
 __stableApiVersion: 2
 field.ImGuiProjection.IsClipSpaceYInverted: int
 field.ImGuiProjection.UseLegacyColorSpaceHandling: int
-field.ImGuiProjection._pad0: int
-field.ImGuiProjection._pad1: int
 field.ImGuiProjection.projection: Matrix4x4
 field.ImGuiShape.FontSampler: SamplerSlot
 field.ImGuiShape.FontTexture: TextureSlot
@@ -11,21 +9,17 @@ field.ImGuiShape.Vertices: VertexInput`1<ImGuiVertex>
 field.ImGuiVertex.vsin_color: uint
 field.ImGuiVertex.vsin_position: Vector2
 field.ImGuiVertex.vsin_texCoord: Vector2
-field.IncompleteLayoutTests.StorageShape.Items: StorageBufferSlot
+field.IncompleteLayoutTests.StorageShape.Items: StorageBufferSlot`1<uint>
 field.ShaderPipelineShapeTests.MisspelledTextureShape.MainSampler: SamplerSlot
 field.ShaderPipelineShapeTests.MisspelledTextureShape.MainTex: TextureSlot
 field.ShaderPipelineShapeTests.MisspelledTextureShape.Projection: UniformBlock`1<Projection>
 field.ShaderPipelineShapeTests.MisspelledTextureShape.Vertices: VertexInput`1<QuadVertex>
 field.ShaderPipelineShapeTests.Projection.Matrix: Matrix4x4
 field.ShaderPipelineShapeTests.Projection.Scale: float
-field.ShaderPipelineShapeTests.Projection._pad0: float
-field.ShaderPipelineShapeTests.Projection._pad1: float
-field.ShaderPipelineShapeTests.Projection._pad2: float
 field.ShaderPipelineShapeTests.ProjectionSwapped.Matrix: Matrix4x4
 field.ShaderPipelineShapeTests.ProjectionSwapped.Scale: float
-field.ShaderPipelineShapeTests.ProjectionSwapped._pad0: float
-field.ShaderPipelineShapeTests.ProjectionSwapped._pad1: float
-field.ShaderPipelineShapeTests.ProjectionSwapped._pad2: float
+field.ShaderPipelineShapeTests.ProjectionUnrounded.Matrix: Matrix4x4
+field.ShaderPipelineShapeTests.ProjectionUnrounded.Scale: float
 field.ShaderPipelineShapeTests.QuadShape.MainSampler: SamplerSlot
 field.ShaderPipelineShapeTests.QuadShape.MainTexture: TextureSlot
 field.ShaderPipelineShapeTests.QuadShape.Projection: UniformBlock`1<Projection>
@@ -36,6 +30,8 @@ field.ShaderPipelineShapeTests.QuadVertex.TexCoord: Vector2
 field.ShaderPipelineShapeTests.QuadVertexSwapped.Color: RgbaByte
 field.ShaderPipelineShapeTests.QuadVertexSwapped.Position: Vector2
 field.ShaderPipelineShapeTests.QuadVertexSwapped.TexCoord: Vector2
+field.ShaderPipelineShapeTests.SizeSmallerThanFields.Matrix: Matrix4x4
+field.ShaderPipelineShapeTests.SizeSmallerThanFields.Scale: float
 field.ShaderPipelineShapeTests.SwappedStructShape.MainSampler: SamplerSlot
 field.ShaderPipelineShapeTests.SwappedStructShape.MainTexture: TextureSlot
 field.ShaderPipelineShapeTests.SwappedStructShape.Projection: UniformBlock`1<ProjectionSwapped>
@@ -44,6 +40,10 @@ field.ShaderPipelineShapeTests.SwappedVertexShape.MainSampler: SamplerSlot
 field.ShaderPipelineShapeTests.SwappedVertexShape.MainTexture: TextureSlot
 field.ShaderPipelineShapeTests.SwappedVertexShape.Projection: UniformBlock`1<Projection>
 field.ShaderPipelineShapeTests.SwappedVertexShape.Vertices: VertexInput`1<QuadVertexSwapped>
+field.ShaderPipelineShapeTests.UnroundedStructShape.MainSampler: SamplerSlot
+field.ShaderPipelineShapeTests.UnroundedStructShape.MainTexture: TextureSlot
+field.ShaderPipelineShapeTests.UnroundedStructShape.Projection: UniformBlock`1<ProjectionUnrounded>
+field.ShaderPipelineShapeTests.UnroundedStructShape.Vertices: VertexInput`1<QuadVertex>
 field.ShaderPipelineShapeTests.WrongBundleShape.MainSampler: SamplerSlot
 field.ShaderPipelineShapeTests.WrongBundleShape.MainTexture: TextureSlot
 field.ShaderPipelineShapeTests.WrongBundleShape.Projection: UniformBlock`1<Projection>
@@ -62,8 +62,39 @@ field.UniformArenaRenderTests.ArenaShape.FontSampler: SamplerSlot
 field.UniformArenaRenderTests.ArenaShape.FontTexture: TextureSlot
 field.UniformArenaRenderTests.ArenaShape.Projection: UniformBlock`1<ImGuiProjection>
 field.UniformArenaRenderTests.ArenaShape.Vertices: VertexInput`1<ImGuiVertex>
+field.UniformStructSizeBindTests.ImGuiProjection_NoSize.IsClipSpaceYInverted: int
+field.UniformStructSizeBindTests.ImGuiProjection_NoSize.UseLegacyColorSpaceHandling: int
+field.UniformStructSizeBindTests.ImGuiProjection_NoSize.projection: Matrix4x4
+field.UniformStructSizeBindTests.ImGuiProjection_Size80.IsClipSpaceYInverted: int
+field.UniformStructSizeBindTests.ImGuiProjection_Size80.UseLegacyColorSpaceHandling: int
+field.UniformStructSizeBindTests.ImGuiProjection_Size80.projection: Matrix4x4
+field.UniformStructSizeBindTests.ImGuiProjection_SizeTooSmall.IsClipSpaceYInverted: int
+field.UniformStructSizeBindTests.ImGuiProjection_SizeTooSmall.UseLegacyColorSpaceHandling: int
+field.UniformStructSizeBindTests.ImGuiProjection_SizeTooSmall.projection: Matrix4x4
+field.UniformStructSizeBindTests.NoSizeShape.FontSampler: SamplerSlot
+field.UniformStructSizeBindTests.NoSizeShape.FontTexture: TextureSlot
+field.UniformStructSizeBindTests.NoSizeShape.Projection: UniformBlock`1<ImGuiProjection_NoSize>
+field.UniformStructSizeBindTests.NoSizeShape.Vertices: VertexInput`1<ImGuiVertex>
+field.UniformStructSizeBindTests.Size80Shape.FontSampler: SamplerSlot
+field.UniformStructSizeBindTests.Size80Shape.FontTexture: TextureSlot
+field.UniformStructSizeBindTests.Size80Shape.Projection: UniformBlock`1<ImGuiProjection_Size80>
+field.UniformStructSizeBindTests.Size80Shape.Vertices: VertexInput`1<ImGuiVertex>
+field.UniformStructSizeBindTests.SizeTooSmallShape.FontSampler: SamplerSlot
+field.UniformStructSizeBindTests.SizeTooSmallShape.FontTexture: TextureSlot
+field.UniformStructSizeBindTests.SizeTooSmallShape.Projection: UniformBlock`1<ImGuiProjection_SizeTooSmall>
+field.UniformStructSizeBindTests.SizeTooSmallShape.Vertices: VertexInput`1<ImGuiVertex>
 method.CommandContractGpuTests..ctor: void()
 method.CommandContractGpuTests.D3D11_DrawAndDispatchWithoutVerifiedPipelineThrowBeforeNativeCommands: void()
+method.ComputeBundleAndVertexInfoTests..ctor: void()
+method.ComputeBundleAndVertexInfoTests.ComputeBundle_IsCompute_AndYieldsItsBytesAndEntryPoint: void()
+method.ComputeBundleAndVertexInfoTests.ComputeBundle_SurvivesSerialization_AndStaysCompute: void()
+method.ComputeBundleAndVertexInfoTests.D3D11_ReportsNoIndirectBaseInstance_ButDirectBaseInstance: void()
+method.ComputeBundleAndVertexInfoTests.GraphicsBundle_IsNotCompute: void()
+method.ComputeBundleAndVertexInfoTests.HlslVertexInfoRegister_RoundTripsThroughJson_AndIsOmittedWhenNull: void()
+method.D3D11UavBufferMirrorTests..ctor: void()
+method.D3D11UavBufferMirrorTests.EndThenBegin_ClearsBothMirrors: void()
+method.D3D11UavBufferMirrorTests.RebindingASlotToAnotherBuffer_ReplacesTheEntry: void()
+method.D3D11UavBufferMirrorTests.RebindingTheSameSlots_DoesNotGrowTheMirror: void()
 method.ExplicitUniformStorageTests..ctor: void()
 method.ExplicitUniformStorageTests.D3D11PartialUniformUpdateIsRejectedWithoutWidening: void()
 method.ExplicitUniformStorageTests.NonDynamicUpdatesBetweenDrawsRetainCommandOrder: void(GraphicsBackend backend, bool memberUpdates)
@@ -74,8 +105,8 @@ method.ImGuiShape..ctor: void()
 method.ImGuiShapeRenderTests..ctor: void()
 method.ImGuiShapeRenderTests.TypedShapeRendersKnownColor: void(GraphicsBackend backend)
 method.IncompleteLayoutTests..ctor: void()
-method.IncompleteLayoutTests.StorageCannotPassOnKindOnlyMetadata: void()
 method.IncompleteLayoutTests.StorageShape..ctor: void()
+method.IncompleteLayoutTests.StorageWithoutCompiledBlockLayout_IsMetadata_NotSilentlyAccepted: void()
 method.IncompleteLayoutTests.UniformResourceWithoutMemberMetadataIsNotSilentlySkipped: void()
 method.ShaderPipelineShapeTests..ctor: void()
 method.ShaderPipelineShapeTests.BundleFormat_Version1_OrNoInterface_IsRejectedOnDeserialize: void()
@@ -87,9 +118,12 @@ method.ShaderPipelineShapeTests.MisspelledField_IsReportedBothWays: void()
 method.ShaderPipelineShapeTests.MisspelledTextureShape..ctor: void()
 method.ShaderPipelineShapeTests.QuadShape..ctor: void()
 method.ShaderPipelineShapeTests.ShapeNamesADifferentBundle_IsReported: void()
+method.ShaderPipelineShapeTests.StructLayoutSize_SmallerThanTheFields_IsSilentlyIgnoredByTheRuntime_SoTheVerifierMustCatchIt: void()
 method.ShaderPipelineShapeTests.StructMemberAtWrongOffset_IsReported_V7c: void()
+method.ShaderPipelineShapeTests.StructSmallerThanThe16RoundedBlockSize_IsReported_V7c: void()
 method.ShaderPipelineShapeTests.SwappedStructShape..ctor: void()
 method.ShaderPipelineShapeTests.SwappedVertexShape..ctor: void()
+method.ShaderPipelineShapeTests.UnroundedStructShape..ctor: void()
 method.ShaderPipelineShapeTests.VertexFieldOrderMismatch_IsReported_V7a: void()
 method.ShaderPipelineShapeTests.VertexLayout_IsGeneratedFromTheStruct_ByFieldNameOffsetAndFormat: void()
 method.ShaderPipelineShapeTests.WrongBundleShape..ctor: void()
@@ -112,12 +146,30 @@ method.ShapeCommandBindingTests.BindingBeforeSelectingPipelineThrows: void()
 method.ShapeCommandBindingTests.CannotSelectUnverifiedPipeline: void()
 method.ShapeCommandBindingTests.DifferentShapeInstanceIsNotTheOwner: void()
 method.ShapeCommandBindingTests.ResetRemovesOwnership: void()
+method.SharedResourceSetBindingTests..ctor: void()
+method.SharedResourceSetBindingTests.IdenticalDeclarations_AreAccepted: void()
+method.SharedResourceSetBindingTests.SameBindingCount_DifferentNameAtOneBinding_IsRefused_NamingTheBinding: void()
+method.SharedResourceSetBindingTests.ShaderThatDeclaresOnlyPartOfTheSet_IsRefused: void()
+method.SharedSetZeroAllocationTests..ctor: void()
+method.SharedSetZeroAllocationTests.BooleanPass_AllocatesZero_EvenOnRejection: void(bool mismatch)
+method.SharedSetZeroAllocationTests.FailureRerun_CollectsEveryMismatch: void()
 method.SharedUniformStorageTests..ctor: void()
 method.SharedUniformStorageTests.DisposedSharedStorageCannotBeWrittenOrBound: void(GraphicsBackend backend)
 method.SharedUniformStorageTests.OneUpdateIsObservedByEverySharingShapeInCommandOrder: void(GraphicsBackend backend, BufferUsage usage)
 method.SharedUniformStorageTests.SecondFamilyShape..ctor: void()
 method.SharedUniformStorageTests.SharedStorageIsWrittenOnlyThroughItsOwnHandle: void(GraphicsBackend backend)
 method.SharedUniformStorageTests.SharingAcrossDevicesIsRejected: void()
+method.TimestampQueryTests..ctor: void()
+method.TimestampQueryTests.ExplicitPool_DoublingRepeatsRoughlyDoublesDelta: void(GraphicsBackend backend)
+method.TimestampQueryTests.ExplicitPool_FreshSlotInsideRenderPass_IsLegal: void(GraphicsBackend backend)
+method.TimestampQueryTests.ExplicitPool_NotReadyBeforeSubmit_ReadyAfterWait: void(GraphicsBackend backend)
+method.TimestampQueryTests.ExplicitPool_OverwriteUnresolved_IncrementsAbandonedWriteCount: void(GraphicsBackend backend)
+method.TimestampQueryTests.ExplicitPool_ResolveRightAfterSubmit_ReturnsPromptlyNeverThrows: void(GraphicsBackend backend)
+method.TimestampQueryTests.ExplicitPool_ResolvedSlot_IsResetAtNextBegin_AndReusable: void(GraphicsBackend backend)
+method.TimestampQueryTests.ExplicitPool_ReuseInsideRenderPass_Throws: void(GraphicsBackend backend)
+method.TimestampQueryTests.ExplicitPool_TwoTimestampsAroundWorkload_T1GreaterThanT0: void(GraphicsBackend backend)
+method.TimestampQueryTests.ExplicitPool_Validation_RejectsBadArguments: void(GraphicsBackend backend)
+method.TimestampQueryTests.Features_TimestampQueries_ReportedTrue: void(GraphicsBackend backend)
 method.TypedBindingContractTests..ctor: void()
 method.TypedBindingContractTests.CommandBindingsMirrorTheGpu: void(GraphicsBackend backend)
 method.TypedBindingContractTests.LayoutsAndSetsRejectPositionalForeignIncompleteAndDuplicateSlots: void(GraphicsBackend backend)
@@ -128,20 +180,27 @@ method.TypedVertexBindingTests.UnboundInputCannotCreateBuffers: void()
 method.UniformArenaRenderTests..ctor: void()
 method.UniformArenaRenderTests.ArenaShape..ctor: void()
 method.UniformArenaRenderTests.TwoElementsOneUploadSelectDifferentUniformValues: void(GraphicsBackend backend)
+method.UniformStructSizeBindTests..ctor: void()
+method.UniformStructSizeBindTests.Bind_StructWithSizeEqualToTheRoundedBlock_Succeeds_AndCreateBufferMatches: void()
+method.UniformStructSizeBindTests.Bind_StructWithSizeSmallerThanItsFields_Throws: void()
+method.UniformStructSizeBindTests.Bind_StructWithoutSize_72BytesAgainst80ByteBlock_Throws: void()
+method.UniformStructSizeBindTests.NoSizeShape..ctor: void()
+method.UniformStructSizeBindTests.Size80Shape..ctor: void()
+method.UniformStructSizeBindTests.SizeTooSmallShape..ctor: void()
+method.UniformStructSizeBindTests.TheRuntimeDoesNotThrowForAnUndersizedStructLayoutSize_ItUsesTheNaturalSize: void()
 method.UpdateBufferOutsideCommandListPermissionTests..ctor: void()
 method.UpdateBufferOutsideCommandListPermissionTests.CommandListUpdateNeverNeedsThePermission: void(GraphicsBackend backend)
 method.UpdateBufferOutsideCommandListPermissionTests.DescriptionCarriesTheFlagInEqualityAndHash: void()
 method.UpdateBufferOutsideCommandListPermissionTests.DeviceLevelUpdateWithPermissionLandsBytes: void(GraphicsBackend backend, BufferUsage usage)
 method.UpdateBufferOutsideCommandListPermissionTests.DeviceLevelUpdateWithoutPermissionThrowsAndNamesTheRemedy: void(GraphicsBackend backend, BufferUsage usage)
 method.UpdateBufferOutsideCommandListPermissionTests.TypedShapeStorageIsSequencedByDesignAndNeverGrantsThePermission: void(GraphicsBackend backend)
+property.TimestampQueryTests.Backends: TheoryData`1<GraphicsBackend> { get; }
 struct.ImGuiProjection._layout: Sequential
 struct.ImGuiProjection._pack: 0
-struct.ImGuiProjection._size: 0
+struct.ImGuiProjection._size: 80
 struct.ImGuiProjection.field0.projection: Matrix4x4
 struct.ImGuiProjection.field1.IsClipSpaceYInverted: int
 struct.ImGuiProjection.field2.UseLegacyColorSpaceHandling: int
-struct.ImGuiProjection.field3._pad0: int
-struct.ImGuiProjection.field4._pad1: int
 struct.ImGuiVertex._layout: Sequential
 struct.ImGuiVertex._pack: 0
 struct.ImGuiVertex._size: 0
@@ -150,20 +209,19 @@ struct.ImGuiVertex.field1.vsin_texCoord: Vector2
 struct.ImGuiVertex.field2.vsin_color: uint
 struct.ShaderPipelineShapeTests.Projection._layout: Sequential
 struct.ShaderPipelineShapeTests.Projection._pack: 0
-struct.ShaderPipelineShapeTests.Projection._size: 0
+struct.ShaderPipelineShapeTests.Projection._size: 80
 struct.ShaderPipelineShapeTests.Projection.field0.Matrix: Matrix4x4
 struct.ShaderPipelineShapeTests.Projection.field1.Scale: float
-struct.ShaderPipelineShapeTests.Projection.field2._pad0: float
-struct.ShaderPipelineShapeTests.Projection.field3._pad1: float
-struct.ShaderPipelineShapeTests.Projection.field4._pad2: float
 struct.ShaderPipelineShapeTests.ProjectionSwapped._layout: Sequential
 struct.ShaderPipelineShapeTests.ProjectionSwapped._pack: 0
-struct.ShaderPipelineShapeTests.ProjectionSwapped._size: 0
+struct.ShaderPipelineShapeTests.ProjectionSwapped._size: 80
 struct.ShaderPipelineShapeTests.ProjectionSwapped.field0.Scale: float
 struct.ShaderPipelineShapeTests.ProjectionSwapped.field1.Matrix: Matrix4x4
-struct.ShaderPipelineShapeTests.ProjectionSwapped.field2._pad0: float
-struct.ShaderPipelineShapeTests.ProjectionSwapped.field3._pad1: float
-struct.ShaderPipelineShapeTests.ProjectionSwapped.field4._pad2: float
+struct.ShaderPipelineShapeTests.ProjectionUnrounded._layout: Sequential
+struct.ShaderPipelineShapeTests.ProjectionUnrounded._pack: 0
+struct.ShaderPipelineShapeTests.ProjectionUnrounded._size: 0
+struct.ShaderPipelineShapeTests.ProjectionUnrounded.field0.Matrix: Matrix4x4
+struct.ShaderPipelineShapeTests.ProjectionUnrounded.field1.Scale: float
 struct.ShaderPipelineShapeTests.QuadVertex._layout: Sequential
 struct.ShaderPipelineShapeTests.QuadVertex._pack: 0
 struct.ShaderPipelineShapeTests.QuadVertex._size: 0
@@ -176,6 +234,11 @@ struct.ShaderPipelineShapeTests.QuadVertexSwapped._size: 0
 struct.ShaderPipelineShapeTests.QuadVertexSwapped.field0.TexCoord: Vector2
 struct.ShaderPipelineShapeTests.QuadVertexSwapped.field1.Position: Vector2
 struct.ShaderPipelineShapeTests.QuadVertexSwapped.field2.Color: RgbaByte
+struct.ShaderPipelineShapeTests.SizeSmallerThanFields._layout: Sequential
+struct.ShaderPipelineShapeTests.SizeSmallerThanFields._pack: 0
+struct.ShaderPipelineShapeTests.SizeSmallerThanFields._size: 8
+struct.ShaderPipelineShapeTests.SizeSmallerThanFields.field0.Matrix: Matrix4x4
+struct.ShaderPipelineShapeTests.SizeSmallerThanFields.field1.Scale: float
 struct.ShapeBypassTests.Nested._layout: Sequential
 struct.ShapeBypassTests.Nested._pack: 0
 struct.ShapeBypassTests.Nested._size: 0
@@ -184,7 +247,27 @@ struct.ShapeBypassTests.Values._layout: Sequential
 struct.ShapeBypassTests.Values._pack: 0
 struct.ShapeBypassTests.Values._size: 0
 struct.ShapeBypassTests.Values.field0.Value: float
+struct.UniformStructSizeBindTests.ImGuiProjection_NoSize._layout: Sequential
+struct.UniformStructSizeBindTests.ImGuiProjection_NoSize._pack: 0
+struct.UniformStructSizeBindTests.ImGuiProjection_NoSize._size: 0
+struct.UniformStructSizeBindTests.ImGuiProjection_NoSize.field0.projection: Matrix4x4
+struct.UniformStructSizeBindTests.ImGuiProjection_NoSize.field1.IsClipSpaceYInverted: int
+struct.UniformStructSizeBindTests.ImGuiProjection_NoSize.field2.UseLegacyColorSpaceHandling: int
+struct.UniformStructSizeBindTests.ImGuiProjection_Size80._layout: Sequential
+struct.UniformStructSizeBindTests.ImGuiProjection_Size80._pack: 0
+struct.UniformStructSizeBindTests.ImGuiProjection_Size80._size: 80
+struct.UniformStructSizeBindTests.ImGuiProjection_Size80.field0.projection: Matrix4x4
+struct.UniformStructSizeBindTests.ImGuiProjection_Size80.field1.IsClipSpaceYInverted: int
+struct.UniformStructSizeBindTests.ImGuiProjection_Size80.field2.UseLegacyColorSpaceHandling: int
+struct.UniformStructSizeBindTests.ImGuiProjection_SizeTooSmall._layout: Sequential
+struct.UniformStructSizeBindTests.ImGuiProjection_SizeTooSmall._pack: 0
+struct.UniformStructSizeBindTests.ImGuiProjection_SizeTooSmall._size: 8
+struct.UniformStructSizeBindTests.ImGuiProjection_SizeTooSmall.field0.projection: Matrix4x4
+struct.UniformStructSizeBindTests.ImGuiProjection_SizeTooSmall.field1.IsClipSpaceYInverted: int
+struct.UniformStructSizeBindTests.ImGuiProjection_SizeTooSmall.field2.UseLegacyColorSpaceHandling: int
 type.CommandContractGpuTests: sealed class
+type.ComputeBundleAndVertexInfoTests: class
+type.D3D11UavBufferMirrorTests: class
 type.ExplicitUniformStorageTests: sealed class
 type.ImGuiBundleContractTests: sealed class
 type.ImGuiProjection: struct
@@ -196,11 +279,14 @@ type.IncompleteLayoutTests: sealed class
 type.ShaderPipelineShapeTests.MisspelledTextureShape: sealed class
 type.ShaderPipelineShapeTests.Projection: struct
 type.ShaderPipelineShapeTests.ProjectionSwapped: struct
+type.ShaderPipelineShapeTests.ProjectionUnrounded: struct
 type.ShaderPipelineShapeTests.QuadShape: sealed class
 type.ShaderPipelineShapeTests.QuadVertex: struct
 type.ShaderPipelineShapeTests.QuadVertexSwapped: struct
+type.ShaderPipelineShapeTests.SizeSmallerThanFields: struct
 type.ShaderPipelineShapeTests.SwappedStructShape: sealed class
 type.ShaderPipelineShapeTests.SwappedVertexShape: sealed class
+type.ShaderPipelineShapeTests.UnroundedStructShape: sealed class
 type.ShaderPipelineShapeTests.WrongBundleShape: sealed class
 type.ShaderPipelineShapeTests.WrongKindShape: sealed class
 type.ShaderPipelineShapeTests: class
@@ -209,10 +295,20 @@ type.ShapeBypassTests.UnsealedShape: class
 type.ShapeBypassTests.Values: struct
 type.ShapeBypassTests: sealed class
 type.ShapeCommandBindingTests: sealed class
+type.SharedResourceSetBindingTests: class
+type.SharedSetZeroAllocationTests: sealed class
 type.SharedUniformStorageTests.SecondFamilyShape: sealed class
 type.SharedUniformStorageTests: sealed class
+type.TimestampQueryTests: sealed class
 type.TypedBindingContractTests: sealed class
 type.TypedVertexBindingTests: sealed class
 type.UniformArenaRenderTests.ArenaShape: sealed class
 type.UniformArenaRenderTests: sealed class
+type.UniformStructSizeBindTests.ImGuiProjection_NoSize: struct
+type.UniformStructSizeBindTests.ImGuiProjection_Size80: struct
+type.UniformStructSizeBindTests.ImGuiProjection_SizeTooSmall: struct
+type.UniformStructSizeBindTests.NoSizeShape: sealed class
+type.UniformStructSizeBindTests.Size80Shape: sealed class
+type.UniformStructSizeBindTests.SizeTooSmallShape: sealed class
+type.UniformStructSizeBindTests: class
 type.UpdateBufferOutsideCommandListPermissionTests: sealed class

@@ -59,6 +59,13 @@ namespace Veldrid.MTL
             return new MtlFence(signaled);
         }
 
+        private protected override TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity)
+        {
+            // Features.TimestampQueries is false on Metal (MTLCounterSampleBuffer later - _TASKS/GpuTimestampQueries.md 5.5); the public
+            // wrapper already threw under VALIDATE_USAGE. Reached only in a non-validating build.
+            throw new VeldridException("GPU timestamp queries are not supported on the Metal backend yet.");
+        }
+
         public override Swapchain CreateSwapchain(ref SwapchainDescription description)
         {
             return new MtlSwapchain(gd, ref description);

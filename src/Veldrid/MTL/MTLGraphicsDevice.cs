@@ -99,25 +99,27 @@ namespace Veldrid.MTL
             ApiVersion = new GraphicsApiVersion(major, minor, 0, 0);
 
             Features = new GraphicsDeviceFeatures(
-                true,
-                false,
-                false,
-                MetalFeatures.IsSupported(MTLFeatureSet.macOS_GPUFamily1_v3),
-                false,
-                MetalFeatures.IsDrawBaseVertexInstanceSupported(),
-                MetalFeatures.IsDrawBaseVertexInstanceSupported(),
-                true,
-                true,
-                true,
-                true,
-                true,
-                true, // TODO: Should be macOS 10.11+ and iOS 11.0+.
-                true,
-                true,
-                true,
-                true,
-                true,
-                false);
+                computeShader: true,
+                geometryShader: false,
+                tessellationShaders: false,
+                multipleViewports: MetalFeatures.IsSupported(MTLFeatureSet.macOS_GPUFamily1_v3),
+                samplerLodBias: false,
+                drawBaseVertex: MetalFeatures.IsDrawBaseVertexInstanceSupported(),
+                drawBaseInstance: MetalFeatures.IsDrawBaseVertexInstanceSupported(),
+                drawIndirect: true,
+                drawIndirectBaseInstance: true,
+                fillModeWireframe: true,
+                samplerAnisotropy: true,
+                depthClipDisable: true,
+                texture1D: true, // TODO: Should be macOS 10.11+ and iOS 11.0+.
+                independentBlend: true,
+                structuredBuffer: true,
+                subsetTextureView: true,
+                commandListDebugMarkers: true,
+                bufferRangeBinding: true,
+                shaderFloat64: false,
+                // MTLCounterSampleBuffer later (_TASKS/GpuTimestampQueries.md 5.5).
+                timestampQueries: false);
             ResourceBindingModel = options.ResourceBindingModel;
             PreferMemorylessDepthTargets = metalOptions.PreferMemorylessDepthTargets;
 
@@ -249,6 +251,13 @@ namespace Veldrid.MTL
         public override void ResetFence(Fence fence)
         {
             Util.AssertSubtype<Fence, MtlFence>(fence).Reset();
+        }
+
+        private protected override TimestampResolveResult TryResolveTimestampsCore(TimestampQueryPool pool, uint first, uint count, Span<ulong> ticks, out double ticksPerSecond)
+        {
+            // Unreachable: GraphicsDevice.TryResolveTimestamps returns NotReady when Features.TimestampQueries is false (Metal, this cut).
+            ticksPerSecond = 0;
+            return TimestampResolveResult.NotReady;
         }
 
         internal static bool IsSupported()

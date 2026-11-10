@@ -99,6 +99,8 @@ namespace Veldrid.Vk
         private string vendorName;
         private GraphicsApiVersion apiVersion;
         private VkPhysicalDeviceProperties physicalDeviceProperties;
+        // From the selected graphics queue family (getQueueFamilyIndices); 0 means no timestamp support. Read by VkTimestampQueryPool for its mask.
+        private uint graphicsQueueTimestampValidBits;
         private VkPhysicalDeviceFeatures physicalDeviceFeatures;
         private VkPhysicalDeviceMemoryProperties physicalDeviceMemProperties;
         private VkDevice device;
@@ -136,25 +138,28 @@ namespace Veldrid.Vk
                 GetImageMemoryRequirements2);
 
             Features = new GraphicsDeviceFeatures(
-                true,
-                physicalDeviceFeatures.geometryShader,
-                physicalDeviceFeatures.tessellationShader,
-                physicalDeviceFeatures.multiViewport,
-                true,
-                true,
-                true,
-                true,
-                physicalDeviceFeatures.drawIndirectFirstInstance,
-                physicalDeviceFeatures.fillModeNonSolid,
-                physicalDeviceFeatures.samplerAnisotropy,
-                physicalDeviceFeatures.depthClamp,
-                true,
-                physicalDeviceFeatures.independentBlend,
-                true,
-                true,
-                debugMarkerEnabled,
-                true,
-                physicalDeviceFeatures.shaderFloat64);
+                computeShader: true,
+                geometryShader: physicalDeviceFeatures.geometryShader,
+                tessellationShaders: physicalDeviceFeatures.tessellationShader,
+                multipleViewports: physicalDeviceFeatures.multiViewport,
+                samplerLodBias: true,
+                drawBaseVertex: true,
+                drawBaseInstance: true,
+                drawIndirect: true,
+                drawIndirectBaseInstance: physicalDeviceFeatures.drawIndirectFirstInstance,
+                fillModeWireframe: physicalDeviceFeatures.fillModeNonSolid,
+                samplerAnisotropy: physicalDeviceFeatures.samplerAnisotropy,
+                depthClipDisable: physicalDeviceFeatures.depthClamp,
+                texture1D: true,
+                independentBlend: physicalDeviceFeatures.independentBlend,
+                structuredBuffer: true,
+                subsetTextureView: true,
+                commandListDebugMarkers: debugMarkerEnabled,
+                bufferRangeBinding: true,
+                shaderFloat64: physicalDeviceFeatures.shaderFloat64,
+                // Decision B7 (_TASKS/GpuTimestampQueries.md): the selected graphics queue family's timestampValidBits, NOT
+                // timestampComputeAndGraphics (which only says whether EVERY family supports them).
+                timestampQueries: graphicsQueueTimestampValidBits != 0);
 
             ResourceFactory = new VkResourceFactory(this);
 
@@ -251,6 +256,85 @@ namespace Veldrid.Vk
             var vkFence = Util.AssertSubtype<Fence, VkFence>(fence).DeviceFence;
             vkResetFences(device, 1, ref vkFence);
         }
+
+        #region Timestamp queries (_TASKS/GpuTimestampQueries.md 5.2 / 5.3)
+
+        /// <summary>timestampValidBits of the selected graphics queue family; 0 when the family cannot timestamp (then Features.TimestampQueries is false).</summary>
+        internal uint GraphicsQueueTimestampValidBits => graphicsQueueTimestampValidBits;
+
+        /// <summary>Live pools, so <see cref="VkCommandList.Begin"/> can record the lazy resets of resolved slots (always outside a render pass).</summary>
+        private readonly object timestampPoolsLock = new object();
+        private readonly List<VkTimestampQueryPool> timestampPools = new List<VkTimestampQueryPool>();
+        private volatile VkTimestampQueryPool[] timestampPoolsSnapshot = Array.Empty<VkTimestampQueryPool>();
+
+        internal void RegisterTimestampPool(VkTimestampQueryPool pool)
+        {
+            lock (timestampPoolsLock)
+            {
+                timestampPools.Add(pool);
+                timestampPoolsSnapshot = timestampPools.ToArray();
+            }
+        }
+
+        internal void UnregisterTimestampPool(VkTimestampQueryPool pool)
+        {
+            lock (timestampPoolsLock)
+            {
+                timestampPools.Remove(pool);
+                timestampPoolsSnapshot = timestampPools.ToArray();
+            }
+        }
+
+        /// <summary>Lock-free read for the per-Begin() poll; the array is replaced, never mutated.</summary>
+        internal VkTimestampQueryPool[] TimestampPoolsSnapshot => timestampPoolsSnapshot;
+
+        private protected override TimestampResolveResult TryResolveTimestampsCore(TimestampQueryPool pool, uint first, uint count, Span<ulong> ticks, out double ticksPerSecond)
+        {
+            ticksPerSecond = 0;
+            var vkPool = Util.AssertSubtype<TimestampQueryPool, VkTimestampQueryPool>(pool);
+
+            // Hold the state lock across the read + state transition so a concurrent Begin() cannot reset a slot between the two.
+            lock (vkPool.StateLock)
+            {
+                // A slot that was reset and never written again can never become available; skip the driver call.
+                if (vkPool.AnyFreshLocked(first, count)) return TimestampResolveResult.NotReady;
+
+                // Layout with WITH_AVAILABILITY: per query [value:u64][availability:u64], stride 16.
+                const int stride_bytes = 16;
+                int byteCount = checked((int)count * stride_bytes);
+                ulong* results = stackalloc ulong[(int)count * 2];
+
+                var result = vkGetQueryPoolResults(
+                    device,
+                    vkPool.DeviceQueryPool,
+                    first,
+                    count,
+                    (UIntPtr)byteCount,
+                    results,
+                    stride_bytes,
+                    VkQueryResultFlags._64 | VkQueryResultFlags.WithAvailability);
+
+                // NotReady is the documented non-blocking signal (VK_NOT_READY without WAIT_BIT); every other failure is a real error.
+                if (result == VkResult.NotReady) return TimestampResolveResult.NotReady;
+                CheckResult(result);
+
+                for (int i = 0; i < count; i++)
+                {
+                    if (results[i * 2 + 1] == 0) return TimestampResolveResult.NotReady;   // availability word
+                }
+
+                for (int i = 0; i < count; i++)
+                    ticks[i] = results[i * 2] & vkPool.ValidBitsMask;
+
+                vkPool.MarkResolvedLocked(first, count);
+            }
+
+            // timestampPeriod = nanoseconds per tick.
+            ticksPerSecond = 1e9 / physicalDeviceProperties.limits.timestampPeriod;
+            return TimestampResolveResult.Ready;
+        }
+
+        #endregion
 
         public override bool WaitForFence(Fence fence, ulong nanosecondTimeout)
         {
@@ -1161,6 +1245,9 @@ namespace Veldrid.Vk
                 if ((qfp[i].queueFlags & VkQueueFlags.Graphics) != 0)
                 {
                     GraphicsQueueIndex = i;
+                    // 0 = no timestamps on this family; otherwise the count of meaningful low bits in a vkCmdWriteTimestamp value
+                    // (64 on desktop, as low as 36 on some mobile parts). Drives Features.TimestampQueries and the resolve-time mask.
+                    graphicsQueueTimestampValidBits = qfp[i].timestampValidBits;
                     foundGraphics = true;
                 }
 

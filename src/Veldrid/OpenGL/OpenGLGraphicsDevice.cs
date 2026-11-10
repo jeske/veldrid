@@ -183,6 +183,13 @@ namespace Veldrid.OpenGL
             Util.AssertSubtype<Fence, OpenGLFence>(fence).Reset();
         }
 
+        private protected override TimestampResolveResult TryResolveTimestampsCore(TimestampQueryPool pool, uint first, uint count, Span<ulong> ticks, out double ticksPerSecond)
+        {
+            // Unreachable: GraphicsDevice.TryResolveTimestamps returns NotReady when Features.TimestampQueries is false (OpenGL, this cut).
+            ticksPerSecond = 0;
+            return TimestampResolveResult.NotReady;
+        }
+
         public void EnableDebugCallback()
         {
             EnableDebugCallback(DebugSeverity.DebugSeverityNotification);
@@ -398,25 +405,27 @@ namespace Veldrid.OpenGL
 
             bool drawIndirect = Extensions.DrawIndirect || Extensions.MultiDrawIndirect;
             features = new GraphicsDeviceFeatures(
-                Extensions.ComputeShaders,
-                Extensions.GeometryShader,
-                Extensions.TessellationShader,
-                Extensions.ArbViewportArray,
-                backendType == GraphicsBackend.OpenGL,
-                Extensions.DrawElementsBaseVertex,
-                Extensions.GLVersion(4, 2),
-                drawIndirect,
-                drawIndirect,
-                backendType == GraphicsBackend.OpenGL,
-                Extensions.AnisotropicFilter,
-                backendType == GraphicsBackend.OpenGL,
-                backendType == GraphicsBackend.OpenGL,
-                Extensions.IndependentBlend,
-                Extensions.StorageBuffers,
-                Extensions.ArbTextureView,
-                Extensions.KhrDebug || Extensions.ExtDebugMarker,
-                Extensions.ArbUniformBufferObject,
-                Extensions.ArbGpuShaderFp64);
+                computeShader: Extensions.ComputeShaders,
+                geometryShader: Extensions.GeometryShader,
+                tessellationShaders: Extensions.TessellationShader,
+                multipleViewports: Extensions.ArbViewportArray,
+                samplerLodBias: backendType == GraphicsBackend.OpenGL,
+                drawBaseVertex: Extensions.DrawElementsBaseVertex,
+                drawBaseInstance: Extensions.GLVersion(4, 2),
+                drawIndirect: drawIndirect,
+                drawIndirectBaseInstance: drawIndirect,
+                fillModeWireframe: backendType == GraphicsBackend.OpenGL,
+                samplerAnisotropy: Extensions.AnisotropicFilter,
+                depthClipDisable: backendType == GraphicsBackend.OpenGL,
+                texture1D: backendType == GraphicsBackend.OpenGL,
+                independentBlend: Extensions.IndependentBlend,
+                structuredBuffer: Extensions.StorageBuffers,
+                subsetTextureView: Extensions.ArbTextureView,
+                commandListDebugMarkers: Extensions.KhrDebug || Extensions.ExtDebugMarker,
+                bufferRangeBinding: Extensions.ArbUniformBufferObject,
+                shaderFloat64: Extensions.ArbGpuShaderFp64,
+                // GL_TIMESTAMP queries later (_TASKS/GpuTimestampQueries.md 5.5).
+                timestampQueries: false);
 
             int uboAlignment;
             glGetIntegerv(GetPName.UniformBufferOffsetAlignment, &uboAlignment);

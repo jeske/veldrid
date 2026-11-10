@@ -1337,6 +1337,7 @@ namespace Veldrid.MTL
         private protected override void InsertDebugMarkerCore(string name)
         {
             var nsName = NSString.New(name);
+
             if (!bce.IsNull)
                 bce.insertDebugSignpost(nsName);
             else if (!cce.IsNull)
@@ -1344,6 +1345,11 @@ namespace Veldrid.MTL
             else if (!rce.IsNull) rce.insertDebugSignpost(nsName);
 
             ObjectiveCRuntime.release(nsName);
+        }
+
+        private protected override void WriteTimestampCore(TimestampQueryPool pool, uint index)
+        {
+            // Unreachable: CommandList.WriteTimestamp returns early when Features.TimestampQueries is false (Metal, this cut).
         }
     }
 }

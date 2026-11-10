@@ -253,5 +253,10 @@ namespace Veldrid.OpenGL
         {
             CurrentCommands.InsertDebugMarker(name);
         }
+
+        private protected override void WriteTimestampCore(TimestampQueryPool pool, uint index)
+        {
+            // Unreachable: CommandList.WriteTimestamp returns early when Features.TimestampQueries is false (OpenGL, this cut).
+        }
     }
 }

@@ -163,16 +163,18 @@ namespace Veldrid.D3D11
                 // V11 (AN_Monsters spec 204 T3): a GPU-authored indirect record's FirstInstance is NOT visible to gl_InstanceIndex on D3D11
                 // (SV_InstanceID excludes it and the host cannot fill SPIRV_Cross_VertexInfo from a buffer it cannot read). Was wrongly true.
                 drawIndirectBaseInstance: false,
-                true,
-                true,
-                true,
-                true,
-                true,
-                device.FeatureLevel >= FeatureLevel.Level_11_0,
-                true,
-                device.FeatureLevel >= FeatureLevel.Level_11_1,
-                device.FeatureLevel >= FeatureLevel.Level_11_1,
-                device.CheckFeatureSupport<FeatureDataDoubles>(Feature.Doubles).DoublePrecisionFloatShaderOps);
+                fillModeWireframe: true,
+                samplerAnisotropy: true,
+                depthClipDisable: true,
+                texture1D: true,
+                independentBlend: true,
+                structuredBuffer: device.FeatureLevel >= FeatureLevel.Level_11_0,
+                subsetTextureView: true,
+                commandListDebugMarkers: device.FeatureLevel >= FeatureLevel.Level_11_1,
+                bufferRangeBinding: device.FeatureLevel >= FeatureLevel.Level_11_1,
+                shaderFloat64: device.CheckFeatureSupport<FeatureDataDoubles>(Feature.Doubles).DoublePrecisionFloatShaderOps,
+                // D3D11_QUERY_TIMESTAMP / TIMESTAMP_DISJOINT exist from FL10; the fork requires FL11 (_TASKS/GpuTimestampQueries.md 5.1).
+                timestampQueries: true);
 
             d3d11ResourceFactory = new D3D11ResourceFactory(this);
             d3d11Info = new BackendInfoD3D11(this);
@@ -546,6 +548,121 @@ namespace Veldrid.D3D11
         {
             Util.AssertSubtype<Fence, D3D11Fence>(fence).Reset();
         }
+
+        #region Timestamp queries (_TASKS/GpuTimestampQueries.md 5.1 / 5.3)
+
+        /// <summary>Live pools, so <see cref="D3D11CommandList.Begin"/> can advance resolved slots to Fresh (parity with the Vulkan lazy reset).</summary>
+        private readonly object timestampPoolsLock = new object();
+        private readonly List<D3D11TimestampQueryPool> timestampPools = new List<D3D11TimestampQueryPool>();
+        private volatile D3D11TimestampQueryPool[] timestampPoolsSnapshot = Array.Empty<D3D11TimestampQueryPool>();
+
+        internal void RegisterTimestampPool(D3D11TimestampQueryPool pool)
+        {
+            lock (timestampPoolsLock)
+            {
+                timestampPools.Add(pool);
+                timestampPoolsSnapshot = timestampPools.ToArray();
+            }
+        }
+
+        internal void UnregisterTimestampPool(D3D11TimestampQueryPool pool)
+        {
+            lock (timestampPoolsLock)
+            {
+                timestampPools.Remove(pool);
+                timestampPoolsSnapshot = timestampPools.ToArray();
+            }
+        }
+
+        /// <summary>Lock-free read for the per-Begin() poll; the array is replaced, never mutated.</summary>
+        internal D3D11TimestampQueryPool[] TimestampPoolsSnapshot => timestampPoolsSnapshot;
+
+        private readonly object timestampWindowsLock = new object();
+        private readonly Stack<D3D11TimestampDisjointWindow> freeTimestampDisjointWindows = new Stack<D3D11TimestampDisjointWindow>();
+
+        /// <summary>Hands a reset disjoint window to a command list that is about to record its first timestamp of this recording.</summary>
+        internal D3D11TimestampDisjointWindow RentTimestampDisjointWindow()
+        {
+            lock (timestampWindowsLock)
+            {
+                if (freeTimestampDisjointWindows.Count > 0) return freeTimestampDisjointWindows.Pop();
+            }
+
+            var query = device.CreateQuery(new QueryDescription(QueryType.TimestampDisjoint));
+            query.DebugName = "Veldrid.TimestampDisjointWindow";
+            return new D3D11TimestampDisjointWindow(query);
+        }
+
+        /// <summary>Called by the pools when the last slot referencing an Ended window is rewritten or disposed.</summary>
+        internal void ReturnTimestampDisjointWindow(D3D11TimestampDisjointWindow window)
+        {
+            window.ResetForReuse();
+            lock (timestampWindowsLock) freeTimestampDisjointWindows.Push(window);
+        }
+
+        private protected override TimestampResolveResult TryResolveTimestampsCore(TimestampQueryPool pool, uint first, uint count, Span<ulong> ticks, out double ticksPerSecond)
+        {
+            ticksPerSecond = 0;
+            var d3dPool = Util.AssertSubtype<TimestampQueryPool, D3D11TimestampQueryPool>(pool);
+
+            // GetData must run on the IMMEDIATE context (fails on a deferred one) -> same lock as SubmitCommandsCore / SwapBuffersCore (B3).
+            // The pool lock is nested inside so a concurrent WriteTimestamp cannot swap a slot's window mid-resolve.
+            // Flags = None (NOT DoNotFlush): this fork's D3D11 WaitForIdleCore is a no-op and ExecuteCommandList does not flush, so with
+            // DoNotFlush a query behind an unflushed immediate context would read S_FALSE forever. GetData's implicit Flush is asynchronous -
+            // it hands the buffered commands to the GPU and returns; it never waits, so the "never blocks" contract holds.
+            lock (immediateContextLock)
+            lock (d3dPool.StateLock)
+            {
+                if (d3dPool.AnyFreshLocked(first, count)) return TimestampResolveResult.NotReady;
+
+                // 1. Every distinct disjoint window in the range must be Ended (its command list reached End()) and have data.
+                ulong frequency = 0;
+                bool anyDisjoint = false;
+                bool frequencyMismatch = false;
+
+                for (uint i = first; i < first + count; i++)
+                {
+                    var window = d3dPool.SlotWindows[i];
+                    if (window == null || !window.Ended) return TimestampResolveResult.NotReady;
+
+                    if (!window.ResultFetched)
+                    {
+                        // S_FALSE (not ready) surfaces as 'false' from Vortice's generic GetData; S_OK as 'true'. DoNotFlush keeps it non-blocking.
+                        if (!immediateContext.GetData(window.Query, AsyncGetDataFlags.None, out QueryDataTimestampDisjoint disjointData))
+                            return TimestampResolveResult.NotReady;
+
+                        window.ResultFetched = true;
+                        window.Frequency = disjointData.Frequency;
+                        window.Disjoint = disjointData.Disjoint;
+                    }
+
+                    if (window.Disjoint) anyDisjoint = true;
+                    if (frequency == 0) frequency = window.Frequency;
+                    else if (frequency != window.Frequency) frequencyMismatch = true;   // B2: a range spanning windows with different clocks is unusable
+                }
+
+                // 2. Every slot's own timestamp must be available (a slot may be ready while a later one in the same window is not).
+                Span<ulong> values = count <= 64 ? stackalloc ulong[(int)count] : new ulong[count];
+
+                for (uint i = 0; i < count; i++)
+                {
+                    if (!immediateContext.GetData(d3dPool.Queries[first + i], AsyncGetDataFlags.None, out ulong value))
+                        return TimestampResolveResult.NotReady;
+                    values[(int)i] = value;
+                }
+
+                // 3. All data is in: the slots are consumed either way (a Disjoint range is discarded, not retried).
+                d3dPool.MarkResolvedLocked(first, count);
+
+                if (anyDisjoint || frequencyMismatch) return TimestampResolveResult.Disjoint;
+
+                values.CopyTo(ticks);
+                ticksPerSecond = frequency;
+                return TimestampResolveResult.Ready;
+            }
+        }
+
+        #endregion
 
         public override bool GetD3D11Info(out BackendInfoD3D11 info)
         {

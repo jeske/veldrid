@@ -272,6 +272,10 @@ enum.TextureUsage.Staging: 32
 enum.TextureUsage.Storage: 2
 enum.TextureUsage._flags: true
 enum.TextureUsage._type: byte
+enum.TimestampResolveResult.Disjoint: 2
+enum.TimestampResolveResult.NotReady: 0
+enum.TimestampResolveResult.Ready: 1
+enum.TimestampResolveResult._type: int
 enum.VertexElementFormat.Byte2: 5
 enum.VertexElementFormat.Byte2Norm: 4
 enum.VertexElementFormat.Byte2_Norm: 4
@@ -635,6 +639,7 @@ method.CommandList.UpdateBuffer: void(ShaderUniformBuffer`1<!!0> storage, ref !!
 method.CommandList.UpdateBuffer: void(ShaderVertexBuffer`1<!!0> buffer, uint firstVertex, ReadOnlySpan`1<!!0> vertices)
 method.CommandList.UpdateBuffer: void(UniformBlock`1<!!0> block, Expression`1<Func`2<!!0, !!1>> member, ref !!1 value)
 method.CommandList.UpdateBuffer: void(UniformBlock`1<!!0> block, ref !!0 value)
+method.CommandList.WriteTimestamp: void(TimestampQueryPool pool, uint index)
 method.CommandListDescription.Equals: bool(CommandListDescription other)
 method.ComputePipelineDescription..ctor: void(Shader computeShader, ResourceLayout[] resourceLayouts, uint threadGroupSizeX, uint threadGroupSizeY, uint threadGroupSizeZ)
 method.ComputePipelineDescription..ctor: void(Shader shaderStage, ResourceLayout resourceLayout, uint threadGroupSizeX, uint threadGroupSizeY, uint threadGroupSizeZ)
@@ -725,6 +730,7 @@ method.GraphicsDevice.SwapBuffers: void(Swapchain swapchain)
 method.GraphicsDevice.ThrowIfDeviceLost: void()
 method.GraphicsDevice.TrimDriverMemoryForIdle: void()
 method.GraphicsDevice.TryQueryVideoMemoryUsage: bool(ref GraphicsDevice_VideoMemoryUsage usage)
+method.GraphicsDevice.TryResolveTimestamps: TimestampResolveResult(TimestampQueryPool pool, uint first, uint count, Span`1<ulong> ticks, ref double ticksPerSecond)
 method.GraphicsDevice.Unmap: void(IMappableResource resource)
 method.GraphicsDevice.Unmap: void(IMappableResource resource, uint subresource)
 method.GraphicsDevice.UpdateActiveDisplay: void(int x, int y, int w, int h)
@@ -806,6 +812,7 @@ method.ResourceFactory.CreateTexture: Texture(ulong nativeTexture, ref TextureDe
 method.ResourceFactory.CreateTextureView: TextureView(Texture target)
 method.ResourceFactory.CreateTextureView: TextureView(TextureViewDescription description)
 method.ResourceFactory.CreateTextureView: TextureView(ref TextureViewDescription description)
+method.ResourceFactory.CreateTimestampQueryPool: TimestampQueryPool(uint capacity)
 method.ResourceLayout.Dispose: void()
 method.ResourceLayoutDescription..ctor: void(ShapeSlot[] slots)
 method.ResourceLayoutDescription.Equals: bool(ResourceLayoutDescription other)
@@ -961,6 +968,7 @@ method.TextureViewDescription..ctor: void(Texture target, PixelFormat format, ui
 method.TextureViewDescription..ctor: void(Texture target, uint baseMipLevel, uint mipLevels, uint baseArrayLayer, uint arrayLayers)
 method.TextureViewDescription.Equals: bool(TextureViewDescription other)
 method.TextureViewDescription.GetHashCode: int()
+method.TimestampQueryPool.Dispose: void()
 method.UniformArenaElement..ctor: void(uint Value)
 method.UniformArenaElement.Deconstruct: void(ref uint Value)
 method.UniformArenaElement.Equals: bool(UniformArenaElement other)
@@ -1113,6 +1121,7 @@ property.GraphicsDeviceFeatures.StructuredBuffer: bool { get; }
 property.GraphicsDeviceFeatures.SubsetTextureView: bool { get; }
 property.GraphicsDeviceFeatures.TessellationShaders: bool { get; }
 property.GraphicsDeviceFeatures.Texture1D: bool { get; }
+property.GraphicsDeviceFeatures.TimestampQueries: bool { get; }
 property.IDeviceResource.Name: string { get; set; }
 property.MappedResourceView`1.Item: ref !0 { get; }
 property.MappedResourceView`1.Item: ref !0 { get; }
@@ -1220,6 +1229,10 @@ property.TextureView.IsDisposed: bool { get; }
 property.TextureView.MipLevels: uint { get; }
 property.TextureView.Name: string { get; set; }
 property.TextureView.Target: Texture { get; }
+property.TimestampQueryPool.AbandonedWriteCount: ulong { get; }
+property.TimestampQueryPool.Capacity: uint { get; }
+property.TimestampQueryPool.IsDisposed: bool { get; }
+property.TimestampQueryPool.Name: string { get; set; }
 property.UniformArenaElement.Value: uint { get; set; }
 property.VdShaderBackendData.ComputeEntryPoint: string { get; set; }
 property.VdShaderBackendData.ComputeShaderData: string { get; set; }
@@ -1747,6 +1760,8 @@ type.TextureType: enum
 type.TextureUsage: enum
 type.TextureView: abstract class
 type.TextureViewDescription: struct
+type.TimestampQueryPool: abstract class
+type.TimestampResolveResult: enum
 type.UniformArenaElement: struct
 type.UniformBlock`1: sealed class
 type.UniformBufferBindingTimeOffsetSelectableAttribute: sealed class

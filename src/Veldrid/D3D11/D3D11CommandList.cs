@@ -201,12 +201,22 @@ namespace Veldrid.D3D11
             commandList?.Dispose();
             commandList = null;
             clearState();
+            emulatedRenderPassActive = false;
+            if (currentDisjointWindow != null) closeDisjointWindow();   // Begin() after End() without a submit: the window still has to be closed
+
+            // Parity with VkCommandList.Begin(): resolved slots become Fresh here (no GPU work on D3D11; the state machine is what the
+            // "reused inside a render pass" rule reads).
+            var pools = gd.TimestampPoolsSnapshot;
+            for (int i = 0; i < pools.Length; i++)
+                if (pools[i].HasSlotsAwaitingReset) pools[i].AdvanceResolvedSlotsToFresh();
             begun = true;
         }
 
         public override void End()
         {
             if (commandList != null) throw new VeldridException("Invalid use of End().");
+
+            closeDisjointWindow();
 
             try
             {
@@ -226,6 +236,8 @@ namespace Veldrid.D3D11
 
         public void Reset()
         {
+            closeDisjointWindow();
+
             if (commandList != null)
             {
                 commandList.Dispose();
@@ -242,6 +254,63 @@ namespace Veldrid.D3D11
             resetManagedState();
             begun = false;
         }
+
+        #region Timestamp queries (_TASKS/GpuTimestampQueries.md 5.1 / 5.3)
+
+        /// <summary>
+        ///     Mirror of Vulkan's lazy render pass so the "reused slot inside a pass" rule throws in the SAME situations on both backends:
+        ///     set by draws only - NOT clears, which Vulkan defers into the pass's load-op (Vulkan begins its pass there), cleared by SetFramebuffer / Dispatch / Copy* / Resolve / Begin / End
+        ///     (Vulkan ends its pass there). D3D11 itself has no such restriction.
+        /// </summary>
+        private bool emulatedRenderPassActive;
+
+        /// <summary>The D3D11_QUERY_TIMESTAMP_DISJOINT bracket of the current recording; opened on the first WriteTimestamp, closed at End()/Reset().</summary>
+        private D3D11TimestampDisjointWindow currentDisjointWindow;
+
+        private void closeDisjointWindow()
+        {
+            if (currentDisjointWindow == null) return;
+            DeviceContext.End(currentDisjointWindow.Query);
+            var window = currentDisjointWindow;
+            currentDisjointWindow = null;
+            window.Ended = true;
+            // All slots that referenced it may already have been rewritten (abandoned) -> nothing holds it; recycle now.
+            if (window.SlotReferences == 0) gd.ReturnTimestampDisjointWindow(window);
+        }
+
+        private protected override void WriteTimestampCore(TimestampQueryPool pool, uint index)
+        {
+            var d3dPool = Util.AssertSubtype<TimestampQueryPool, D3D11TimestampQueryPool>(pool);
+
+            if (currentDisjointWindow == null)
+            {
+                currentDisjointWindow = gd.RentTimestampDisjointWindow();
+                DeviceContext.Begin(currentDisjointWindow.Query);   // on the DEFERRED context: the bracket executes with the command list
+            }
+
+            D3D11TimestampQueryPool.SlotState previous;
+            D3D11TimestampDisjointWindow previousWindow;
+            lock (d3dPool.StateLock) d3dPool.PeekLocked(index, out previous, out previousWindow);
+
+            if (previous != D3D11TimestampQueryPool.SlotState.Fresh && emulatedRenderPassActive)
+            {
+                // D3D11 could legally End() the query again here; refusing keeps the contract identical to Vulkan (VkCommandList.WriteTimestampCore).
+#if VALIDATE_USAGE
+                throw new VeldridException(
+                    $"WriteTimestamp: slot {index} of TimestampQueryPool '{pool.Name}' is being reused inside a render pass " +
+                    $"(previous state {previous}). A reused slot must be reset first, which is only legal outside a render pass: " +
+                    "resolve the pool before the next CommandList.Begin() (the reset is then recorded automatically), write the first " +
+                    "timestamp of this pool before SetFramebuffer/draws, or use a deeper ring of pools.");
+#else
+                return;
+#endif
+            }
+
+            d3dPool.MarkWritten(index, currentDisjointWindow);
+            DeviceContext.End(d3dPool.Queries[index]);   // D3D11 timestamps are End()-only (no Begin); the value is taken when the GPU reaches this point
+        }
+
+        #endregion
 
         private protected override void DispatchCore(uint groupCountX, uint groupCountY, uint groupCountZ)
         {
@@ -334,6 +403,7 @@ namespace Veldrid.D3D11
 
         protected override void ResolveTextureCore(Texture source, Texture destination)
         {
+            emulatedRenderPassActive = false;
             var d3d11Source = Util.AssertSubtype<Texture, D3D11Texture>(source);
             var d3d11Destination = Util.AssertSubtype<Texture, D3D11Texture>(destination);
             DeviceContext.ResolveSubresource(
@@ -346,6 +416,7 @@ namespace Veldrid.D3D11
 
         protected override void SetFramebufferCore(Framebuffer fb)
         {
+            emulatedRenderPassActive = false;
             var d3dFb = Util.AssertSubtype<Framebuffer, D3D11Framebuffer>(fb);
 
             if (d3dFb.Swapchain != null)
@@ -361,6 +432,7 @@ namespace Veldrid.D3D11
 
         protected override void CopyBufferCore(DeviceBuffer source, uint sourceOffset, DeviceBuffer destination, uint destinationOffset, uint sizeInBytes)
         {
+            emulatedRenderPassActive = false;
             var srcD3D11Buffer = Util.AssertSubtype<DeviceBuffer, D3D11Buffer>(source);
             var dstD3D11Buffer = Util.AssertSubtype<DeviceBuffer, D3D11Buffer>(destination);
 
@@ -381,6 +453,7 @@ namespace Veldrid.D3D11
             uint width, uint height, uint depth,
             uint layerCount)
         {
+            emulatedRenderPassActive = false;
             var srcD3D11Texture = Util.AssertSubtype<Texture, D3D11Texture>(source);
             var dstD3D11Texture = Util.AssertSubtype<Texture, D3D11Texture>(destination);
 
@@ -646,6 +719,7 @@ namespace Veldrid.D3D11
 
         private void preDrawCommand()
         {
+            emulatedRenderPassActive = true;
             flushViewports();
             flushScissorRects();
             flushVertexBindings();
@@ -664,6 +738,7 @@ namespace Veldrid.D3D11
 
         private void preDispatchCommand()
         {
+            emulatedRenderPassActive = false;
             int computeResourceCount = computePipeline.ResourceLayouts.Length;
 
             for (uint i = 0; i < computeResourceCount; i++)
@@ -1246,11 +1321,13 @@ namespace Veldrid.D3D11
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
         {
+            // Not a pass start: Vulkan defers the clear to the pass's load-op and opens the pass at the first DRAW (see emulatedRenderPassActive).
             DeviceContext.ClearRenderTargetView(d3D11Framebuffer.RenderTargetViews[index], new Color4(clearColor.R, clearColor.G, clearColor.B, clearColor.A));
         }
 
         private protected override void ClearDepthStencilCore(float depth, byte stencil)
         {
+            // Not a pass start (same reason as ClearColorTargetCore).
             DeviceContext.ClearDepthStencilView(d3D11Framebuffer.DepthStencilView, DepthStencilClearFlags.Depth | DepthStencilClearFlags.Stencil, depth, stencil);
         }
 

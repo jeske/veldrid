@@ -48,6 +48,13 @@ namespace Veldrid.OpenGL
             return new OpenGLFence(signaled);
         }
 
+        private protected override TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity)
+        {
+            // Features.TimestampQueries is false on OpenGL (GL_TIMESTAMP queries later - _TASKS/GpuTimestampQueries.md 5.5); the public
+            // wrapper already threw under VALIDATE_USAGE. Reached only in a non-validating build.
+            throw new VeldridException("GPU timestamp queries are not supported on the OpenGL backend yet.");
+        }
+
         public override Swapchain CreateSwapchain(ref SwapchainDescription description)
         {
             throw new NotSupportedException("OpenGL does not support creating Swapchain objects.");

@@ -123,13 +123,16 @@ Rule of thumb per call site - ask "what breaks if the CPU does NOT wait here?":
 
 ## 6. Implementation plan
 
-- [ ] 6.1 Rename `WaitForIdleCore` -> `GpuOrderingBarrierCore` (4 backends, bodies untouched); add `GpuOrderingBarrier()`, `WaitForGpuIdle()` + abstract `WaitForGpuIdleCore()`; `[Obsolete] WaitForIdle()` alias. Build green, ContractTests green (no behaviour change yet).
-- [ ] 6.2 D3D11 `WaitForGpuIdleCore` (event query). Vulkan/Metal/OpenGL `WaitForGpuIdleCore` = their barrier core.
-- [ ] 6.3 `D3D11Fence` on an EVENT query (D5).
-- [ ] 6.4 Fork call-site migration (4.1) incl. the timestamp tests' retry loops becoming first-call asserts.
-- [ ] 6.5 Tests (section 5). Full suite x5 serial.
-- [ ] 6.6 Regenerate `AN.Veldrid.stableapi`; docs; publish to LocalNuGet.
+- [x] 6.1 Rename `WaitForIdleCore` -> `GpuOrderingBarrierCore` (4 backends, bodies untouched); add `GpuOrderingBarrier()`, `WaitForGpuIdle()` + abstract `WaitForGpuIdleCore()`; `[Obsolete] WaitForIdle()` alias. (commit `efb410d3`)
+- [x] 6.2 D3D11 `WaitForGpuIdleCore` (cached EVENT query, Flush, spin-then-yield poll). Vulkan/Metal/OpenGL `WaitForGpuIdleCore` = their barrier core.
+- [x] 6.3 `D3D11Fence` on an EVENT query (D5); `WaitForFences` polls (no kernel handles any more).
+- [x] 6.4 Fork call-site migration (4.1); `ResolveWithRetry` asserts `Ready` on the FIRST resolve after `WaitForGpuIdle` (regression detector for D3).
+- [x] 6.5 Tests: `GpuSyncVerbTests` (5 x 2). ContractTests 137/137 x 4 serial.
+- [x] 6.6 `AN.Veldrid.stableapi` regenerated. Publish to LocalNuGet: with the timestamp work (7.9 there).
 - [ ] 6.7 File client obligations: `AN_Monsters/_SPECS_RenderKit/95_GpuTiming.md` (append) and `AN_FluidUI/_TASKS/GpuTiming_GameCompositor.md` (append) with the 4.2 tables.
+
+Status: **IMPLEMENTED Nov 10 2026** except 6.7 (client migration tables) and publish. Binding gaps for section 7 recorded in
+`_BUGFIX/BUGFIX_ppyVk_Binding_Gaps_For_GpuSync_Semantics.md` (STATUS: UNRESOLVED).
 
 ## 7. Open questions / follow-ups
 

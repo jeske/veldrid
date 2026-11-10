@@ -59,7 +59,7 @@ public sealed class UpdateBufferOutsideCommandListPermissionTests
         Assert.False(readback.AllowUpdateBufferOutsideCommandList);
         using var commands = factory.CreateCommandList();
         commands.Begin(); commands.CopyBuffer(source, 0, readback, 0, 64); commands.End();
-        device.SubmitCommands(commands); device.WaitForIdle();
+        device.SubmitCommands(commands); device.GpuOrderingBarrier();
         var view = device.Map<uint>(readback, MapMode.Read);
         try { for (int i = 0; i < payload.Length; i++) Assert.Equal(payload[i], view[i]); }
         finally { device.Unmap(readback); }
@@ -88,7 +88,7 @@ public sealed class UpdateBufferOutsideCommandListPermissionTests
         commands.CopyBuffer(gpuPrivate, 0, readback, 0, 32);
         commands.CopyBuffer(dynamic, 32, readback, 32, 32);
         commands.End();
-        device.SubmitCommands(commands); device.WaitForIdle();
+        device.SubmitCommands(commands); device.GpuOrderingBarrier();
         var view = device.Map<uint>(readback, MapMode.Read);
         try
         {

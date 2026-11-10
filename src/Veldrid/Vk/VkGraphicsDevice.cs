@@ -1413,9 +1413,16 @@ namespace Veldrid.Vk
             }
         }
 
-        private protected override void WaitForIdleCore()
+        private protected override void GpuOrderingBarrierCore()
         {
             lock (graphicsQueueLock) vkQueueWaitIdle(graphicsQueue);
+        }
+
+        private protected override void WaitForGpuIdleCore()
+        {
+            // vkQueueWaitIdle is already a true CPU wait; the barrier variant keeps it for now (spec D6 - replacing it with a GPU-side
+            // fence/semaphore is the follow-up the rename enables).
+            GpuOrderingBarrierCore();
 
             checkSubmittedFences();
         }

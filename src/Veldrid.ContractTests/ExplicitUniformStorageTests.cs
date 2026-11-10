@@ -102,7 +102,7 @@ public sealed class ExplicitUniformStorageTests
             if (memberUpdates) commands.UpdateBuffer(shape.Projection, p => p.UseLegacyColorSpaceHandling, in value.UseLegacyColorSpaceHandling);
             else commands.UpdateBuffer(shape.Projection, value);
             commands.SetScissorRect(0, 16, 0, 8, 16); commands.Draw(3);
-            commands.CopyTexture(color, staging); commands.End(); device.SubmitCommands(commands); device.WaitForIdle();
+            commands.CopyTexture(color, staging); commands.End(); device.SubmitCommands(commands); device.GpuOrderingBarrier();
             var pixels = device.Map<RgbaByte>(staging, MapMode.Read);
             try
             {

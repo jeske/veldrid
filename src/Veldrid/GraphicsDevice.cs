@@ -171,7 +171,7 @@ namespace Veldrid
         /// </summary>
         public void Dispose()
         {
-            WaitForIdle();
+            WaitForGpuIdle();   // teardown: the GPU must be FINISHED, not merely ordered, before native objects go away
             GpuTiming.DisposeRing();
             PointSampler.Dispose();
             LinearSampler.Dispose();
@@ -537,12 +537,40 @@ namespace Veldrid
         }
 
         /// <summary>
-        ///     A blocking method that returns when all submitted <see cref="CommandList" /> objects have fully completed.
+        ///     Guarantees that GPU work submitted before this call is complete and visible to GPU work submitted after it and to subsequent
+        ///     <see cref="Map(MappableResource, MapMode)"/> reads. It is the CHEAPEST thing each backend can do - a GPU-side ORDERING point -
+        ///     and makes NO promise that the calling thread waited: Direct3D11 does nothing (the runtime orders every resource access
+        ///     implicitly); Vulkan currently drains the queue (<c>vkQueueWaitIdle</c>); Metal and OpenGL use their existing ordering.
+        ///     Use it before readbacks and before reusing or destroying resources. For a real CPU wait (timing, teardown, tests) use
+        ///     <see cref="WaitForGpuIdle"/>. Spec: <c>_TASKS/GpuOrderingBarrier_vs_WaitForGpuIdle.md</c>.
         /// </summary>
+        public void GpuOrderingBarrier()
+        {
+            GpuOrderingBarrierCore();
+            flushDeferredDisposals();
+        }
+
+        /// <summary>
+        ///     Blocks the calling CPU thread until EVERY GPU command submitted so far has finished executing, on every backend (Direct3D11:
+        ///     <c>Flush</c> + event query; Vulkan: <c>vkQueueWaitIdle</c>; Metal: wait on the last committed command buffer). Costly by
+        ///     definition - a full CPU&lt;-&gt;GPU bubble. Legitimate uses: timing around a submit, reading GPU queries without polling,
+        ///     device/swapchain teardown, tests. Almost every other caller wants <see cref="GpuOrderingBarrier"/>. Grep for this in a perf review.
+        /// </summary>
+        public void WaitForGpuIdle()
+        {
+            WaitForGpuIdleCore();
+            flushDeferredDisposals();
+        }
+
+        /// <summary>
+        ///     Historical name. It never did what it said on Direct3D11 (the implementation was empty), and almost every call site only needs the
+        ///     GPU ordering that <see cref="GpuOrderingBarrier"/> provides, so this is that - byte-for-byte the previous behaviour on every
+        ///     backend; nothing gets slower by migrating. Pick the verb you mean.
+        /// </summary>
+        [Obsolete("Say what you mean: GpuOrderingBarrier() (GPU ordering, cheap - what almost every caller wants) or WaitForGpuIdle() (real CPU stall). WaitForIdle() is GpuOrderingBarrier() and will be removed.")]
         public void WaitForIdle()
         {
-            WaitForIdleCore();
-            flushDeferredDisposals();
+            GpuOrderingBarrier();
         }
 
         /// <summary>
@@ -1182,7 +1210,11 @@ namespace Veldrid
 
         private protected abstract void SwapBuffersCore(Swapchain swapchain);
 
-        private protected abstract void WaitForIdleCore();
+        /// <summary>Backend half of <see cref="GpuOrderingBarrier"/>: the cheapest GPU-side ordering guarantee; may be a no-op (D3D11).</summary>
+        private protected abstract void GpuOrderingBarrierCore();
+
+        /// <summary>Backend half of <see cref="WaitForGpuIdle"/>: MUST block the calling thread until the GPU has executed everything submitted so far.</summary>
+        private protected abstract void WaitForGpuIdleCore();
 
         /// <summary>
         ///     Backend hook for <see cref="TrimDriverMemoryForIdle" />. Default: no-op. Backends whose driver/runtime keeps

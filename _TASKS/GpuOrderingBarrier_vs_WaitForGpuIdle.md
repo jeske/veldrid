@@ -133,9 +133,18 @@ Rule of thumb per call site - ask "what breaks if the CPU does NOT wait here?":
 
 ## 7. Open questions / follow-ups
 
-- Vulkan `GpuOrderingBarrierCore` without a CPU stall (D6): track the last submitted fence and have the NEXT `SubmitCommands` wait on it
-  GPU-side (semaphore), with `Map(READ)` doing a targeted `vkWaitForFences` on the specific submission instead of the whole queue. This is the
-  real payoff of the split for Vulkan; separate task once the rename has landed and the call sites say what they mean.
+- Vulkan `GpuOrderingBarrierCore` without a CPU stall (D6) - **what it needs, Nov 10 answer to "which Vulkan version, can we do it now?":**
+  - The API pieces exist in Vulkan 1.0 and in ppy.Vk 1.0.26: `vkWaitForFences` (every Veldrid submission already carries a `VkFence` for staging
+    recycling) and binary `vkCreateSemaphore`. **Timeline semaphores (1.2 core / `VK_KHR_timeline_semaphore`) are NOT in the binding** -
+    `VkSemaphoreTypeCreateInfo`, `vkWaitSemaphores`, `VkPhysicalDeviceVulkan12Features`: 0 hits in vk.dll. That would be the first concrete reason
+    to fork ppy.Vk into `AN_VulkanBindings`, and is only compelling for a multi-queue future.
+  - What stops us is not the version but CORRECTNESS: today's `vkQueueWaitIdle` also papers over the fork's missing buffer barriers between command
+    buffers (`CopyBufferCore` has no pre-copy barrier, on record). If the barrier verb stopped waiting, sites relying on that accidental insurance
+    become GPU races. Prerequisite: a Vulkan barrier audit of `VkCommandList` (images are covered by layout transitions; buffers are the gap).
+  - Then: lazy barrier - record "ordering requested", resolve it as a targeted `vkWaitForFences` on the last submission only when a `Map(READ)`
+    or a destroy actually follows, otherwise emit nothing. Readback cost is inherent (the GPU must finish that work); the win is at the
+    reuse/destroy sites that need no CPU wait at all.
+  - Separate task after this one lands; the rename makes it a backend-internal change behind a stable verb.
 - Should `GpuOrderingBarrier()` be allowed inside the GameCompositor's `submitLock` hold? Today `WaitForIdle()` is, and on Vulkan it stalls the
   compositor thread while holding the lock; unchanged by this task, but worth a look when the compositor adopts the two verbs.
 - Naming: `GpuOrderingBarrier` vs the user's `GpuOrderingFence` - see header.

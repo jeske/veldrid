@@ -99,6 +99,12 @@ method.ExplicitUniformStorageTests..ctor: void()
 method.ExplicitUniformStorageTests.D3D11PartialUniformUpdateIsRejectedWithoutWidening: void()
 method.ExplicitUniformStorageTests.NonDynamicUpdatesBetweenDrawsRetainCommandOrder: void(GraphicsBackend backend, bool memberUpdates)
 method.ExplicitUniformStorageTests.StorageMustBeExplicitAndUsageIsPreserved: void(GraphicsBackend backend)
+method.GpuSyncVerbTests..ctor: void()
+method.GpuSyncVerbTests.Fence_NotSignaledImmediatelyAfterHeavySubmit_SignaledAfterWaitForFence: void(GraphicsBackend backend)
+method.GpuSyncVerbTests.Fence_WaitForFenceTimeout_ReturnsFalseWhileGpuBusy_ThenTrue: void(GraphicsBackend backend)
+method.GpuSyncVerbTests.GpuOrderingBarrier_ReadbackObservesPriorWork: void(GraphicsBackend backend)
+method.GpuSyncVerbTests.WaitForGpuIdle_ThenTimestampsAreReadyOnFirstResolve: void(GraphicsBackend backend)
+method.GpuSyncVerbTests.WaitForIdle_Obsolete_StillRunsAsGpuOrderingBarrier: void(GraphicsBackend backend)
 method.GpuTimingAutoTests..ctor: void()
 method.GpuTimingAutoTests.Auto_BeginWithoutSubmit_IsAbandonedAndRingRecovers: void(GraphicsBackend backend)
 method.GpuTimingAutoTests.Auto_CommandListMode_EverySubmitProducesOneSpan: void(GraphicsBackend backend)
@@ -202,6 +208,7 @@ method.UpdateBufferOutsideCommandListPermissionTests.DescriptionCarriesTheFlagIn
 method.UpdateBufferOutsideCommandListPermissionTests.DeviceLevelUpdateWithPermissionLandsBytes: void(GraphicsBackend backend, BufferUsage usage)
 method.UpdateBufferOutsideCommandListPermissionTests.DeviceLevelUpdateWithoutPermissionThrowsAndNamesTheRemedy: void(GraphicsBackend backend, BufferUsage usage)
 method.UpdateBufferOutsideCommandListPermissionTests.TypedShapeStorageIsSequencedByDesignAndNeverGrantsThePermission: void(GraphicsBackend backend)
+property.GpuSyncVerbTests.Backends: TheoryData`1<GraphicsBackend> { get; }
 property.GpuTimingAutoTests.Backends: TheoryData`1<GraphicsBackend> { get; }
 property.TimestampQueryTests.Backends: TheoryData`1<GraphicsBackend> { get; }
 struct.ImGuiProjection._layout: Sequential
@@ -278,6 +285,7 @@ type.CommandContractGpuTests: sealed class
 type.ComputeBundleAndVertexInfoTests: class
 type.D3D11UavBufferMirrorTests: class
 type.ExplicitUniformStorageTests: sealed class
+type.GpuSyncVerbTests: sealed class
 type.GpuTimingAutoTests: sealed class
 type.ImGuiBundleContractTests: sealed class
 type.ImGuiProjection: struct

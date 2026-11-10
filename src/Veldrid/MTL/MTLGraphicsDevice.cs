@@ -393,7 +393,7 @@ namespace Veldrid.MTL
 
         protected override void PlatformDispose()
         {
-            WaitForIdle();
+            WaitForGpuIdle();   // teardown: the GPU must be FINISHED, not merely ordered, before native objects go away
 
             if (!unalignedBufferCopyPipeline.IsNull)
             {
@@ -709,7 +709,7 @@ namespace Veldrid.MTL
             }
         }
 
-        private protected override void WaitForIdleCore()
+        private protected override void GpuOrderingBarrierCore()
         {
             MTLCommandBuffer lastCb;
 
@@ -723,6 +723,12 @@ namespace Veldrid.MTL
                 lastCb.waitUntilCompleted();
 
             ObjectiveCRuntime.release(lastCb.NativePtr);
+        }
+
+        private protected override void WaitForGpuIdleCore()
+        {
+            // waitUntilCompleted on the last committed buffer is already a true CPU wait; both verbs share it on Metal.
+            GpuOrderingBarrierCore();
         }
     }
 

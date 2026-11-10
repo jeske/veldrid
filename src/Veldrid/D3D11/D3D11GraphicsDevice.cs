@@ -519,29 +519,33 @@ namespace Veldrid.D3D11
 
         public override bool WaitForFences(Fence[] fences, bool waitAll, ulong nanosecondTimeout)
         {
-            int msTimeout;
-            if (nanosecondTimeout == ulong.MaxValue)
-                msTimeout = -1;
-            else
-                msTimeout = (int)Math.Min(nanosecondTimeout / 1_000_000, int.MaxValue);
-
-            var events = getResetEventArray(fences.Length);
-            for (int i = 0; i < fences.Length; i++)
-                events[i] = Util.AssertSubtype<Fence, D3D11Fence>(fences[i]).ResetEvent;
-
-            bool result;
-
-            if (waitAll)
-                result = WaitHandle.WaitAll(events.Cast<WaitHandle>().ToArray(), msTimeout);
-            else
+            // Fences are EVENT queries now (D3D11Fence); there is no kernel handle to WaitAll/WaitAny on, so poll with the same spin/yield cadence.
+            long deadlineTicks = nanosecondTimeout == ulong.MaxValue
+                ? long.MaxValue
+                : Stopwatch.GetTimestamp() + (long)(nanosecondTimeout / 1_000_000_000.0 * Stopwatch.Frequency);
+            var spin = new SpinWait();
+            while (true)
             {
-                int index = WaitHandle.WaitAny(events.Cast<WaitHandle>().ToArray(), msTimeout);
-                result = index != WaitHandle.WaitTimeout;
+                int signaledCount = 0;
+                for (int i = 0; i < fences.Length; i++)
+                    if (Util.AssertSubtype<Fence, D3D11Fence>(fences[i]).Signaled) signaledCount++;
+
+                if (waitAll ? signaledCount == fences.Length : signaledCount > 0) return true;
+                if (Stopwatch.GetTimestamp() >= deadlineTicks) return false;
+                if (spin.Count < 32) spin.SpinOnce(); else Thread.Sleep(0);
             }
+        }
 
-            returnResetEventArray(events);
-
-            return result;
+        /// <summary>
+        ///     Non-blocking "has the GPU reached this EVENT query" check for <see cref="D3D11Fence"/> and <see cref="WaitForGpuIdleCore"/>:
+        ///     <c>GetData</c> on the immediate context (flush allowed, so an unflushed context cannot pin the answer at S_FALSE forever).
+        /// </summary>
+        internal bool PollEventQuery(ID3D11Query eventQuery)
+        {
+            lock (immediateContextLock)
+            {
+                return immediateContext.GetData(eventQuery, AsyncGetDataFlags.None, out SharpGen.Runtime.RawBool signaled) && signaled;
+            }
         }
 
         public override void ResetFence(Fence fence)
@@ -930,7 +934,7 @@ namespace Veldrid.D3D11
                 }
             }
 
-            if (fence is D3D11Fence d3d11Fence) d3d11Fence.Set();
+            if (fence is D3D11Fence d3d11Fence) lock (immediateContextLock) d3d11Fence.Issue(immediateContext);   // EVENT query after ExecuteCommandList: signals on GPU completion, not CPU hand-off
         }
 
         private protected override void SwapBuffersCore(Swapchain swapchain)
@@ -1176,8 +1180,42 @@ namespace Veldrid.D3D11
             }
         }
 
-        private protected override void WaitForIdleCore()
+        private protected override void GpuOrderingBarrierCore()
         {
+            // Intentionally empty (_TASKS/GpuOrderingBarrier_vs_WaitForGpuIdle.md D2): Direct3D11 orders every resource access implicitly -
+            // Map(READ) blocks until the producing copy landed, WRITE_DISCARD renames, destruction is deferred - so the GPU-side ordering this
+            // verb promises is already guaranteed. Making it a CPU stall was proposed and REJECTED: it would insert a CPU<->GPU bubble at every
+            // readback prelude and resource-recycle point in the clients. Callers who need the CPU to wait use WaitForGpuIdle().
+        }
+
+        private ID3D11Query gpuIdleEventQuery;   // D3D11_QUERY_EVENT, created on first WaitForGpuIdle, lives with the device
+
+        private protected override void WaitForGpuIdleCore()
+        {
+            // The canonical D3D11 "wait for the GPU": flush the immediate context, End() an EVENT query, and poll GetData until it reports
+            // S_OK - the event signals once every command recorded before it has executed. Spin briefly, then yield; no timeout (a GPU that
+            // never finishes is a TDR, which surfaces as device-lost through the usual path).
+            lock (immediateContextLock)
+            {
+                throwIfDeviceKnownLost();
+                gpuIdleEventQuery ??= device.CreateQuery(new QueryDescription(QueryType.Event));
+                immediateContext.End(gpuIdleEventQuery);
+                immediateContext.Flush();
+            }
+
+            var spin = new System.Threading.SpinWait();
+            while (true)
+            {
+                bool done;
+                lock (immediateContextLock)
+                {
+                    // GetData with flags None (flush allowed) is non-blocking: true = S_OK (event reached), false = S_FALSE (not yet).
+                    done = immediateContext.GetData(gpuIdleEventQuery, AsyncGetDataFlags.None, out SharpGen.Runtime.RawBool signaled) && signaled;
+                }
+
+                if (done) return;
+                if (spin.Count < 32) spin.SpinOnce(); else System.Threading.Thread.Sleep(0);
+            }
         }
 
         private protected override void TrimDriverMemoryForIdleCore()

@@ -188,7 +188,7 @@ namespace Veldrid.Vk
                                                               && surfaceCapabilities.maxImageExtent.width == 0 && surfaceCapabilities.maxImageExtent.height == 0)
                 return false;
 
-            if (deviceSwapchain != VkSwapchainKHR.Null) gd.WaitForIdle();
+            if (deviceSwapchain != VkSwapchainKHR.Null) gd.WaitForGpuIdle();   // the old swapchain's images are about to be destroyed: completion, not ordering
 
             currentImageIndex = 0;
             uint surfaceFormatCount = 0;

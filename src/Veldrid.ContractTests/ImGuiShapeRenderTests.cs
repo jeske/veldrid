@@ -64,7 +64,7 @@ public sealed class ImGuiShapeRenderTests
             commands.CopyTexture(color, staging);
             commands.End();
             device.SubmitCommands(commands);
-            device.WaitForIdle();
+            device.GpuOrderingBarrier();
             var mapped = device.Map<RgbaByte>(staging, MapMode.Read);
             try
             {

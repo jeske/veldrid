@@ -59,7 +59,7 @@ public sealed class UniformArenaRenderTests
             // Element count must match the set's offset-selectable bindings; out-of-range elements are refused by the arena.
             Assert.Throws<ShaderContractException>(() => commands.SetGraphicsResourceSet(gpu.MainSet));
             Assert.Throws<ArgumentOutOfRangeException>(() => commands.SetGraphicsResourceSet(gpu.MainSet, new UniformArenaElement(2)));
-            commands.CopyTexture(color, staging); commands.End(); device.SubmitCommands(commands); device.WaitForIdle();
+            commands.CopyTexture(color, staging); commands.End(); device.SubmitCommands(commands); device.GpuOrderingBarrier();
             var pixels = device.Map<RgbaByte>(staging, MapMode.Read);
             try { Assert.InRange((int)pixels[4, 8].R, 127, 129); Assert.InRange((int)pixels[12, 8].R, 53, 57); }
             finally { device.Unmap(staging); }

@@ -74,7 +74,7 @@ public sealed class SharedUniformStorageTests
             commands.UpdateBuffer(shared, value);
             firstGpu.Bind(commands);
             commands.SetScissorRect(0, 16, 0, 8, 16); commands.Draw(3);           // ... and the first family again sees the newest value
-            commands.CopyTexture(color, staging); commands.End(); device.SubmitCommands(commands); device.WaitForIdle();
+            commands.CopyTexture(color, staging); commands.End(); device.SubmitCommands(commands); device.GpuOrderingBarrier();
 
             var pixels = device.Map<RgbaByte>(staging, MapMode.Read);
             try

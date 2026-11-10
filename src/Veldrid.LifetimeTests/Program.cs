@@ -127,7 +127,7 @@ internal static class Program
         var stopwatch = Stopwatch.StartNew();
         while (stopwatch.ElapsedMilliseconds < 2000)
         {
-            graphicsDevice.WaitForIdle(); // triggers submitted-fence processing
+            graphicsDevice.WaitForGpuIdle(); // triggers submitted-fence processing
             if (texture.IsDisposed) return true;
             Thread.Sleep(10);
         }
@@ -163,7 +163,7 @@ internal static class Program
         }
 
         graphicsDevice.SubmitCommands(commandList); // pre-fix Vulkan: destroyed handles here
-        graphicsDevice.WaitForIdle();
+        graphicsDevice.WaitForGpuIdle();
 
         if (strictDeferredAssertions)
         {
@@ -286,7 +286,7 @@ internal static class Program
             disposedThisRun.Add(destinationTexture);
         }
 
-        graphicsDevice.WaitForIdle();
+        graphicsDevice.WaitForGpuIdle();
         bool allEventuallyDestroyed = true;
         foreach (var texture in disposedThisRun)
         {
@@ -336,7 +336,7 @@ internal static class Program
         readbackList.CopyTexture(source, stagingReadback);
         readbackList.End();
         graphicsDevice.SubmitCommands(readbackList);
-        graphicsDevice.WaitForIdle();
+        graphicsDevice.WaitForGpuIdle();
 
         int badTexels = 0;
         MappedResource mapped = graphicsDevice.Map(stagingReadback, MapMode.Read);
@@ -364,7 +364,7 @@ internal static class Program
         readbackList.CopyBuffer(source, 0, stagingReadback, 0, byteCount);
         readbackList.End();
         graphicsDevice.SubmitCommands(readbackList);
-        graphicsDevice.WaitForIdle();
+        graphicsDevice.WaitForGpuIdle();
 
         int badWords = 0;
         MappedResourceView<uint> view = graphicsDevice.Map<uint>(stagingReadback, MapMode.Read);
@@ -409,7 +409,7 @@ internal static class Program
                 CountBadWords(graphicsDevice, largeBuffer, largeReadback, upload_large_buffer_bytes, fillWord) == 0);
         }
 
-        graphicsDevice.WaitForIdle();
+        graphicsDevice.WaitForGpuIdle();
         int? inFlight = VulkanInFlightSharedPoolSubmissions(graphicsDevice);
         if (inFlight.HasValue)
             Assert($"{testName}: no in-flight shared-pool submissions after WaitForIdle (got {inFlight})", inFlight == 0);
@@ -480,7 +480,7 @@ internal static class Program
         uploadThread.Start();
         submitThread.Start();
         bool finished = uploadThread.Join(TimeSpan.FromSeconds(60)) & submitThread.Join(TimeSpan.FromSeconds(60));
-        graphicsDevice.WaitForIdle();
+        graphicsDevice.WaitForGpuIdle();
         Console.WriteLine($"    ({upload_iterations} upload iterations, {submitCount} concurrent submits, {stopwatch.ElapsedMilliseconds} ms)");
         if (uploadThreadException != null) Console.WriteLine($"    UPLOAD THREAD EXCEPTION:\n{uploadThreadException}");
         if (submitThreadException != null) Console.WriteLine($"    SUBMIT THREAD EXCEPTION:\n{submitThreadException}");

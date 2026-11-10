@@ -73,7 +73,7 @@ namespace Veldrid.D3D11
 
         public override Fence CreateFence(bool signaled)
         {
-            return new D3D11Fence(signaled);
+            return new D3D11Fence(gd, signaled);
         }
 
         private protected override TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity)

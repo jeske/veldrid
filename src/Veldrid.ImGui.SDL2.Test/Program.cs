@@ -90,7 +90,7 @@ namespace Veldrid.ImGuiSdl2Test
                 }
             }
 
-            gd.WaitForIdle();
+            gd.WaitForGpuIdle();
             imguiRenderer.Dispose();
             commandList.Dispose();
             gd.Dispose();

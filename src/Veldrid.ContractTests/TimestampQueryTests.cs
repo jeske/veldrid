@@ -51,7 +51,7 @@ public sealed class TimestampQueryTests
         cl.WriteTimestamp(pool, 1);
         cl.End();
         device.SubmitCommands(cl);
-        device.WaitForIdle();
+        device.WaitForGpuIdle();
 
         Span<ulong> ticks = stackalloc ulong[2];
         var result = ResolveWithRetry(device, pool, 0, 2, ticks, out double ticksPerSecond);
@@ -103,7 +103,7 @@ public sealed class TimestampQueryTests
         cl.WriteTimestamp(pool, 1);
         cl.End();
         device.SubmitCommands(cl);
-        device.WaitForIdle();
+        device.WaitForGpuIdle();
         Span<ulong> ticks = stackalloc ulong[2];
         Assert.Equal(TimestampResolveResult.Ready, ResolveWithRetry(device, pool, 0, 2, ticks, out double ticksPerSecond));
         return (ticks[1] - ticks[0]) / ticksPerSecond * 1000.0;
@@ -129,7 +129,7 @@ public sealed class TimestampQueryTests
         Assert.Equal(TimestampResolveResult.NotReady, device.TryResolveTimestamps(pool, 0, 2, ticks, out _));
 
         device.SubmitCommands(cl);
-        device.WaitForIdle();
+        device.WaitForGpuIdle();
         Assert.Equal(TimestampResolveResult.Ready, ResolveWithRetry(device, pool, 0, 2, ticks, out _));
     }
 
@@ -157,7 +157,7 @@ public sealed class TimestampQueryTests
         Assert.True(Enum.IsDefined(result), $"unexpected result {result}");
         Assert.True(sw.Elapsed.TotalMilliseconds < 50, $"TryResolveTimestamps took {sw.Elapsed.TotalMilliseconds:F2} ms - it must not block on the GPU");
 
-        device.WaitForIdle();
+        device.WaitForGpuIdle();
         Assert.Equal(TimestampResolveResult.Ready, ResolveWithRetry(device, pool, 0, 2, ticks, out _));
     }
 
@@ -171,13 +171,13 @@ public sealed class TimestampQueryTests
 
         cl.Begin(); cl.WriteTimestamp(pool, 0); cl.End();
         device.SubmitCommands(cl);
-        device.WaitForIdle();
+        device.WaitForGpuIdle();
         Assert.Equal(0UL, pool.AbandonedWriteCount);
 
         // Never resolved -> the second write abandons the first value. Outside a render pass, so it is legal on both backends.
         cl.Begin(); cl.WriteTimestamp(pool, 0); cl.End();
         device.SubmitCommands(cl);
-        device.WaitForIdle();
+        device.WaitForGpuIdle();
         Assert.Equal(1UL, pool.AbandonedWriteCount);
 
         Span<ulong> ticks = stackalloc ulong[1];
@@ -197,7 +197,7 @@ public sealed class TimestampQueryTests
         {
             cl.Begin(); cl.WriteTimestamp(pool, 0); cl.WriteTimestamp(pool, 1); cl.End();
             device.SubmitCommands(cl);
-            device.WaitForIdle();
+            device.WaitForGpuIdle();
             Assert.Equal(TimestampResolveResult.Ready, ResolveWithRetry(device, pool, 0, 2, ticks, out _));
             Assert.True(ticks[1] >= ticks[0]);
         }
@@ -217,7 +217,7 @@ public sealed class TimestampQueryTests
         // First use: slot 0 goes Fresh -> Written and is never resolved.
         cl.Begin(); cl.WriteTimestamp(pool, 0); cl.End();
         device.SubmitCommands(cl);
-        device.WaitForIdle();
+        device.WaitForGpuIdle();
 
         // Second recording: a DRAW opens the lazy render pass on Vulkan (clears are deferred into the pass load-op and do not) and the emulated
         // pass on D3D11; rewriting the unresolved slot inside it would need a reset that is illegal there -> VeldridException on BOTH backends
@@ -231,7 +231,7 @@ public sealed class TimestampQueryTests
 
         // The refused write left the slot untouched: resolving it still yields the FIRST value.
         device.SubmitCommands(cl);
-        device.WaitForIdle();
+        device.WaitForGpuIdle();
         Span<ulong> ticks = stackalloc ulong[1];
         Assert.Equal(TimestampResolveResult.Ready, ResolveWithRetry(device, pool, 0, 1, ticks, out _));
     }
@@ -257,7 +257,7 @@ public sealed class TimestampQueryTests
             cl.WriteTimestamp(pool, 1);
             cl.End();
             device.SubmitCommands(cl);
-            device.WaitForIdle();
+            device.WaitForGpuIdle();
             Assert.Equal(TimestampResolveResult.Ready, ResolveWithRetry(device, pool, 0, 2, ticks, out _));
             Assert.True(ticks[1] >= ticks[0]);
         }
@@ -283,16 +283,21 @@ public sealed class TimestampQueryTests
 
     // ---- helpers ----
 
-    /// <summary>After WaitForIdle the GPU is done, but D3D11's query data can trail the fence by a context flush; retry briefly before failing.</summary>
+    /// <summary>
+    ///     Regression detector for WaitForGpuIdle (spec _TASKS/GpuOrderingBarrier_vs_WaitForGpuIdle.md D3): every caller has just called
+    ///     device.WaitForGpuIdle(), so the FIRST resolve must already be Ready on every backend. Before Nov 10 D3D11's wait was a no-op and this
+    ///     helper had to poll for up to 2 s; the poll remains only to produce a useful message if a backend regresses.
+    /// </summary>
     private static TimestampResolveResult ResolveWithRetry(GraphicsDevice device, TimestampQueryPool pool, uint first, uint count, Span<ulong> ticks, out double ticksPerSecond)
     {
+        var firstAttempt = device.TryResolveTimestamps(pool, first, count, ticks, out ticksPerSecond);
+        if (firstAttempt != TimestampResolveResult.NotReady) return firstAttempt;
+
         var deadline = Stopwatch.StartNew();
         TimestampResolveResult result;
         while ((result = device.TryResolveTimestamps(pool, first, count, ticks, out ticksPerSecond)) == TimestampResolveResult.NotReady
-               && deadline.Elapsed < TimeSpan.FromSeconds(2))
-        {
-            System.Threading.Thread.Sleep(1);
-        }
+               && deadline.Elapsed < TimeSpan.FromSeconds(2)) System.Threading.Thread.Sleep(1);
+        Assert.Fail($"{device.BackendType}: TryResolveTimestamps was NotReady right after WaitForGpuIdle() (became {result} after {deadline.ElapsedMilliseconds} ms of polling). WaitForGpuIdle must block until the GPU has executed everything submitted.");
         return result;
     }
 
@@ -304,7 +309,7 @@ public sealed class TimestampQueryTests
         cl.WriteTimestamp(pool, 1);
         cl.End();
         device.SubmitCommands(cl);
-        device.WaitForIdle();
+        device.WaitForGpuIdle();
         Span<ulong> ticks = stackalloc ulong[2];
         var result = ResolveWithRetry(device, pool, 0, 2, ticks, out double ticksPerSecond);
         Assert.Equal(TimestampResolveResult.Ready, result);

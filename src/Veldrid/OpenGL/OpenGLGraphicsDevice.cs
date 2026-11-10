@@ -971,14 +971,19 @@ namespace Veldrid.OpenGL
 
         private protected override void SwapBuffersCore(Swapchain swapchain)
         {
-            WaitForIdle();
+            GpuOrderingBarrier();   // swap: ordering is what is needed; on GL both verbs are the same execution-thread hand-off anyway
 
             executionThread.SwapBuffers();
         }
 
-        private protected override void WaitForIdleCore()
+        private protected override void GpuOrderingBarrierCore()
         {
             executionThread.WaitForIdle();
+        }
+
+        private protected override void WaitForGpuIdleCore()
+        {
+            executionThread.WaitForIdle();   // the GL execution thread hand-off is already the strongest sync GL offers here (spec D8)
         }
 
         private protected override void WaitForNextFrameReadyCore()

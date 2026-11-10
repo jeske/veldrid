@@ -181,7 +181,7 @@ public sealed class GpuTimingAutoTests
 
         cl.Begin(); cl.PushDebugGroup("x"); workload.Record(cl, 1); cl.PopDebugGroup(); cl.End();
         device.SubmitCommands(cl);
-        device.WaitForIdle();
+        device.WaitForGpuIdle();
 
         var cls = new List<GpuTiming_CommandListSpan>();
         var groups = new List<GpuTiming_DebugGroupSpan>();

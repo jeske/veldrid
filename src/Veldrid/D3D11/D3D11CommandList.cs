@@ -484,6 +484,13 @@ namespace Veldrid.D3D11
             }
 
             boundUaVs.Clear();
+
+            // The buffer-UAV mirrors must reset with everything else: every caller has already reset the device context
+            // (ClearState on Begin/Reset, FinishCommandList(false) on End), so no CSUnset/OMUnset is needed here - just forget.
+            // Omitting this made boundComputeUavBuffers grow by one entry per buffer UAV per dispatch for the life of the command
+            // list (_BUGFIX/BUGFIX_D3D11_ComputeUavBindingList_Grows_PerFrame.md).
+            boundComputeUavBuffers.Clear();
+            boundOmuavBuffers.Clear();
         }
 
         private void clearSets(BoundResourceSetInfo[] boundSets)
@@ -939,7 +946,41 @@ namespace Veldrid.D3D11
         private void trackBoundUavBuffer(DeviceBuffer buffer, int slot, bool compute)
         {
             var list = compute ? boundComputeUavBuffers : boundOmuavBuffers;
+
+            // A UAV slot holds exactly one view, so the mirror holds at most one entry per slot: REPLACE a stale entry for this slot
+            // instead of appending. Appending unconditionally (the pre-Nov-2026 behaviour) had two faults
+            // (_BUGFIX/BUGFIX_D3D11_ComputeUavBindingList_Grows_PerFrame.md):
+            //   1. the list grew by N per dispatch, forever (resetManagedState never cleared it), and every later SetVertexBuffer /
+            //      SetIndexBuffer / buffer-SRV bind scanned it - O(frames x draws) CPU decay;
+            //   2. a stale (oldBuffer, slot) entry survived a rebind of that slot, so a later vertex/index bind of oldBuffer would
+            //      CSUnset/OMUnset the slot now holding a DIFFERENT buffer.
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Item2 == slot)
+                {
+                    list[i] = (buffer, slot);
+                    return;
+                }
+            }
+
             list.Add((buffer, slot));
+        }
+
+        /// <summary>
+        ///     Test seam (Veldrid.ContractTests, InternalsVisibleTo): the number of buffer UAVs the managed mirror believes are bound on
+        ///     the compute (<c>CSSetUnorderedAccessView</c>) or output-merger (<c>OMSetUnorderedAccessView</c>) stage. Bounded by the
+        ///     UAV slot count (<see cref="max_ua_vs"/>) within one command list and zero after <see cref="End"/> / <see cref="Begin"/>.
+        /// </summary>
+        internal int DebugTrackedUavBufferCount(bool compute) => (compute ? boundComputeUavBuffers : boundOmuavBuffers).Count;
+
+        /// <summary>
+        ///     Test seam: records <paramref name="buffer"/> as the buffer UAV in <paramref name="slot"/> exactly as a compute /
+        ///     graphics resource-set bind does (the same private path, no device call). Lets a test exercise the mirror's bounding and
+        ///     reset rules without a compiled compute bundle.
+        /// </summary>
+        internal void DebugTrackUavBufferForTests(DeviceBuffer buffer, int slot, bool compute)
+        {
+            trackBoundUavBuffer(buffer, slot, compute);
         }
 
         private void unbindUavBuffer(DeviceBuffer buffer)

@@ -23,6 +23,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Veldrid.BindingTests" />
     <InternalsVisibleTo Include="Veldrid.ContractTests" />
+    <InternalsVisibleTo Include="Veldrid.LifetimeTests" />
   </ItemGroup>
 
   <ItemGroup>

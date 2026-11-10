@@ -100,12 +100,29 @@ namespace Veldrid.Vk
             // decrements exactly once \u2014 whether the recording completed on the GPU or was
             // abandoned (End without submit, then Begin/Dispose).
 
-            submittedStagingInfos.Add(cb, currentStagingInfo);
+            // stagingLock: CommandBufferCompleted may run concurrently on another thread (see End()).
+            lock (stagingLock) submittedStagingInfos.Add(cb, currentStagingInfo);
             currentStagingInfo = null;
         }
 
+        /// <summary>
+        ///     Called from <c>VkGraphicsDevice.completeFenceSubmission</c> on WHICHEVER thread observed the fence - not necessarily
+        ///     the thread that records on this list. Order matters: the staging record keyed by <paramref name="completedCb"/> is
+        ///     recycled FIRST, and only then is the command buffer returned to <see cref="availableCommandBuffers"/>. Returning it
+        ///     first lets the owner thread Begin/End/Submit the same handle and hit a duplicate key in <see cref="submittedStagingInfos"/>
+        ///     (_BUGFIX/BUGFIX_Vulkan_SharedCommandPool_RegisterAfterSubmit_Race.md, section "Second race").
+        /// </summary>
         public void CommandBufferCompleted(VkCommandBuffer completedCb)
         {
+            lock (stagingLock)
+            {
+                if (submittedStagingInfos.TryGetValue(completedCb, out var info))
+                {
+                    recycleStagingInfo(info);
+                    submittedStagingInfos.Remove(completedCb);
+                }
+            }
+
             lock (commandBufferListLock)
             {
                 for (int i = 0; i < submittedCommandBuffers.Count; i++)
@@ -118,15 +135,6 @@ namespace Veldrid.Vk
                         submittedCommandBuffers.RemoveAt(i);
                         i -= 1;
                     }
-                }
-            }
-
-            lock (stagingLock)
-            {
-                if (submittedStagingInfos.TryGetValue(completedCb, out var info))
-                {
-                    recycleStagingInfo(info);
-                    submittedStagingInfos.Remove(completedCb);
                 }
             }
 
@@ -189,7 +197,9 @@ namespace Veldrid.Vk
             }
 
             vkEndCommandBuffer(CommandBuffer);
-            submittedCommandBuffers.Add(CommandBuffer);
+            // CommandBufferCompleted mutates this list under the same lock from whichever thread observes the fence
+            // (any thread calling VkGraphicsDevice.checkSubmittedFences, e.g. an off-thread UpdateTexture).
+            lock (commandBufferListLock) submittedCommandBuffers.Add(CommandBuffer);
         }
 
         public override void SetScissorRect(uint index, uint x, uint y, uint width, uint height)

@@ -103,6 +103,8 @@ internal static class Program
             Test_AbandonedRecording_DoesNotDestroyOwnedResources(graphicsDevice, backend, strictDeferredAssertions);
             Test_CommandListDispose_WithUnsubmittedRecording_ReleasesRefs(graphicsDevice, backend, strictDeferredAssertions);
             Test_RepeatedRecordDisposeSubmitCycles_NoLeakNoCrash(graphicsDevice, backend);
+            Test_DeviceUpload_SingleThread_RoundTrip(graphicsDevice, backend);
+            Test_DeviceUpload_OffThread_WhileSubmitting_NoRaceNoLeak(graphicsDevice, backend);
         }
         finally
         {
@@ -294,6 +296,217 @@ internal static class Program
             allEventuallyDestroyed);
 
         commandList.Dispose();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────────
+    // Device-side upload path (GraphicsDevice.UpdateTexture / UpdateBuffer, no CommandList).
+    // On Vulkan these go through SharedCommandPool + a pooled staging resource, recycled
+    // when the submission fence signals (_BUGFIX/BUGFIX_Vulkan_SharedCommandPool_RegisterAfterSubmit_Race.md).
+    // ─────────────────────────────────────────────────────────────────────────────────
+
+    private const uint upload_tile_edge = 16;                 // 16x16x16 R8G8B8A8 = 16 KiB per tile
+    private const uint upload_small_buffer_bytes = 256;       // <= Vulkan max_staging_buffer_size (pooled staging path)
+    private const uint upload_large_buffer_bytes = 4096;      // >  Vulkan max_staging_buffer_size (dispose-after-use path)
+
+    private static Texture CreateUploadTargetTexture3D(GraphicsDevice graphicsDevice)
+    {
+        return graphicsDevice.ResourceFactory.CreateTexture(TextureDescription.Texture3D(
+            upload_tile_edge, upload_tile_edge, upload_tile_edge, mipLevels: 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Sampled));
+    }
+
+    private static Texture CreateReadbackStagingTexture3D(GraphicsDevice graphicsDevice)
+    {
+        return graphicsDevice.ResourceFactory.CreateTexture(TextureDescription.Texture3D(
+            upload_tile_edge, upload_tile_edge, upload_tile_edge, mipLevels: 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Staging));
+    }
+
+    /// <summary>Fills every texel/word of the tile with the same 32-bit <paramref name="fillWord"/>.</summary>
+    private static uint[] MakeFilledWords(uint byteCount, uint fillWord)
+    {
+        var words = new uint[byteCount / sizeof(uint)];
+        Array.Fill(words, fillWord);
+        return words;
+    }
+
+    /// <summary>Copies <paramref name="source"/> into <paramref name="stagingReadback"/> on a fresh command list, waits, then maps and counts words != expected.</summary>
+    private static int CountBadTexels(GraphicsDevice graphicsDevice, Texture source, Texture stagingReadback, uint expectedWord)
+    {
+        using CommandList readbackList = graphicsDevice.ResourceFactory.CreateCommandList();
+        readbackList.Begin();
+        readbackList.CopyTexture(source, stagingReadback);
+        readbackList.End();
+        graphicsDevice.SubmitCommands(readbackList);
+        graphicsDevice.WaitForIdle();
+
+        int badTexels = 0;
+        MappedResource mapped = graphicsDevice.Map(stagingReadback, MapMode.Read);
+        try
+        {
+            unsafe
+            {
+                byte* basePtr = (byte*)mapped.Data;
+                for (uint z = 0; z < upload_tile_edge; z++)
+                for (uint y = 0; y < upload_tile_edge; y++)
+                {
+                    uint* row = (uint*)(basePtr + z * mapped.DepthPitch + y * mapped.RowPitch);
+                    for (uint x = 0; x < upload_tile_edge; x++) if (row[x] != expectedWord) badTexels++;
+                }
+            }
+        }
+        finally { graphicsDevice.Unmap(stagingReadback); }
+        return badTexels;
+    }
+
+    private static int CountBadWords(GraphicsDevice graphicsDevice, DeviceBuffer source, DeviceBuffer stagingReadback, uint byteCount, uint expectedWord)
+    {
+        using CommandList readbackList = graphicsDevice.ResourceFactory.CreateCommandList();
+        readbackList.Begin();
+        readbackList.CopyBuffer(source, 0, stagingReadback, 0, byteCount);
+        readbackList.End();
+        graphicsDevice.SubmitCommands(readbackList);
+        graphicsDevice.WaitForIdle();
+
+        int badWords = 0;
+        MappedResourceView<uint> view = graphicsDevice.Map<uint>(stagingReadback, MapMode.Read);
+        try
+        {
+            for (int wordIndex = 0; wordIndex < view.Count; wordIndex++) if (view[wordIndex] != expectedWord) badWords++;
+        }
+        finally { graphicsDevice.Unmap(stagingReadback); }
+        return badWords;
+    }
+
+    /// <summary>Vulkan-only leak probe: in-flight SharedCommandPool submissions must be 0 after WaitForIdle. Returns null on other backends.</summary>
+    private static int? VulkanInFlightSharedPoolSubmissions(GraphicsDevice graphicsDevice)
+    {
+        return graphicsDevice is Veldrid.Vk.VkGraphicsDevice vkDevice ? vkDevice.InFlightSharedPoolSubmissionCount_ForTests : null;
+    }
+
+    // Basic functionality: single-threaded UpdateTexture (3D tile) + UpdateBuffer (pooled and oversize staging) round-trip.
+    private static void Test_DeviceUpload_SingleThread_RoundTrip(GraphicsDevice graphicsDevice, GraphicsBackend backend)
+    {
+        string testName = $"{backend}: DeviceUpload_SingleThread_RoundTrip";
+        Texture targetTexture = CreateUploadTargetTexture3D(graphicsDevice);
+        Texture readbackTexture = CreateReadbackStagingTexture3D(graphicsDevice);
+        DeviceBuffer smallBuffer = graphicsDevice.ResourceFactory.CreateBuffer(new BufferDescription(upload_small_buffer_bytes, BufferUsage.VertexBuffer) { AllowUpdateBufferOutsideCommandList = true });
+        DeviceBuffer largeBuffer = graphicsDevice.ResourceFactory.CreateBuffer(new BufferDescription(upload_large_buffer_bytes, BufferUsage.VertexBuffer) { AllowUpdateBufferOutsideCommandList = true });
+        DeviceBuffer smallReadback = graphicsDevice.ResourceFactory.CreateBuffer(new BufferDescription(upload_small_buffer_bytes, BufferUsage.Staging));
+        DeviceBuffer largeReadback = graphicsDevice.ResourceFactory.CreateBuffer(new BufferDescription(upload_large_buffer_bytes, BufferUsage.Staging));
+
+        uint tileBytes = upload_tile_edge * upload_tile_edge * upload_tile_edge * 4;
+        for (uint pass = 1; pass <= 3; pass++)
+        {
+            uint fillWord = 0xA0000000u | pass;
+            graphicsDevice.UpdateTexture(targetTexture, MakeFilledWords(tileBytes, fillWord), 0, 0, 0, upload_tile_edge, upload_tile_edge, upload_tile_edge, 0, 0);
+            graphicsDevice.UpdateBufferOutsideCommandList(smallBuffer, 0, MakeFilledWords(upload_small_buffer_bytes, fillWord));
+            graphicsDevice.UpdateBufferOutsideCommandList(largeBuffer, 0, MakeFilledWords(upload_large_buffer_bytes, fillWord));
+
+            Assert($"{testName}: pass {pass} texture texels correct",
+                CountBadTexels(graphicsDevice, targetTexture, readbackTexture, fillWord) == 0);
+            Assert($"{testName}: pass {pass} small buffer words correct",
+                CountBadWords(graphicsDevice, smallBuffer, smallReadback, upload_small_buffer_bytes, fillWord) == 0);
+            Assert($"{testName}: pass {pass} large buffer words correct",
+                CountBadWords(graphicsDevice, largeBuffer, largeReadback, upload_large_buffer_bytes, fillWord) == 0);
+        }
+
+        graphicsDevice.WaitForIdle();
+        int? inFlight = VulkanInFlightSharedPoolSubmissions(graphicsDevice);
+        if (inFlight.HasValue)
+            Assert($"{testName}: no in-flight shared-pool submissions after WaitForIdle (got {inFlight})", inFlight == 0);
+
+        targetTexture.Dispose(); readbackTexture.Dispose();
+        smallBuffer.Dispose(); largeBuffer.Dispose(); smallReadback.Dispose(); largeReadback.Dispose();
+    }
+
+    // Concurrency regression: thread B hammers GraphicsDevice.UpdateTexture/UpdateBuffer while thread A records+submits
+    // command lists copying the same resources (every SubmitCommands runs checkSubmittedFences). Pre-fix Vulkan:
+    // "An item with the same key has already been added. Key: Vulkan.VkCommandBuffer" then an access violation,
+    // with a shared-pool leak visible before the crash. Post-fix: no exception, final values intact, 0 in flight after idle.
+    private static void Test_DeviceUpload_OffThread_WhileSubmitting_NoRaceNoLeak(GraphicsDevice graphicsDevice, GraphicsBackend backend)
+    {
+        const int upload_iterations = 2000;
+        string testName = $"{backend}: DeviceUpload_OffThread_WhileSubmitting(x{upload_iterations})";
+        Texture targetTexture = CreateUploadTargetTexture3D(graphicsDevice);
+        Texture readbackTexture = CreateReadbackStagingTexture3D(graphicsDevice);
+        Texture copyScratchTexture = CreateUploadTargetTexture3D(graphicsDevice);
+        DeviceBuffer smallBuffer = graphicsDevice.ResourceFactory.CreateBuffer(new BufferDescription(upload_small_buffer_bytes, BufferUsage.VertexBuffer) { AllowUpdateBufferOutsideCommandList = true });
+        DeviceBuffer largeBuffer = graphicsDevice.ResourceFactory.CreateBuffer(new BufferDescription(upload_large_buffer_bytes, BufferUsage.VertexBuffer) { AllowUpdateBufferOutsideCommandList = true });
+        DeviceBuffer copyScratchBuffer = graphicsDevice.ResourceFactory.CreateBuffer(new BufferDescription(upload_large_buffer_bytes, BufferUsage.VertexBuffer) { AllowUpdateBufferOutsideCommandList = true });
+        DeviceBuffer smallReadback = graphicsDevice.ResourceFactory.CreateBuffer(new BufferDescription(upload_small_buffer_bytes, BufferUsage.Staging));
+        DeviceBuffer largeReadback = graphicsDevice.ResourceFactory.CreateBuffer(new BufferDescription(upload_large_buffer_bytes, BufferUsage.Staging));
+
+        uint tileBytes = upload_tile_edge * upload_tile_edge * upload_tile_edge * 4;
+        uint finalFillWord = 0xB0000000u | (upload_iterations - 1);
+        Exception uploadThreadException = null;
+        Exception submitThreadException = null;
+        int submitCount = 0;
+        var uploadsDone = new ManualResetEventSlim(false);
+
+        var uploadThread = new Thread(() =>
+        {
+            try
+            {
+                for (uint iteration = 0; iteration < upload_iterations; iteration++)
+                {
+                    uint fillWord = 0xB0000000u | iteration;
+                    graphicsDevice.UpdateTexture(targetTexture, MakeFilledWords(tileBytes, fillWord), 0, 0, 0, upload_tile_edge, upload_tile_edge, upload_tile_edge, 0, 0);
+                    graphicsDevice.UpdateBufferOutsideCommandList(smallBuffer, 0, MakeFilledWords(upload_small_buffer_bytes, fillWord));
+                    graphicsDevice.UpdateBufferOutsideCommandList(largeBuffer, 0, MakeFilledWords(upload_large_buffer_bytes, fillWord));
+                }
+            }
+            catch (Exception uploadException) { uploadThreadException = uploadException; }
+            finally { uploadsDone.Set(); }
+        }) { Name = "LifetimeTests-UploadThread", IsBackground = true };
+
+        var submitThread = new Thread(() =>
+        {
+            try
+            {
+                using CommandList copyList = graphicsDevice.ResourceFactory.CreateCommandList();
+                while (!uploadsDone.IsSet)
+                {
+                    copyList.Begin();
+                    copyList.CopyTexture(targetTexture, copyScratchTexture);
+                    copyList.CopyBuffer(largeBuffer, 0, copyScratchBuffer, 0, upload_large_buffer_bytes);
+                    copyList.End();
+                    graphicsDevice.SubmitCommands(copyList); // runs checkSubmittedFences -> the completion side of the race
+                    submitCount++;
+                }
+            }
+            catch (Exception submitException) { submitThreadException = submitException; }
+        }) { Name = "LifetimeTests-SubmitThread", IsBackground = true };
+
+        var stopwatch = Stopwatch.StartNew();
+        uploadThread.Start();
+        submitThread.Start();
+        bool finished = uploadThread.Join(TimeSpan.FromSeconds(60)) & submitThread.Join(TimeSpan.FromSeconds(60));
+        graphicsDevice.WaitForIdle();
+        Console.WriteLine($"    ({upload_iterations} upload iterations, {submitCount} concurrent submits, {stopwatch.ElapsedMilliseconds} ms)");
+        if (uploadThreadException != null) Console.WriteLine($"    UPLOAD THREAD EXCEPTION:\n{uploadThreadException}");
+        if (submitThreadException != null) Console.WriteLine($"    SUBMIT THREAD EXCEPTION:\n{submitThreadException}");
+
+        Assert($"{testName}: both threads finished within timeout", finished);
+        Assert($"{testName}: upload thread threw no exception" + (uploadThreadException != null ? $" [{uploadThreadException.GetType().Name}: {uploadThreadException.Message}]" : ""),
+            uploadThreadException == null);
+        Assert($"{testName}: submit thread threw no exception" + (submitThreadException != null ? $" [{submitThreadException.GetType().Name}: {submitThreadException.Message}]" : ""),
+            submitThreadException == null);
+
+        if (uploadThreadException == null && submitThreadException == null)
+        {
+            Assert($"{testName}: final texture texels == last upload",
+                CountBadTexels(graphicsDevice, targetTexture, readbackTexture, finalFillWord) == 0);
+            Assert($"{testName}: final small buffer words == last upload",
+                CountBadWords(graphicsDevice, smallBuffer, smallReadback, upload_small_buffer_bytes, finalFillWord) == 0);
+            Assert($"{testName}: final large buffer words == last upload",
+                CountBadWords(graphicsDevice, largeBuffer, largeReadback, upload_large_buffer_bytes, finalFillWord) == 0);
+        }
+
+        int? inFlight = VulkanInFlightSharedPoolSubmissions(graphicsDevice);
+        if (inFlight.HasValue)
+            Assert($"{testName}: no in-flight shared-pool submissions after WaitForIdle (got {inFlight})", inFlight == 0);
+
+        targetTexture.Dispose(); readbackTexture.Dispose(); copyScratchTexture.Dispose();
+        smallBuffer.Dispose(); largeBuffer.Dispose(); copyScratchBuffer.Dispose(); smallReadback.Dispose(); largeReadback.Dispose();
     }
 
     // ────────────────────────────── Assertion helper ─────────────────────────

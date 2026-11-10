@@ -87,15 +87,6 @@ namespace Veldrid.Vk
         private readonly List<VkTexture> availableStagingTextures = new List<VkTexture>();
         private readonly List<VkBuffer> availableStagingBuffers = new List<VkBuffer>();
 
-        private readonly Dictionary<VkCommandBuffer, VkTexture> submittedStagingTextures
-            = new Dictionary<VkCommandBuffer, VkTexture>();
-
-        private readonly Dictionary<VkCommandBuffer, VkBuffer> submittedStagingBuffers
-            = new Dictionary<VkCommandBuffer, VkBuffer>();
-
-        private readonly Dictionary<VkCommandBuffer, SharedCommandPool> submittedSharedCommandPools
-            = new Dictionary<VkCommandBuffer, SharedCommandPool>();
-
         private readonly object submittedFencesLock = new object();
         private readonly ConcurrentQueue<Vulkan.VkFence> availableSubmissionFences = new ConcurrentQueue<Vulkan.VkFence>();
         private readonly List<FenceSubmissionInfo> submittedFences = new List<FenceSubmissionInfo>();
@@ -512,10 +503,9 @@ namespace Veldrid.Vk
             DescriptorPoolManager.DestroyAll();
             vkDestroyCommandPool(device, graphicsCommandPool, null);
 
-            Debug.Assert(submittedStagingTextures.Count == 0);
+            // submittedFences.Count == 0 (asserted above) implies no in-flight shared-pool submission still owns a staging resource.
             foreach (var tex in availableStagingTextures) tex.Dispose();
 
-            Debug.Assert(submittedStagingBuffers.Count == 0);
             foreach (var buffer in availableStagingBuffers) { StagingBufferPoolTelemetry.NoteEvictedFromPool(buffer.SizeInBytes); buffer.Dispose(); }
 
             lock (graphicsCommandPoolLock)
@@ -619,6 +609,19 @@ namespace Veldrid.Vk
             VkSemaphore* signalSemaphoresPtr,
             Fence fence)
         {
+            submitCommandBuffer(vkCl, vkCb, waitSemaphoreCount, waitSemaphoresPtr, signalSemaphoreCount, signalSemaphoresPtr, fence, default);
+        }
+
+        private void submitCommandBuffer(
+            VkCommandList vkCl,
+            VkCommandBuffer vkCb,
+            uint waitSemaphoreCount,
+            VkSemaphore* waitSemaphoresPtr,
+            uint signalSemaphoreCount,
+            VkSemaphore* signalSemaphoresPtr,
+            Fence fence,
+            SharedPoolSubmission sharedPoolSubmission)
+        {
             checkSubmittedFences();
 
             bool useExtraFence = fence != null;
@@ -659,8 +662,10 @@ namespace Veldrid.Vk
                 }
             }
 
+            // The recycle record is appended atomically with the fence; completion (checkSubmittedFences) can only observe
+            // this submission through this list entry, so there is no register-after-submit window.
             lock (submittedFencesLock)
-                submittedFences.Add(new FenceSubmissionInfo(submissionFence, vkCl, vkCb));
+                submittedFences.Add(new FenceSubmissionInfo(submissionFence, vkCl, vkCb, sharedPoolSubmission));
         }
 
         private void checkSubmittedFences()
@@ -692,28 +697,54 @@ namespace Veldrid.Vk
             CheckResult(resetResult);
             returnSubmissionFence(fence);
 
-            lock (stagingResourcesLock)
+            // Shared-pool submissions carry what to recycle in the record itself (no handle-keyed lookup; see
+            // _BUGFIX/BUGFIX_Vulkan_SharedCommandPool_RegisterAfterSubmit_Race.md).
+            if (!fsi.SharedPool.HasPool) return;
+
+            var sharedSubmission = fsi.SharedPool;
+
+            if (sharedSubmission.StagingTexture != null || sharedSubmission.StagingBuffer != null)
             {
-                if (submittedStagingTextures.Remove(completedCb, out var stagingTex))
-                    availableStagingTextures.Add(stagingTex);
-
-                if (submittedStagingBuffers.Remove(completedCb, out var stagingBuffer))
+                lock (stagingResourcesLock)
                 {
-                    if (stagingBuffer.SizeInBytes <= max_staging_buffer_size)
-                    { availableStagingBuffers.Add(stagingBuffer); StagingBufferPoolTelemetry.NoteReturnedToPool(stagingBuffer.SizeInBytes); }
-                    else
-                        stagingBuffer.Dispose();
-                }
+                    if (sharedSubmission.StagingTexture != null)
+                        availableStagingTextures.Add(sharedSubmission.StagingTexture);
 
-                if (submittedSharedCommandPools.Remove(completedCb, out var sharedPool))
-                {
-                    lock (graphicsCommandPoolLock)
+                    var stagingBuffer = sharedSubmission.StagingBuffer;
+
+                    if (stagingBuffer != null)
                     {
-                        if (sharedPool.IsCached)
-                            sharedGraphicsCommandPools.Push(sharedPool);
+                        if (stagingBuffer.SizeInBytes <= max_staging_buffer_size)
+                        { availableStagingBuffers.Add(stagingBuffer); StagingBufferPoolTelemetry.NoteReturnedToPool(stagingBuffer.SizeInBytes); }
                         else
-                            sharedPool.Destroy();
+                            stagingBuffer.Dispose();
                     }
+                }
+            }
+
+            lock (graphicsCommandPoolLock)
+            {
+                if (sharedSubmission.Pool.IsCached)
+                    sharedGraphicsCommandPools.Push(sharedSubmission.Pool);
+                else
+                    sharedSubmission.Pool.Destroy();
+            }
+        }
+
+        /// <summary>
+        ///     Test seam (Veldrid.LifetimeTests, InternalsVisibleTo): number of in-flight <see cref="SharedCommandPool"/> submissions
+        ///     (device-side UpdateBuffer/UpdateTexture/layout transitions) whose fence has not yet been observed signalled. Must be 0
+        ///     after <see cref="WaitForIdle"/>; a non-zero value after idle is the leak this bookkeeping used to have.
+        /// </summary>
+        internal int InFlightSharedPoolSubmissionCount_ForTests
+        {
+            get
+            {
+                lock (submittedFencesLock)
+                {
+                    int count = 0;
+                    foreach (var fsi in submittedFences) if (fsi.SharedPool.HasPool) count++;
+                    return count;
                 }
             }
         }
@@ -1378,8 +1409,8 @@ namespace Veldrid.Vk
                 };
                 vkCmdCopyBuffer(cb, copySrcVkBuffer.DeviceBuffer, vkBuffer.DeviceBuffer, 1, ref copyRegion);
 
-                pool.EndAndSubmit(cb);
-                lock (stagingResourcesLock) submittedStagingBuffers.Add(cb, copySrcVkBuffer);
+                // Staging buffer travels in the submission record (recycled by completeFenceSubmission).
+                pool.EndAndSubmit(cb, stagingTexture: null, stagingBuffer: copySrcVkBuffer);
             }
         }
 
@@ -1429,8 +1460,8 @@ namespace Veldrid.Vk
                     stagingTex, 0, 0, 0, 0, 0,
                     texture, x, y, z, mipLevel, arrayLayer,
                     width, height, depth, 1);
-                lock (stagingResourcesLock) submittedStagingTextures.Add(cb, stagingTex);
-                pool.EndAndSubmit(cb);
+                // Staging texture travels in the submission record (recycled by completeFenceSubmission).
+                pool.EndAndSubmit(cb, stagingTexture: stagingTex, stagingBuffer: null);
             }
         }
 
@@ -1472,10 +1503,20 @@ namespace Veldrid.Vk
 
             public void EndAndSubmit(VkCommandBuffer cb)
             {
+                EndAndSubmit(cb, stagingTexture: null, stagingBuffer: null);
+            }
+
+            /// <summary>
+            ///     Ends <paramref name="cb"/> and submits it. The pool itself plus any staging resource the copy reads from are
+            ///     carried IN the <see cref="FenceSubmissionInfo"/> record (see <see cref="SharedPoolSubmission"/>), so completion
+            ///     recycles them from the record and nothing is keyed by the reusable <see cref="VkCommandBuffer"/> handle.
+            ///     See _BUGFIX/BUGFIX_Vulkan_SharedCommandPool_RegisterAfterSubmit_Race.md.
+            /// </summary>
+            public void EndAndSubmit(VkCommandBuffer cb, VkTexture stagingTexture, VkBuffer stagingBuffer)
+            {
                 var result = vkEndCommandBuffer(cb);
                 CheckResult(result);
-                gd.submitCommandBuffer(null, cb, 0, null, 0, null, null);
-                lock (gd.stagingResourcesLock) gd.submittedSharedCommandPools.Add(cb, this);
+                gd.submitCommandBuffer(null, cb, 0, null, 0, null, null, new SharedPoolSubmission(this, stagingTexture, stagingBuffer));
             }
 
             internal void Destroy()
@@ -1484,17 +1525,46 @@ namespace Veldrid.Vk
             }
         }
 
+        /// <summary>
+        ///     Resources owned by one <see cref="SharedCommandPool"/> submission (device-side <c>UpdateBuffer</c>/<c>UpdateTexture</c>,
+        ///     image layout transitions) that must be recycled when its fence signals. Stored by value inside
+        ///     <see cref="FenceSubmissionInfo"/>; <see cref="Pool"/> is <c>null</c> for ordinary <see cref="VkCommandList"/> submissions.
+        /// </summary>
+        private readonly struct SharedPoolSubmission
+        {
+            public readonly SharedCommandPool Pool;
+            public readonly VkTexture StagingTexture;
+            public readonly VkBuffer StagingBuffer;
+
+            public SharedPoolSubmission(SharedCommandPool pool, VkTexture stagingTexture, VkBuffer stagingBuffer)
+            {
+                Pool = pool;
+                StagingTexture = stagingTexture;
+                StagingBuffer = stagingBuffer;
+            }
+
+            public bool HasPool => Pool != null;
+        }
+
         private struct FenceSubmissionInfo
         {
             public readonly Vulkan.VkFence Fence;
             public readonly VkCommandList CommandList;
             public readonly VkCommandBuffer CommandBuffer;
 
-            public FenceSubmissionInfo(Vulkan.VkFence fence, VkCommandList commandList, VkCommandBuffer commandBuffer)
+            /// <summary>Shared-pool resources to recycle on completion; default (no pool) for command-list submissions.</summary>
+            public readonly SharedPoolSubmission SharedPool;
+
+            public FenceSubmissionInfo(
+                Vulkan.VkFence fence,
+                VkCommandList commandList,
+                VkCommandBuffer commandBuffer,
+                SharedPoolSubmission sharedPool)
             {
                 Fence = fence;
                 CommandList = commandList;
                 CommandBuffer = commandBuffer;
+                SharedPool = sharedPool;
             }
         }
     }

@@ -35,7 +35,7 @@ enough to draw an Nsight-style timeline (command-buffer lane + marker lane) and 
 | B6 | Vulkan ticks are masked to the graphics queue family's `timestampValidBits` inside the fork; callers get already-masked values. |
 | B7 | `Features.TimestampQueries` on Vulkan = selected graphics queue family `timestampValidBits != 0` (NOT `timestampComputeAndGraphics`). |
 | B8 | A resolve range with ANY slot unavailable returns `NotReady`. |
-| C2 | Tests live in `src/Veldrid.ContractTests` (D3D11 + Vulkan via `ShapeTestHarness.CreateDevice`). A new probe compute bundle is added (6.1). |
+| C2 | Tests live in `src/Veldrid.ContractTests` (D3D11 + Vulkan via `ShapeTestHarness.CreateDevice`). Probe workload = N x 64 MB CopyBuffer, no shader (6.1; the compute-bundle idea was dropped). |
 | C3 | The "not ready immediately after submit" test is restated: `NotReady` BEFORE submit; after submit only "returns promptly, never throws". |
 | C4 | `AN.Veldrid.stableapi` snapshot is regenerated and committed with the API. |
 | C5 | All four `new GraphicsDeviceFeatures(...)` call sites switch to NAMED arguments while adding `timestampQueries`. No behaviour change. |
@@ -116,27 +116,49 @@ public readonly record struct GpuTiming_SubmitIndex(ulong Value);
 
 public sealed class GpuTiming   // GraphicsDevice.GpuTiming
 {
-    public bool Supported { get; }                       // Features.TimestampQueries
-    public GpuTiming_Mode Mode { get; set; }              // runtime toggle; setting Off releases nothing, pools stay allocated once created
-    public uint RingSlotPairs { get; set; } = 1024;       // capacity of the internal pool ring, in (start,end) pairs; applied on next enable
-    public ulong DroppedCommandLists { get; }             // spans skipped because the ring was full (never blocks)
-    public ulong DisjointCommandLists { get; }            // spans discarded because D3D11 reported a clock change
-    /// Moves every span whose results are now available into the lists (appends; caller clears). Non-blocking. Called once per frame by the kit.
+    public bool Supported { get; }                          // Features.TimestampQueries
+    public GpuTiming_Mode Mode { get; set; }                 // runtime toggle; forced Off when !Supported; turning ON creates the ring (impl: must
+                                                             // happen before the next Begin() so that Begin() records the ring's initial reset)
+    public uint RingSlotPairs { get; set; } = 2048;          // (impl) ring capacity in (start,end) pairs; applied when the ring is (re)created
+    public uint MaxDebugGroupsPerCommandList { get; set; } = 16;   // (impl) pairs reserved per recording for groups; further pushes are not timed
+    public ulong DroppedCommandLists { get; }                // recordings traced WITHOUT timestamps because the ring was full (never blocks)
+    public ulong DisjointCommandLists { get; }               // recordings discarded because D3D11 reported a clock change
+    public ulong UntimedDebugGroups { get; }                 // (impl) pushes past MaxDebugGroupsPerCommandList (forwarded to the debugger, not timed)
+    public ulong AbandonedCommandLists { get; }              // (impl) Begin()'d while on, never submitted; slots recycled unread
+    /// Moves every span whose results are now available into the lists (appends; caller clears). Non-blocking: stops at the first pending
+    /// recording, in submit order, whose values are not in yet. Called once per frame by the kit.
     public void DrainCompleted(List<GpuTiming_CommandListSpan> commandLists, List<GpuTiming_DebugGroupSpan> debugGroups);
+    /// (impl) Disposes the ring (Mode forced Off, pending spans dropped) so the next enable rebuilds it from RingSlotPairs / MaxDebugGroups...
+    public void RecreateRing();
 }
 ```
 
-Semantics:
-- `Mode has CommandLists`: at `CommandList.Begin()` the fork writes a start timestamp, at `End()` an end timestamp; `SubmitCommands` records the pending span.
-  A command list that is `Begin`/`End`ed but never submitted (or `Reset`) has its slots abandoned (A4) - no leak, no block.
-- `Mode has DebugGroups`: `PushDebugGroup(name)` writes a start timestamp and pushes (name, slot) on a per-command-list stack; `PopDebugGroup()` writes the
-  end timestamp. Groups still open at `End()` are closed at `End()` (and reported with the name suffixed `" (unclosed)"`). Depth > 15 is clamped/ignored
-  (ring protection). Debug group timestamps are legal inside render passes on every backend (write only; the reset already happened at `Begin()`).
-- Mode changes take effect at the next `Begin()`; a command list already recording keeps the mode it started with.
-- Nothing here requires `WaitForIdle`. Resolution happens inside `DrainCompleted` (and opportunistically in `SwapBuffers`) through `TryResolveTimestamps`
-  on the internal pools.
-- Threading: `DrainCompleted` and `SubmitCommands` may be called from different threads; the pending list is lock-protected (same lock discipline as
-  `D3D11GraphicsDevice.immediateContextLock` / `VkGraphicsDevice.graphicsQueueLock`).
+Semantics (as built):
+- `Mode has CommandLists`: `CommandList.Begin()` (after the backend's `BeginCore`) writes the start timestamp; `End()` (before `EndCore`, so the buffer is
+  still open) writes the end timestamp; `SubmitCommands` stamps `Stopwatch.GetTimestamp()`, assigns the `GpuTiming_SubmitIndex` and queues the record.
+- `Mode has DebugGroups`: `PushDebugGroup(name)` writes a start timestamp (BEFORE the backend marker, so the span brackets exactly what the debugger
+  shows) and pushes on the recording's stack; `PopDebugGroup()` writes the end timestamp (after the marker pop). Groups still open at `End()` are closed
+  there and reported with the name suffixed `" (unclosed)"`. Pushes beyond `MaxDebugGroupsPerCommandList` (count per recording, nested or sequential)
+  are forwarded to the debugger but not timed (`UntimedDebugGroups++`). Group writes are legal inside render passes because their slots are Fresh
+  (reset at `Begin()`).
+- **(impl) Slot allocation**: each traced recording reserves a contiguous block of `2 + 2 * MaxDebugGroupsPerCommandList` slots from ONE ring pool
+  (`2 * RingSlotPairs` slots, `"Veldrid.GpuTiming.Ring"`) at `Begin()`. Layout `[clStart, clEnd, g0Start, g0End, ...]`. A block that does not fit before
+  the end of the ring wraps to 0 and the wasted tail is charged to that record. If `used + block > capacity` the recording is NOT traced
+  (`DroppedCommandLists++`). Defaults (2048 pairs, 16 groups) keep ~120 recordings in flight. Blocks are freed in submit (FIFO) order by `DrainCompleted`.
+- **(impl) Resolve**: `DrainCompleted` resolves only the WRITTEN prefix of a block (`CommandLists` off => the first pair stays Fresh and is skipped),
+  so a `DebugGroups`-only recording resolves. `Disjoint` => `DisjointCommandLists++`, spans dropped, block freed.
+- **(impl) Abandon**: `Begin()` on a command list whose previous recording was never submitted marks that record abandoned; it is queued so its block
+  is freed in ring order, and its written slots are `DiscardRange`d (-> Resolved without a read -> reset at the next Begin). `AbandonedCommandLists++`.
+  A command list DISPOSED with a live record leaks its block for the life of the ring (no base-class Dispose hook); `RecreateRing()` clears it.
+- Mode changes take effect at the next `Begin()`; a recording keeps the mode it started with.
+- Nothing here requires `WaitForIdle`. Resolution happens only inside `DrainCompleted` (the "opportunistically in SwapBuffers" idea was dropped: one
+  drain site keeps the lock discipline trivial).
+- Threading: the ring allocator + pending queue are guarded by one lock (`Begin()`, `SubmitCommands`, `DrainCompleted`); per-recording state lives on
+  the `CommandList` (`gpuTimingRecord`) and needs none; several command lists may record on different threads concurrently. The pools' own
+  `StateLock` covers slot state (5.3 #4).
+- Cost when `Off`: `Begin()` makes one call that returns on a volatile read; `End/Push/Pop/Submit` test a null field.
+- **(impl) Plumbing**: `CommandList`'s internal ctor takes the device's `GpuTiming` (4 backend call sites); `GraphicsDevice` constructs it in its base
+  ctor and disposes the ring in `Dispose()` before `PlatformDispose()`.
 
 Not goals (separate future task `_TASKS/GpuPerformanceCounters.md`, not written): hardware counters (SM throughput, occupancy), per-draw attribution, stall
 reasons, host/GPU clock calibration (`VK_EXT_calibrated_timestamps` - not in ppy.Vk; D3D11 has no equivalent). The `GpuTiming` surface must not grow into those.
@@ -193,17 +215,13 @@ neither and is the same cost. Revisit only if a use case needs reset without a c
 
 ### 5.4 Automatic layer internals (`src/Veldrid/GpuTiming.cs`, backend-agnostic)
 
-- Pool ring: `TimestampQueryPool[framesDeep]` created on first enable from `ResourceFactory`, each `2 * RingSlotPairs` slots... simpler: ONE pool of
-  `2 * RingSlotPairs` slots used as a circular allocator (slot pair = `(2k, 2k+1)`), plus a `Pending` queue of `(submitIndex, name, firstSlot, slotCount,
-  debugGroupEntries[])`. `DrainCompleted` pops from the head while `TryResolveTimestamps` returns `Ready`/`Disjoint`; stops at the first `NotReady`.
-- Because resets happen at `Begin()` and the circular allocator only hands out slots behind the resolve head, a command list never resets a slot that is
-  still pending; if the ring is full the command list is recorded WITHOUT timestamps and `DroppedCommandLists++`.
-- The per-command-list debug-group stack lives on `CommandList` (`StackList<(string name, uint slot)>`), cleared at `Begin()`.
-- `CommandList.Begin()`/`End()`/`PushDebugGroup`/`PopDebugGroup` are already the public non-virtual entry points (`CommandList.cs` ~L1185-1197 and the
-  backend `Begin`/`End` overrides). Hook: make the public methods call `gd.GpuTiming.OnBegin(this)` etc. before/after the `*Core` call. The D3D11 and Vulkan
-  `Begin()`/`End()` are currently `public override` directly on the backend classes - they get an `internal void TimingBegin/TimingEnd` call site added, OR
-  (preferred) `CommandList.Begin()/End()` become non-virtual public methods delegating to new `BeginCore/EndCore` abstracts. Decide at implementation; the
-  latter is the cleaner refactor and matches the rest of `CommandList`.
+As built (details in section 4 "Semantics (as built)"): one ring pool, per-recording reserved blocks, FIFO `pending` queue of
+`GpuTiming_CommandListRecord` (pooled; fields `FirstSlot/ReservedSlots/WasteSlots/UsedSlots/MaxGroups`, `Groups` list of `GpuTiming_DebugGroupEntry
+(Name, Depth, StartSlot, Closed)`, `OpenGroups` stack with `-1` = untimed), `DrainCompleted` pops from the head while resolve says `Ready`/`Disjoint`.
+Hooks: `CommandList.Begin()/End()` became non-virtual and delegate to new `BeginCore()/EndCore()` abstracts (commit `b2eb475f`, the "preferred" option);
+`PushDebugGroup/PopDebugGroup/SubmitCommands` were already non-virtual. Why reserve a whole block at `Begin()` instead of allocating per push: all of a
+recording's slots are then guaranteed Fresh (resolved + reset before the block was handed out) even for pushes that happen inside a render pass, where a
+non-Fresh slot could not be reset.
 
 ### 5.5 Metal / OpenGL
 
@@ -226,22 +244,34 @@ dependency tax the probe does not need. Add it later only if copy bandwidth prov
 
 ### 6.2 Cases (each `[Theory]` over D3D11 + Vulkan; skip when `!Features.TimestampQueries`)
 
-- [ ] `ExplicitPool_TwoTimestampsAroundWorkload_T1GreaterThanT0` - pool(2); `WriteTimestamp(0)`, probe(N), `WriteTimestamp(1)`; `WaitForIdle`;
+All implemented Nov 10 (`TimestampQueryTests` 10 x 2, `GpuTimingAutoTests` 7 x 2); both classes share `GpuTimestampTestCollection` (serial - see 8).
+Tests that need "inside a render pass" use `TimestampProbe_DrawScene`: a real triangle through the committed ImGui bundle, because Vulkan opens its
+pass at the first DRAW (clears are deferred into the load-op). D3D11's `WaitForIdle()` is a no-op in this fork, so resolves poll with a 2-3 s deadline.
+
+- [x] `ExplicitPool_TwoTimestampsAroundWorkload_T1GreaterThanT0` - pool(2); `WriteTimestamp(0)`, probe(N), `WriteTimestamp(1)`; `WaitForIdle`;
       `TryResolveTimestamps` == `Ready`, `t1 > t0`, `ticksPerSecond > 0`.
-- [ ] `ExplicitPool_DoublingRepeatsRoughlyDoublesDelta` - N=8 and 2N=16 copies, delta ratio in [1.5, 3.0] (loose: driver clocks / copy engines vary).
-- [ ] `ExplicitPool_NotReadyBeforeSubmit` - record both timestamps, `End()`, do NOT submit -> `NotReady`; then submit + `WaitForIdle` -> `Ready`.
-- [ ] `ExplicitPool_ResolveAfterSubmitWithoutWait_NeverThrowsNeverBlocks` - call immediately after submit; assert elapsed < 5 ms and result in
-      {NotReady, Ready, Disjoint}. (C3 restatement.)
-- [ ] `ExplicitPool_ReuseInsideRenderPass_Throws` - write slot 0 in CL #1, submit, wait; CL #2: `SetFramebuffer` + `ClearColorTarget` (forces pass active on
-      Vulkan) then `WriteTimestamp(0)` -> `VeldridException` on BOTH backends.
-- [ ] `ExplicitPool_OverwriteUnresolved_IncrementsAbandonedWriteCount` - write slot 0 twice across two command lists without resolving -> count == 1.
-- [ ] `Auto_CommandListMode_EverySubmitProducesOneSpan` - enable `CommandLists`; submit 3 named command lists; `WaitForIdle`; `DrainCompleted` -> 3 spans,
+- [x] `ExplicitPool_DoublingRepeatsRoughlyDoublesDelta` - warm-up, then best-of-3 at N=8 and 2N=16 copies, delta ratio in [1.5, 3.0].
+- [x] `ExplicitPool_NotReadyBeforeSubmit_ReadyAfterWait` - record both timestamps, `End()`, do NOT submit -> `NotReady`; then submit -> `Ready`.
+- [x] `ExplicitPool_ResolveRightAfterSubmit_ReturnsPromptlyNeverThrows` - call immediately after submit; elapsed < 50 ms and result is a defined
+      enum value. (C3 restatement.)
+- [x] `ExplicitPool_ReuseInsideRenderPass_Throws` - write slot 0 in CL #1, submit, wait; CL #2: `BeginPassAndDraw` (a DRAW, not a clear) then
+      `WriteTimestamp(0)` -> `VeldridException` on BOTH backends; the refused write left the first value resolvable.
+- [x] `ExplicitPool_FreshSlotInsideRenderPass_IsLegal` (impl) - 3 frames of writes between draws; resolved slots are Fresh again at the next Begin; 0 abandons.
+- [x] `ExplicitPool_ResolvedSlot_IsResetAtNextBegin_AndReusable` (impl) - 5 frames reusing a 2-slot pool; 0 abandons.
+- [x] `ExplicitPool_OverwriteUnresolved_IncrementsAbandonedWriteCount` - write slot 0 twice across two command lists without resolving -> count == 1.
+- [x] `ExplicitPool_Validation_RejectsBadArguments` (impl) - capacity 0, index >= Capacity, range > Capacity, ticks span too short.
+- [x] `Auto_CommandListMode_EverySubmitProducesOneSpan` - enable `CommandLists`; submit 3 named command lists; `DrainCompleted` -> 3 spans,
       names match, `Submit` indices increasing, `GpuEndTicks > GpuStartTicks`, spans non-overlapping and in submit order.
-- [ ] `Auto_DebugGroupMode_NestedGroupsReportDepthAndContainment` - push A { push B { dispatch } } ; drain -> B.Depth == 1, B inside A inside CL span.
-- [ ] `Auto_DebugGroupMode_InsideRenderPass_IsLegal` - push/pop around draws after `SetFramebuffer` on Vulkan; no validation error, spans produced.
-- [ ] `Auto_ModeOff_ProducesNothingAndCostsNothing` - `Mode = Off`; submit; drain -> empty; `DroppedCommandLists == 0`.
-- [ ] `Auto_RingFull_DropsNeverBlocks` - `RingSlotPairs = 2`; submit 10 command lists without draining -> `DroppedCommandLists == 8`, call returns promptly.
-- [ ] `Features_TimestampQueries_ReportedTrueOnD3D11AndVulkan` - and `false` on the other backends when creatable in CI.
+- [x] `Auto_DebugGroupMode_NestedGroupsReportDepthAndContainment` - Outer { Inner } Sibling; Inner.Depth == 1, Inner inside Outer inside the CL span on
+      the device timeline, Sibling after Outer.
+- [x] `Auto_DebugGroupMode_InsideRenderPass_IsLegal` - 4 frames, two groups pushed/popped around draws inside the pass; 8 group spans, 0 drops.
+- [x] `Auto_UnclosedGroup_IsClosedAtEndAndFlagged` (impl) - `DebugGroups`-only mode, push without pop -> one span named `"Forgotten (unclosed)"`, no CL span.
+- [x] `Auto_ModeOff_ProducesNothing` - `Mode = Off`; submit with push/pop; drain -> empty; `DroppedCommandLists == 0`.
+- [x] `Auto_RingFull_DropsNeverBlocks` - `RingSlotPairs = 2`, `MaxDebugGroupsPerCommandList = 0`; 10 submits without draining -> `DroppedCommandLists == 8`,
+      prompt; after a drain the ring traces again.
+- [x] `Auto_BeginWithoutSubmit_IsAbandonedAndRingRecovers` (impl) - `AbandonedCommandLists == 1`; then a 4-pair ring with periodic abandons keeps
+      tracing in-pass groups across 6 laps (abandoned slots reset at the next Begin).
+- [x] `Features_TimestampQueries_ReportedTrue` - D3D11 and Vulkan (Metal/OpenGL `false` is asserted by construction in 5.5; no CI device for them).
 
 ## 7. Implementation plan (incremental, each step builds + tests green)
 

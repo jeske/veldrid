@@ -9,7 +9,7 @@ namespace Veldrid.ContractTests;
 ///     Real-GPU checks of the explicit timestamp primitive (<c>_TASKS/GpuTimestampQueries.md</c> section 6.2): headless D3D11 + Vulkan devices,
 ///     no window. Workload is <see cref="TimestampProbe_Workload"/> (N x 64 MB buffer copies) - pure GPU work, linear in N, nothing to compile.
 /// </summary>
-[Collection(GpuTimestampTestCollection.Name)]
+// Serial with the whole assembly - see TestParallelism.cs (D3D11 multi-device driver hazard).
 public sealed class TimestampQueryTests
 {
     public static TheoryData<GraphicsBackend> Backends => new() { GraphicsBackend.Direct3D11, GraphicsBackend.Vulkan };
@@ -67,19 +67,46 @@ public sealed class TimestampQueryTests
     {
         using var device = TryCreateTimestampDevice(backend);
         if (device == null) return;
-        using var workload = new TimestampProbe_Workload(device);
+        // Fill-rate-bound draws on the GRAPHICS pipeline, not CopyBuffer: on D3D11/NVIDIA copies run on a copy engine that graphics timestamps
+        // do not bracket proportionally (4x copies measured 13-15x). Draws are what the timestamps are designed to measure.
+        using var scene = new TimestampProbe_DrawScene(device, targetSize: 2048);
         using var pool = device.ResourceFactory.CreateTimestampQueryPool(2);
         using var cl = device.ResourceFactory.CreateCommandList();
 
         // Warm-up: first touch of fresh buffers / clocks is not representative.
-        MeasureMs(device, workload, pool, cl, repeats: 8);
+        MeasureFillMs(device, scene, pool, cl, triangles: 8);
 
-        // Best-of-3 per side damps clock boosts and scheduler noise; the ratio window is deliberately loose (driver copy engines vary).
-        double small = Math.Min(Math.Min(MeasureMs(device, workload, pool, cl, 8), MeasureMs(device, workload, pool, cl, 8)), MeasureMs(device, workload, pool, cl, 8));
-        double large = Math.Min(Math.Min(MeasureMs(device, workload, pool, cl, 16), MeasureMs(device, workload, pool, cl, 16)), MeasureMs(device, workload, pool, cl, 16));
+        // 4x contrast (8 vs 32 full-target triangles at 2048^2) and the MEDIAN of 5 per side: medians ignore a clock-boost or scheduler
+        // outlier in either direction, where best-of-N only guards one direction. The window asserts "roughly proportional" - more work must
+        // cost clearly more time, and not absurdly more - without pretending a GPU is a perfect clock.
+        double small = MedianFillMs(device, scene, pool, cl, triangles: 8);
+        double large = MedianFillMs(device, scene, pool, cl, triangles: 32);
 
         double ratio = large / small;
-        Assert.InRange(ratio, 1.5, 3.0);
+        Assert.InRange(ratio, 2.0, 8.0);
+    }
+
+    private static double MedianFillMs(GraphicsDevice device, TimestampProbe_DrawScene scene, TimestampQueryPool pool, CommandList cl, int triangles)
+    {
+        var samples = new double[5];
+        for (int i = 0; i < samples.Length; i++) samples[i] = MeasureFillMs(device, scene, pool, cl, triangles);
+        Array.Sort(samples);
+        return samples[2];
+    }
+
+    private static double MeasureFillMs(GraphicsDevice device, TimestampProbe_DrawScene scene, TimestampQueryPool pool, CommandList cl, int triangles)
+    {
+        cl.Begin();
+        scene.BeginPassAndDraw(cl);            // opens the pass (1 triangle, part of the warm-up of each sample)
+        cl.WriteTimestamp(pool, 0);
+        scene.DrawFullTargetTriangles(cl, triangles);
+        cl.WriteTimestamp(pool, 1);
+        cl.End();
+        device.SubmitCommands(cl);
+        device.WaitForIdle();
+        Span<ulong> ticks = stackalloc ulong[2];
+        Assert.Equal(TimestampResolveResult.Ready, ResolveWithRetry(device, pool, 0, 2, ticks, out double ticksPerSecond));
+        return (ticks[1] - ticks[0]) / ticksPerSecond * 1000.0;
     }
 
     [Theory, MemberData(nameof(Backends))]
@@ -286,46 +313,42 @@ public sealed class TimestampQueryTests
 }
 
 /// <summary>
-///     Every test class that issues D3D11 timestamp queries belongs to this collection so xUnit runs them SERIALLY. Reason (Nov 10 2026, NVIDIA
-///     RTX 4080 / 32.0.16.2101): two D3D11 devices on two threads, each building (CPU-side recording + FinishCommandList, i.e. CommandList.End(), BEFORE any submit) query-bearing deferred command lists with heavy copies,
-///     intermittently AccessViolate inside <c>ID3D11DeviceContext::FinishCommandList</c>. Reproduced with RAW Vortice queries (no Veldrid pool
-///     code) in the same configuration; one device, or no queries, never crashed. It is a driver/runtime limitation
-///     (<c>_TASKS/GpuTimestampQueries.md</c> section 8). Serial execution also keeps the timing-ratio tests honest.
-/// </summary>
-[CollectionDefinition(Name, DisableParallelization = true)]
-public sealed class GpuTimestampTestCollection
-{
-    public const string Name = "GPU timestamp queries (D3D11 multi-device concurrency hazard)";
-}
-
-/// <summary>
 ///     GPU workload with no shader: <c>repeats</c> x CopyBuffer of a 64 MB device buffer pair. Linear in <c>repeats</c>, identical API on both
 ///     backends. A compute probe was considered and dropped (spec 6.1): .vdshader bundles are built out-of-tree against the published SPIRV package.
 /// </summary>
 internal sealed class TimestampProbe_Workload : IDisposable
 {
     public const uint SizeBytes = 64 * 1024 * 1024;
+    private const int destination_count = 4;
 
     private readonly DeviceBuffer source;
-    private readonly DeviceBuffer destination;
+    private readonly DeviceBuffer[] destinations = new DeviceBuffer[destination_count];
 
     public TimestampProbe_Workload(GraphicsDevice device)
     {
         // Plain storage-less buffers: VertexBuffer usage is universally supported and never aliases a UAV/SRV path.
         source = device.ResourceFactory.CreateBuffer(new BufferDescription(SizeBytes, BufferUsage.VertexBuffer));
-        destination = device.ResourceFactory.CreateBuffer(new BufferDescription(SizeBytes, BufferUsage.VertexBuffer));
         source.Name = "TimestampProbe.Source";
-        destination.Name = "TimestampProbe.Destination";
+        for (int i = 0; i < destination_count; i++)
+        {
+            destinations[i] = device.ResourceFactory.CreateBuffer(new BufferDescription(SizeBytes, BufferUsage.VertexBuffer));
+            destinations[i].Name = $"TimestampProbe.Destination{i}";
+        }
     }
 
+    /// <summary>
+    ///     Rotates the destination so consecutive copies never target the same buffer: identical back-to-back full-buffer copies into ONE
+    ///     destination were measured super-linear on D3D11/NVIDIA (8 copies cost far less than 8x one copy - coalesced or overlapped), which made a
+    ///     "2x work = 2x time" assertion fail with ratios of 4-6. Distinct destinations keep the cost close to proportional.
+    /// </summary>
     public void Record(CommandList cl, int repeats)
     {
-        for (int i = 0; i < repeats; i++) cl.CopyBuffer(source, 0, destination, 0, SizeBytes);
+        for (int i = 0; i < repeats; i++) cl.CopyBuffer(source, 0, destinations[i % destination_count], 0, SizeBytes);
     }
 
     public void Dispose()
     {
-        destination.Dispose();
+        foreach (var d in destinations) d.Dispose();
         source.Dispose();
     }
 }
@@ -344,13 +367,14 @@ internal sealed class TimestampProbe_DrawScene : IDisposable
     private readonly ShaderVertexBuffer<ImGuiVertex> vertices;
     private readonly ShapeTestHarness.ImGuiFamilyResources gpu;
 
-    public TimestampProbe_DrawScene(GraphicsDevice device)
+    /// <param name="targetSize">Render target edge in pixels. 16 for "just open a pass"; 2048 (16 MB RGBA8) for fill-rate-bound timing work.</param>
+    public TimestampProbe_DrawScene(GraphicsDevice device, uint targetSize = 16)
     {
         var factory = device.ResourceFactory;
         bundle = ShapeTestHarness.LoadBundle(factory);
         shape = ShaderPipelineShape.Bind<ImGuiShape>(bundle, factory);
         shape.Projection.CreateBuffer(BufferUsage.UniformBuffer);
-        color = factory.CreateTexture(TextureDescription.Texture2D(16, 16, 1, 1, PixelFormat.R8G8B8A8UNorm, TextureUsage.RenderTarget));
+        color = factory.CreateTexture(TextureDescription.Texture2D(targetSize, targetSize, 1, 1, PixelFormat.R8G8B8A8UNorm, TextureUsage.RenderTarget));
         white = ShapeTestHarness.CreateWhiteTexture(device);
         framebuffer = factory.CreateFramebuffer(new FramebufferDescription(null, color));
         vertices = shape.Vertices.CreateBuffer(3, BufferUsage.VertexBuffer | BufferUsage.Dynamic);
@@ -381,6 +405,16 @@ internal sealed class TimestampProbe_DrawScene : IDisposable
         gpu.Bind(cl);
         cl.SetVertexBuffer(shape.Vertices, vertices);
         cl.Draw(3);
+    }
+
+    /// <summary>
+    ///     Fill-rate-bound GRAPHICS-pipeline work for timing ratios: <paramref name="count"/> full-target triangles (the vertex buffer holds one
+    ///     oversized triangle covering the whole target). Chosen over CopyBuffer because on D3D11/NVIDIA buffer copies run on a copy engine that
+    ///     timestamps on the graphics pipeline do not bracket proportionally (4x copies measured 13-15x; see spec 6.1).
+    /// </summary>
+    public void DrawFullTargetTriangles(CommandList cl, int count)
+    {
+        for (int i = 0; i < count; i++) Draw(cl);
     }
 
     public void Dispose()

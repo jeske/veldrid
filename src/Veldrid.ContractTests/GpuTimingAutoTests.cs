@@ -11,7 +11,7 @@ namespace Veldrid.ContractTests;
 ///     Real-GPU checks of the automatic timing layer (<c>_TASKS/GpuTimestampQueries.md</c> section 4 / 6.2 Auto_*): every submitted command list
 ///     and every debug group is bracketed with no app marking. Headless D3D11 + Vulkan.
 /// </summary>
-[Collection(GpuTimestampTestCollection.Name)]
+// Serial with the whole assembly - see TestParallelism.cs (D3D11 multi-device driver hazard).
 public sealed class GpuTimingAutoTests
 {
     public static TheoryData<GraphicsBackend> Backends => new() { GraphicsBackend.Direct3D11, GraphicsBackend.Vulkan };

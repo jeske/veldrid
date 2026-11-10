@@ -220,7 +220,43 @@ namespace Veldrid.D3D11
 
             try
             {
-                DeviceContext.FinishCommandList(false, out commandList).CheckError();
+                // ── Process-wide "bake" lock - CANONICAL RATIONALE (the Vulkan twin in VkCommandList.EndCore refers here) ──────────────────
+                // Decided Nov 10 2026 (user + review; _TASKS/GpuTimestampQueries.md section 8 "Driver finding"). Do not relitigate without new evidence.
+                //
+                // WHAT: a single static lock, held across every D3D11 device in the process, around ID3D11DeviceContext::FinishCommandList - the
+                // CPU-side step that closes a deferred recording and bakes it into an ID3D11CommandList. Nothing GPU-side, nothing submitted yet.
+                //
+                // WHY: the NVIDIA user-mode driver (RTX 4080, 32.0.16.2101) AccessViolated INSIDE FinishCommandList when two devices on two
+                // threads baked query-bearing deferred command lists concurrently. Reproduced with raw Vortice queries and none of this fork's
+                // code (so not a Veldrid bug); never with one device, never without queries. The only shared thing between two devices is the
+                // driver DLL.
+                //
+                // WHAT THIS LOCK DOES AND DOES NOT DO (measured, Nov 10): it does NOT eliminate that crash. With this lock in place - and also with
+                // the WHOLE End() serialised, GetData serialised against it, query objects never re-used, and the GC suppressed (NoGCRegion) -
+                // two concurrently active D3D11 devices still crashed (2/8, 1/4, 2/5, 4/5). FinishCommandList is where the corruption SURFACES,
+                // not where it happens. The lock stays as an approved, essentially free, conservative measure (a serialised bake can only help
+                // and is one fewer variable); the actual mitigation is to not run two D3D11 devices concurrently in one process (see section 8).
+                //
+                // WHY UNCONDITIONAL (no "skip when only one device is open" shortcut, which was proposed and rejected):
+                //   1. A device-count guard is racy exactly when it matters: the second device appears on some thread while a first-device End()
+                //      may be mid-bake, unlocked, on another. Making that check safe needs a lock or a fence - the thing being skipped.
+                //   2. It would save ~20 ns per End() (uncontended Monitor.Enter/Exit) around a bake that itself takes tens of microseconds, once
+                //      per command list - three orders of magnitude below anything measurable. Not a hot path.
+                //   3. The multi-device case is tests and tools, where correctness matters most and 20 ns least. One code path to reason about.
+                //   Another thread only ever waits when it is ending a list at the very same instant, and then for microseconds.
+                //
+                // WHY BOTH BACKENDS (Vulkan gets the identical lock around vkEndCommandBuffer, conservatively): the Vulkan ICD is likewise one
+                // shared DLL per process with an equivalent bake step, our Vulkan evidence of immunity is only light-load test runs, and the cost
+                // is identical. Locking both means we never have to re-prove a driver's thread safety after a driver update.
+                //
+                // WHAT IT DOES NOT DO: no thread affinity. End() and SubmitCommands stay callable from any thread (the GameCompositor's game and
+                // compositor threads both End()+Submit; every render mode records on its frame thread). Deadlock-safe: the critical section is a
+                // pure CPU bake that calls back into nothing of ours.
+                // ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                lock (s_finishCommandListLock)
+                {
+                    DeviceContext.FinishCommandList(false, out commandList).CheckError();
+                }
             }
             catch (SharpGenException nativeFailure)
             {
@@ -234,6 +270,9 @@ namespace Veldrid.D3D11
             begun = false;
         }
 
+        /// <summary>See <see cref="EndCore"/>: serialises <c>ID3D11DeviceContext::FinishCommandList</c> across all D3D11 devices in the process.</summary>
+        private static readonly object s_finishCommandListLock = new object();
+
         public void Reset()
         {
             closeDisjointWindow();
@@ -246,7 +285,7 @@ namespace Veldrid.D3D11
             else if (begun)
             {
                 DeviceContext.ClearState();
-                DeviceContext.FinishCommandList(false, out commandList);
+                lock (s_finishCommandListLock) DeviceContext.FinishCommandList(false, out commandList);
                 commandList.Dispose();
                 commandList = null;
             }

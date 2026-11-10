@@ -200,11 +200,22 @@ namespace Veldrid.Vk
                 currentFramebuffer!.TransitionToFinalLayout(CommandBuffer);
             }
 
-            vkEndCommandBuffer(CommandBuffer);
+            // ── Process-wide "bake" lock, UNCONDITIONAL, twin of D3D11CommandList.EndCore - the canonical rationale lives there; summary: ────
+            // Decided Nov 10 2026 (_TASKS/GpuTimestampQueries.md section 8). The D3D11 user-mode driver AccessViolated inside its bake step
+            // (FinishCommandList) when two devices on two threads baked query-bearing command lists concurrently; reproduced with raw API calls,
+            // not Veldrid code. Vulkan gets the identical lock around vkEndCommandBuffer CONSERVATIVELY: the ICD is likewise one shared DLL per
+            // process with an equivalent bake step, our evidence of its immunity is only light-load runs, and the cost is the same ~20 ns per
+            // End() around a microseconds bake - so we lock both and never have to re-prove a driver's thread safety after an update.
+            // No "skip when one device" shortcut (racy exactly when the second device appears; saves nothing measurable). No thread affinity:
+            // End()/SubmitCommands stay callable from any thread. Deadlock-safe: pure CPU bake, no callbacks into our code.
+            lock (s_endCommandBufferLock) vkEndCommandBuffer(CommandBuffer);
             // CommandBufferCompleted mutates this list under the same lock from whichever thread observes the fence
             // (any thread calling VkGraphicsDevice.checkSubmittedFences, e.g. an off-thread UpdateTexture).
             lock (commandBufferListLock) submittedCommandBuffers.Add(CommandBuffer);
         }
+
+        /// <summary>See <see cref="EndCore"/>: serialises <c>vkEndCommandBuffer</c> across all Vulkan devices in the process.</summary>
+        private static readonly object s_endCommandBufferLock = new object();
 
         public override void SetScissorRect(uint index, uint x, uint y, uint width, uint height)
         {

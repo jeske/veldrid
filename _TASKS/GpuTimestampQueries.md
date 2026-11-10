@@ -244,7 +244,7 @@ dependency tax the probe does not need. Add it later only if copy bandwidth prov
 
 ### 6.2 Cases (each `[Theory]` over D3D11 + Vulkan; skip when `!Features.TimestampQueries`)
 
-All implemented Nov 10 (`TimestampQueryTests` 10 x 2, `GpuTimingAutoTests` 7 x 2); both classes share `GpuTimestampTestCollection` (serial - see 8).
+All implemented Nov 10 (`TimestampQueryTests` 10 x 2, `GpuTimingAutoTests` 7 x 2); the whole assembly runs serially (`TestParallelism.cs`; see 8).
 Tests that need "inside a render pass" use `TimestampProbe_DrawScene`: a real triangle through the committed ImGui bundle, because Vulkan opens its
 pass at the first DRAW (clears are deferred into the load-op). D3D11's `WaitForIdle()` is a no-op in this fork, so resolves poll with a 2-3 s deadline.
 
@@ -311,27 +311,58 @@ Rules for clients (so the fork's output stays well-formed):
 
 While landing the tests, `Veldrid.ContractTests` crashed intermittently with `AccessViolationException` inside
 `ID3D11DeviceContext::FinishCommandList` (NVIDIA GeForce RTX 4080, driver 32.0.16.2101). Bisected with a two-thread probe (each thread its own
-`GraphicsDevice`, 200 iterations of Begin / timestamps / 8 x 64 MB CopyBuffer / End / Submit):
+`GraphicsDevice`, 200 iterations of Begin / timestamps / 8 x 64 MB CopyBuffer / End / Submit), then with targeted follow-ups. **Every row below was
+run; "pass" = 0 crashes in N.** The AV always surfaces in `FinishCommandList` (Veldrid `CommandList.End()`, CPU-side bake, before any submit).
 
-| threads (devices) | queries | resolved each iteration | result |
+| # | devices (threads) | what is concurrent | result |
 |---|---|---|---|
-| 1 | yes | no, even under heavy load | pass (3/3) |
-| 2 | no | - | pass (3/3) |
-| 2 | yes | yes | **intermittent AV** (2/3) |
-| 2 | yes | no | AV (3/3) |
-| 2 | **RAW Vortice** `Begin(disjoint)/End(ts)/End(ts)/End(disjoint)` + `GetData`, no Veldrid pool code | yes | **intermittent AV** (2/4) |
+| 1 | 1 | heavy copies + timestamps, never resolved | pass 3/3 |
+| 2 | 1 | same + **300 forced compacting Gen2 collections** from a second thread (filler allocated before/around our objects, freed and `GC.Collect(compacting)` in a loop) | pass 5/5 |
+| 3 | 2 | heavy copies, **no queries** | pass 3/3 (+4/4 later) |
+| 4 | 2 | heavy copies + timestamps, resolved each iteration | **AV 2/3** |
+| 5 | 2 | heavy copies + timestamps, never resolved (query objects renamed on every rewrite) | AV 3/3 before the renaming rule; pass 4/4 after it |
+| 6 | 2 | **RAW Vortice** `Begin(disjoint)/End(ts)/End(ts)/End(disjoint)` + `GetData` on the same deferred/immediate contexts, **none of this fork's query code** | **AV 2/4** |
+| 7 | 2 | row 4 + process-wide lock around `FinishCommandList` | **AV 4/4** |
+| 8 | 2 | row 7 + `GetData` under the same lock | AV 3/4 |
+| 9 | 2 | row 7 + a query object is NEVER re-issued (fresh `ID3D11Query` on every write) | AV 3/5 |
+| 10 | 2 | full ContractTests with the WHOLE `CommandList.End()` under one process-wide lock | AV 2/8 |
+| 11 | 2 | row 4 with the **GC suppressed** (`GC.TryStartNoGCRegion` held for the whole run, never exited early) | **AV 4/5** |
+| 12 | 2 | rows 4/5/3 on **Vulkan** | pass 4/4, 4/4, 4/4 |
+| 13 | 2 | full ContractTests, the two timestamp classes serialised against each other but parallel with the other 93 D3D11 tests (non-query work) | AV 1/4 |
+| 14 | 2 | full ContractTests, assembly-level `DisableTestParallelization` | pass 127/127 x 9 (0 aborts) |
 
-The RAW row is the decisive one: the crash reproduces with canonical D3D11 query usage and none of this fork's code, so it is a runtime/UMD
-limitation: **two D3D11 devices on two threads must not concurrently BUILD query-bearing deferred command lists.** "Build" = the CPU-side recording of calls into the deferred context followed by `FinishCommandList` (Veldrid `CommandList.End()`), which is where the AV occurs; it is CPU-only work that happens BEFORE `ExecuteCommandList` (Veldrid `SubmitCommands`), and the submit path was never on the crashing stack. The nowrite row isolates the ingredient to the queries themselves: `FinishCommandList` is where the UMD assigns a recording's query objects to its internal query-heap slots, so a non-thread-safe process-wide structure there fits every row of the table.** Consequences:
-- `Veldrid.ContractTests`: every class that issues timestamp queries is in `GpuTimestampTestCollection` (`DisableParallelization`), so xUnit runs
-  them serially. Full suite 127/127 x3 after the change; before it the host crashed on most runs.
-- Production: one `GraphicsDevice` per process (AN_Monsters, FluidUI GameCompositor) is unaffected. A process that creates several D3D11 devices
-  and times on more than one of them concurrently is at risk; `GpuTiming.Mode` should then be on for at most one device at a time. Documented
-  on `GpuTiming` once the kit adopts it; not enforced in code (no safe cross-device coordination point exists in the fork).
-- Defensive rule kept in the D3D11 pool (`D3D11TimestampQueryPool.MarkWritten`, `D3D11GraphicsDevice.ReturnTimestampDisjointWindow`): a query
-  object whose previous result was never fetched with `GetData` (abandoned slot, discarded automatic record, unfetched disjoint window) is NOT
-  re-issued - the slot gets a fresh `ID3D11Query`, the window is dropped. Pending command lists keep their own COM reference on the old object.
-  This alone fixed the light-load two-thread case; it keeps every query on the canonical issue -> GetData -> issue cycle.
+**What the table eliminates, each by direct experiment:** Veldrid shared state (there is none across devices - the only statics in the D3D11
+backend are a feature flag and a debug-name counter; command lists are created per `End()` and disposed after `ExecuteCommandList`, never pooled),
+the bake as the unsafe region (row 7), the readback (row 8), query-object re-issue (row 9), the whole end-of-recording sequence (row 10), and the
+garbage collector moving memory a native call thought was pinned (row 2 cannot provoke it on one device; row 11 still crashes with no GC at all).
+Row 6 shows it with canonical raw API calls and none of this fork's query code; row 12 shows Vulkan immune.
+
+**Conclusion:** the invariant across every crashing row is *two D3D11 devices concurrently active in one process, at least one issuing queries*.
+The corruption happens inside the NVIDIA user-mode driver (`nvwgf2umx.dll`, the one component shared by two devices) and `FinishCommandList` is
+merely where it is detected. It is not fixable from this layer; it can only be avoided. Row 13 shows the second device need not use queries at
+all - ordinary work on another device is enough - so a per-class test collection was insufficient.
+
+**Mitigations in place:**
+- `Veldrid.ContractTests`: `[assembly: CollectionBehavior(DisableTestParallelization = true)]` (`TestParallelism.cs`, rationale inline). The suite
+  takes ~8 s serial. Row 14.
+- Process-wide unconditional locks around the bake on BOTH backends (`D3D11CommandList.EndCore` / `VkCommandList.EndCore`; approved by the user
+  Nov 10, rationale in the code comments including the explicit rejection of a "skip when one device" shortcut). **They do not eliminate this
+  crash (rows 7-10)** and are kept as an essentially free conservative measure - a serialised bake is one fewer variable - not as a fix.
+- D3D11 pool: a query object whose result was never fetched is not re-issued (`D3D11TimestampQueryPool.MarkWritten`,
+  `D3D11GraphicsDevice.ReturnTimestampDisjointWindow`). Fixed row 5; kept because it is the canonical issue -> GetData -> issue cycle.
+- Production guidance: one `GraphicsDevice` per process (AN_Monsters, FluidUI GameCompositor) is unaffected; the GameCompositor's multi-threaded
+  record/End/Submit on ONE device is the single-device case. A process that creates several D3D11 devices and keeps more than one active
+  concurrently is at risk whether or not it times; not enforced in code (no safe cross-device coordination point exists in the fork).
+- Not done, available on request (~1 h): a pure-Vortice console repro with no Veldrid at all, for an NVIDIA bug report.
+
+### Probe workload finding (Nov 10 2026) - CopyBuffer is not a graphics-timeline clock on D3D11/NVIDIA
+
+The explicit-pool ratio test first used N x 64 MB `CopyBuffer` as its workload. Measured deltas were super-linear: 2x copies into one destination
+-> ratio 4-6; 4x copies over four rotating destinations -> ratio 13-15. Interpretation: on this driver buffer copies run on a copy/DMA engine that
+timestamps written on the graphics pipeline do not bracket proportionally (Vulkan, single queue in Veldrid, was linear). The ratio test now uses
+fill-rate-bound draws (8 vs 32 full-target triangles at 2048^2 through the ImGui bundle, median of 5, window [2, 8]) - the work timestamps are
+designed to measure. `TimestampProbe_Workload` (copies) is still used where only "some GPU time passes" is needed. Guidance for the kit: GPU
+spans around pure copies on D3D11 may under-report; bracket passes that contain draws/dispatches.
 
 - `_BUGFIX/BUGFIX_Vulkan_CopyBuffer_NoPreCopyBarrier.md` is referenced here (and from `BUGFIX_D3D11_ComputeUavBindingList_Grows_PerFrame.md`) but was never
   filed anywhere under `C:\PROJECTS` (checked Nov 10). The only artefact is `_BUGFIX/BufferPolicies_NativeDocs/Vulkan_CopyBuffer.md`. Timestamps with

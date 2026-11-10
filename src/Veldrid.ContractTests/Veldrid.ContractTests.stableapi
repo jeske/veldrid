@@ -1,5 +1,4 @@
 __stableApiVersion: 2
-const.GpuTimestampTestCollection.Name: string "GPU timestamp queries (D3D11 multi-device concurrency hazard)"
 field.ImGuiProjection.IsClipSpaceYInverted: int
 field.ImGuiProjection.UseLegacyColorSpaceHandling: int
 field.ImGuiProjection.projection: Matrix4x4
@@ -100,7 +99,6 @@ method.ExplicitUniformStorageTests..ctor: void()
 method.ExplicitUniformStorageTests.D3D11PartialUniformUpdateIsRejectedWithoutWidening: void()
 method.ExplicitUniformStorageTests.NonDynamicUpdatesBetweenDrawsRetainCommandOrder: void(GraphicsBackend backend, bool memberUpdates)
 method.ExplicitUniformStorageTests.StorageMustBeExplicitAndUsageIsPreserved: void(GraphicsBackend backend)
-method.GpuTimestampTestCollection..ctor: void()
 method.GpuTimingAutoTests..ctor: void()
 method.GpuTimingAutoTests.Auto_BeginWithoutSubmit_IsAbandonedAndRingRecovers: void(GraphicsBackend backend)
 method.GpuTimingAutoTests.Auto_CommandListMode_EverySubmitProducesOneSpan: void(GraphicsBackend backend)
@@ -280,7 +278,6 @@ type.CommandContractGpuTests: sealed class
 type.ComputeBundleAndVertexInfoTests: class
 type.D3D11UavBufferMirrorTests: class
 type.ExplicitUniformStorageTests: sealed class
-type.GpuTimestampTestCollection: sealed class
 type.GpuTimingAutoTests: sealed class
 type.ImGuiBundleContractTests: sealed class
 type.ImGuiProjection: struct

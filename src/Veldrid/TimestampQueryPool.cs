@@ -39,6 +39,9 @@ namespace Veldrid
     /// </summary>
     public abstract class TimestampQueryPool : IDeviceResource, IDisposable
     {
+        /// <summary>Backend-only derivation: the per-slot state machine members below are internal.</summary>
+        internal TimestampQueryPool() { }
+
         /// <summary>Number of slots; valid indices are <c>[0, Capacity)</c>.</summary>
         public abstract uint Capacity { get; }
 
@@ -53,6 +56,13 @@ namespace Veldrid
 
         /// <summary>A bool indicating whether this instance has been disposed.</summary>
         public abstract bool IsDisposed { get; }
+
+        /// <summary>
+        ///     Marks written-but-never-resolved slots in <c>[first, first + count)</c> as consumed WITHOUT reading them, so the next
+        ///     <see cref="CommandList.Begin"/> resets them and they become writable inside a render pass again. Used by the automatic
+        ///     <see cref="GraphicsDevice.GpuTiming"/> layer for command lists that were recorded but never submitted. Fresh slots are left alone.
+        /// </summary>
+        internal abstract void DiscardRange(uint first, uint count);
 
         /// <summary>Frees unmanaged device resources controlled by this instance.</summary>
         public abstract void Dispose();

@@ -21,7 +21,7 @@ namespace Veldrid.OpenGL
         private bool disposed;
 
         public OpenGLCommandList(OpenGLGraphicsDevice gd, ref CommandListDescription description)
-            : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment)
+            : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment, gd.GpuTiming)
         {
             Device = gd;
         }

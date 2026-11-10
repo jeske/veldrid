@@ -81,6 +81,8 @@ namespace Veldrid.D3D11
         private readonly ID3D11Query[] queries;
         private readonly uint capacity;
         private readonly SlotState[] slotStates;
+        private readonly bool[] slotFetched;    // true once the slot's current value was read by GetData; a non-fresh, unfetched slot is renamed on rewrite
+        private static readonly QueryDescription timestampDescription = new QueryDescription(QueryType.Timestamp);
         private int resolvedSlotCount;          // how many slots are Resolved (fast "anything to advance?" poll at Begin, mirrors the Vulkan pool)
         private ulong abandonedWriteCount;
         private string name;
@@ -91,10 +93,10 @@ namespace Veldrid.D3D11
             this.gd = gd;
             this.capacity = capacity;
             slotStates = new SlotState[capacity];
+            slotFetched = new bool[capacity];
             SlotWindows = new D3D11TimestampDisjointWindow[capacity];
             queries = new ID3D11Query[capacity];
-            var description = new QueryDescription(QueryType.Timestamp);
-            for (int i = 0; i < capacity; i++) queries[i] = gd.Device.CreateQuery(description);
+            for (int i = 0; i < capacity; i++) queries[i] = gd.Device.CreateQuery(timestampDescription);
             Queries = queries;
             gd.RegisterTimestampPool(this);
         }
@@ -133,6 +135,20 @@ namespace Veldrid.D3D11
                 SlotState previous = slotStates[index];
                 if (previous == SlotState.Written) abandonedWriteCount++;
                 else if (previous == SlotState.Resolved) resolvedSlotCount--;
+
+                // Never re-issue an ID3D11Query whose previous result was not fetched with GetData (abandoned, or discarded by the automatic
+                // layer). Observed Nov 10 2026 on NVIDIA RTX 4080 / 32.0.16.2101: two devices on two threads each re-End()ing unfetched
+                // timestamp queries across many pending command lists -> AccessViolation inside FinishCommandList; a single device, or
+                // GetData between issues, never crashed (ContractTests TempParallelD3D11Probe bisect). Renaming keeps every query object on the
+                // canonical issue -> GetData -> issue cycle; the pending command list holds its own COM reference on the old object.
+                if (previous != SlotState.Fresh && !slotFetched[index])
+                {
+                    queries[index].Dispose();
+                    queries[index] = gd.Device.CreateQuery(timestampDescription);
+                    if (name != null) queries[index].DebugName = $"{name}[{index}]";
+                }
+                slotFetched[index] = false;
+
                 releaseWindowLocked(index);
                 slotStates[index] = SlotState.Written;
                 SlotWindows[index] = window;
@@ -164,8 +180,21 @@ namespace Veldrid.D3D11
         /// <summary>Marks <c>[first, first + count)</c> Resolved. The window references stay until the slot is rewritten (the value is still "owned" by that window). Caller holds <see cref="StateLock"/>.</summary>
         internal void MarkResolvedLocked(uint first, uint count)
         {
+            markResolvedLockedCore(first, count, writtenOnly: false);
+        }
+
+        internal override void DiscardRange(uint first, uint count)
+        {
+            lock (StateLock) markResolvedLockedCore(first, count, writtenOnly: true);
+        }
+
+        private void markResolvedLockedCore(uint first, uint count, bool writtenOnly)
+        {
             for (uint i = first; i < first + count; i++)
             {
+                if (writtenOnly && slotStates[i] != SlotState.Written) continue;
+                // Only a real read (writtenOnly == false) makes the query object safe to re-issue; a discard leaves it unfetched -> renamed on rewrite.
+                slotFetched[i] = !writtenOnly;
                 if (slotStates[i] != SlotState.Resolved)
                 {
                     slotStates[i] = SlotState.Resolved;

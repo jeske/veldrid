@@ -82,6 +82,11 @@ enum.GpuDeviceLostReason.DriverInternalError: 3
 enum.GpuDeviceLostReason.Simulated: 5
 enum.GpuDeviceLostReason.Unknown: 4
 enum.GpuDeviceLostReason._type: int
+enum.GpuTiming_Mode.CommandLists: 1
+enum.GpuTiming_Mode.DebugGroups: 2
+enum.GpuTiming_Mode.Off: 0
+enum.GpuTiming_Mode._flags: true
+enum.GpuTiming_Mode._type: int
 enum.GraphicsBackend.Direct3D11: 0
 enum.GraphicsBackend.Metal: 3
 enum.GraphicsBackend.OpenGL: 2
@@ -678,6 +683,32 @@ method.GpuDeviceGeneration.Next: GpuDeviceGeneration()
 method.GpuDeviceGeneration.ToString: string()
 method.GpuDeviceGeneration.op_Equality: bool(GpuDeviceGeneration left, GpuDeviceGeneration right)
 method.GpuDeviceGeneration.op_Inequality: bool(GpuDeviceGeneration left, GpuDeviceGeneration right)
+method.GpuTiming.DrainCompleted: void(List`1<GpuTiming_CommandListSpan> commandLists, List`1<GpuTiming_DebugGroupSpan> debugGroups)
+method.GpuTiming.RecreateRing: void()
+method.GpuTiming_CommandListSpan..ctor: void(GpuTiming_SubmitIndex Submit, string CommandListName, ulong GpuStartTicks, ulong GpuEndTicks, double TicksPerSecond, long CpuSubmitTimestamp)
+method.GpuTiming_CommandListSpan.Deconstruct: void(ref GpuTiming_SubmitIndex Submit, ref string CommandListName, ref ulong GpuStartTicks, ref ulong GpuEndTicks, ref double TicksPerSecond, ref long CpuSubmitTimestamp)
+method.GpuTiming_CommandListSpan.Equals: bool(GpuTiming_CommandListSpan other)
+method.GpuTiming_CommandListSpan.Equals: bool(object obj)
+method.GpuTiming_CommandListSpan.GetHashCode: int()
+method.GpuTiming_CommandListSpan.ToString: string()
+method.GpuTiming_CommandListSpan.op_Equality: bool(GpuTiming_CommandListSpan left, GpuTiming_CommandListSpan right)
+method.GpuTiming_CommandListSpan.op_Inequality: bool(GpuTiming_CommandListSpan left, GpuTiming_CommandListSpan right)
+method.GpuTiming_DebugGroupSpan..ctor: void(GpuTiming_SubmitIndex ParentSubmit, string GroupName, int Depth, ulong GpuStartTicks, ulong GpuEndTicks, double TicksPerSecond)
+method.GpuTiming_DebugGroupSpan.Deconstruct: void(ref GpuTiming_SubmitIndex ParentSubmit, ref string GroupName, ref int Depth, ref ulong GpuStartTicks, ref ulong GpuEndTicks, ref double TicksPerSecond)
+method.GpuTiming_DebugGroupSpan.Equals: bool(GpuTiming_DebugGroupSpan other)
+method.GpuTiming_DebugGroupSpan.Equals: bool(object obj)
+method.GpuTiming_DebugGroupSpan.GetHashCode: int()
+method.GpuTiming_DebugGroupSpan.ToString: string()
+method.GpuTiming_DebugGroupSpan.op_Equality: bool(GpuTiming_DebugGroupSpan left, GpuTiming_DebugGroupSpan right)
+method.GpuTiming_DebugGroupSpan.op_Inequality: bool(GpuTiming_DebugGroupSpan left, GpuTiming_DebugGroupSpan right)
+method.GpuTiming_SubmitIndex..ctor: void(ulong Value)
+method.GpuTiming_SubmitIndex.Deconstruct: void(ref ulong Value)
+method.GpuTiming_SubmitIndex.Equals: bool(GpuTiming_SubmitIndex other)
+method.GpuTiming_SubmitIndex.Equals: bool(object obj)
+method.GpuTiming_SubmitIndex.GetHashCode: int()
+method.GpuTiming_SubmitIndex.ToString: string()
+method.GpuTiming_SubmitIndex.op_Equality: bool(GpuTiming_SubmitIndex left, GpuTiming_SubmitIndex right)
+method.GpuTiming_SubmitIndex.op_Inequality: bool(GpuTiming_SubmitIndex left, GpuTiming_SubmitIndex right)
 method.GraphicsApiVersion..ctor: void(int major, int minor, int subminor, int patch)
 method.GraphicsApiVersion.ToString: string()
 method.GraphicsApiVersion.TryParseGLVersion: bool(string versionString, ref GraphicsApiVersion version)
@@ -1075,6 +1106,27 @@ property.FramebufferAttachment.ArrayLayer: uint { get; }
 property.FramebufferAttachment.MipLevel: uint { get; }
 property.FramebufferAttachment.Target: Texture { get; }
 property.GpuDeviceGeneration.Value: int { get; set; }
+property.GpuTiming.AbandonedCommandLists: ulong { get; }
+property.GpuTiming.DisjointCommandLists: ulong { get; }
+property.GpuTiming.DroppedCommandLists: ulong { get; }
+property.GpuTiming.MaxDebugGroupsPerCommandList: uint { get; set; }
+property.GpuTiming.Mode: GpuTiming_Mode { get; set; }
+property.GpuTiming.RingSlotPairs: uint { get; set; }
+property.GpuTiming.Supported: bool { get; }
+property.GpuTiming.UntimedDebugGroups: ulong { get; }
+property.GpuTiming_CommandListSpan.CommandListName: string { get; set; }
+property.GpuTiming_CommandListSpan.CpuSubmitTimestamp: long { get; set; }
+property.GpuTiming_CommandListSpan.GpuEndTicks: ulong { get; set; }
+property.GpuTiming_CommandListSpan.GpuStartTicks: ulong { get; set; }
+property.GpuTiming_CommandListSpan.Submit: GpuTiming_SubmitIndex { get; set; }
+property.GpuTiming_CommandListSpan.TicksPerSecond: double { get; set; }
+property.GpuTiming_DebugGroupSpan.Depth: int { get; set; }
+property.GpuTiming_DebugGroupSpan.GpuEndTicks: ulong { get; set; }
+property.GpuTiming_DebugGroupSpan.GpuStartTicks: ulong { get; set; }
+property.GpuTiming_DebugGroupSpan.GroupName: string { get; set; }
+property.GpuTiming_DebugGroupSpan.ParentSubmit: GpuTiming_SubmitIndex { get; set; }
+property.GpuTiming_DebugGroupSpan.TicksPerSecond: double { get; set; }
+property.GpuTiming_SubmitIndex.Value: ulong { get; set; }
 property.GraphicsApiVersion.IsKnown: bool { get; }
 property.GraphicsApiVersion.Major: int { get; }
 property.GraphicsApiVersion.Minor: int { get; }
@@ -1088,6 +1140,7 @@ property.GraphicsDevice.BackendType: GraphicsBackend { get; }
 property.GraphicsDevice.DeviceGeneration: GpuDeviceGeneration { get; }
 property.GraphicsDevice.DeviceName: string { get; }
 property.GraphicsDevice.Features: GraphicsDeviceFeatures { get; }
+property.GraphicsDevice.GpuTiming: GpuTiming { get; }
 property.GraphicsDevice.IsClipSpaceYInverted: bool { get; }
 property.GraphicsDevice.IsDepthRangeZeroToOne: bool { get; }
 property.GraphicsDevice.IsDeviceLost: bool { get; }
@@ -1393,6 +1446,28 @@ struct.GpuDeviceGeneration._layout: Sequential
 struct.GpuDeviceGeneration._pack: 0
 struct.GpuDeviceGeneration._size: 0
 struct.GpuDeviceGeneration.field0.<Value>k__BackingField: int
+struct.GpuTiming_CommandListSpan._layout: Sequential
+struct.GpuTiming_CommandListSpan._pack: 0
+struct.GpuTiming_CommandListSpan._size: 0
+struct.GpuTiming_CommandListSpan.field0.<Submit>k__BackingField: GpuTiming_SubmitIndex
+struct.GpuTiming_CommandListSpan.field1.<CommandListName>k__BackingField: string
+struct.GpuTiming_CommandListSpan.field2.<GpuStartTicks>k__BackingField: ulong
+struct.GpuTiming_CommandListSpan.field3.<GpuEndTicks>k__BackingField: ulong
+struct.GpuTiming_CommandListSpan.field4.<TicksPerSecond>k__BackingField: double
+struct.GpuTiming_CommandListSpan.field5.<CpuSubmitTimestamp>k__BackingField: long
+struct.GpuTiming_DebugGroupSpan._layout: Sequential
+struct.GpuTiming_DebugGroupSpan._pack: 0
+struct.GpuTiming_DebugGroupSpan._size: 0
+struct.GpuTiming_DebugGroupSpan.field0.<ParentSubmit>k__BackingField: GpuTiming_SubmitIndex
+struct.GpuTiming_DebugGroupSpan.field1.<GroupName>k__BackingField: string
+struct.GpuTiming_DebugGroupSpan.field2.<Depth>k__BackingField: int
+struct.GpuTiming_DebugGroupSpan.field3.<GpuStartTicks>k__BackingField: ulong
+struct.GpuTiming_DebugGroupSpan.field4.<GpuEndTicks>k__BackingField: ulong
+struct.GpuTiming_DebugGroupSpan.field5.<TicksPerSecond>k__BackingField: double
+struct.GpuTiming_SubmitIndex._layout: Sequential
+struct.GpuTiming_SubmitIndex._pack: 0
+struct.GpuTiming_SubmitIndex._size: 0
+struct.GpuTiming_SubmitIndex.field0.<Value>k__BackingField: ulong
 struct.GraphicsApiVersion._layout: Sequential
 struct.GraphicsApiVersion._pack: 0
 struct.GraphicsApiVersion._size: 0
@@ -1676,6 +1751,11 @@ type.FramebufferDescription: struct
 type.FrontFace: enum
 type.GpuDeviceGeneration: struct
 type.GpuDeviceLostReason: enum
+type.GpuTiming: sealed class
+type.GpuTiming_CommandListSpan: struct
+type.GpuTiming_DebugGroupSpan: struct
+type.GpuTiming_Mode: enum
+type.GpuTiming_SubmitIndex: struct
 type.GraphicsApiVersion: struct
 type.GraphicsBackend: enum
 type.GraphicsDevice: abstract class

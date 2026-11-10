@@ -136,8 +136,19 @@ namespace Veldrid.Vk
         /// <summary>Marks <c>[first, first + count)</c> <see cref="SlotState.Resolved"/> after a successful read. Caller holds <see cref="StateLock"/>.</summary>
         internal void MarkResolvedLocked(uint first, uint count)
         {
+            markResolvedLockedCore(first, count, writtenOnly: false);
+        }
+
+        internal override void DiscardRange(uint first, uint count)
+        {
+            lock (StateLock) markResolvedLockedCore(first, count, writtenOnly: true);
+        }
+
+        private void markResolvedLockedCore(uint first, uint count, bool writtenOnly)
+        {
             for (uint i = first; i < first + count; i++)
             {
+                if (writtenOnly && slotStates[i] != SlotState.Written) continue;
                 if (slotStates[i] != SlotState.Resolved)
                 {
                     slotStates[i] = SlotState.Resolved;

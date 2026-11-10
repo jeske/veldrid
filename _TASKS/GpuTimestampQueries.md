@@ -3,7 +3,11 @@
 Filed Nov 9 2026 from AN_Monsters; revised Nov 10 2026 after design review (decisions in section 2). The kit half (the per-frame CPU/GPU pass table
 built on this) is `AN_Monsters/_SPECS_RenderKit/95_GpuTiming.md`.
 
-Status: SPEC APPROVED, implementation not started.
+Status: **IMPLEMENTED Nov 10 2026** (commits `7812365c` primitive, `b2eb475f` Begin/End refactor, + automatic layer). `Veldrid.ContractTests`
+127/127 green on D3D11 + Vulkan (34 timestamp tests: 20 explicit-pool, 14 automatic-layer). Remaining: publish to LocalNuGet, then the kit half.
+
+Implementation notes that changed the spec text below are marked **(impl)**. Two findings worth reading first: the per-slot reset rule (5.3) and the
+D3D11 multi-device query hazard (8, "Driver finding").
 
 ## 1. Why
 
@@ -150,6 +154,9 @@ reasons, host/GPU clock calibration (`VK_EXT_calibrated_timestamps` - not in ppy
   `S_FALSE` => `NotReady`; `Disjoint` flag or frequencies differ across windows => `Disjoint`; then per slot `GetData(query, out ulong, DoNotFlush)` ->
   `S_FALSE` => `NotReady`. All ready => fill `ticks`, `ticksPerSecond = Frequency`, mark slots `Resolved`, return `Ready`.
 - Disjoint windows are returned to the device pool when every slot that references them is resolved or abandoned (refcount per window).
+- **(impl)** `TryResolveTimestamps` uses `GetData` flags `None`, not `DO_NOT_FLUSH`: this fork's D3D11 `WaitForIdleCore` is a no-op and
+  `ExecuteCommandList` does not flush, so an unflushed immediate context would read `S_FALSE` forever. `GetData`'s implicit Flush is asynchronous.
+- **(impl)** Unfetched query objects are never re-issued (renamed instead) - see section 8, "Driver finding".
 - Hazards: queries created on the immediate device and `End`ed on a deferred context are supported since FL10 (`D3D11_FEATURE_THREADING` not required).
   `Features.TimestampQueries = true` on D3D11 (FL10+; the fork requires FL11 already).
 
@@ -238,15 +245,16 @@ dependency tax the probe does not need. Add it later only if copy bandwidth prov
 
 ## 7. Implementation plan (incremental, each step builds + tests green)
 
-- [ ] 7.1 `GraphicsDeviceFeatures.TimestampQueries` + NAMED arguments at all four construction sites (C5). Metal/OpenGL pass `false`.
-- [ ] 7.2 `TimestampResolveResult`, `TimestampQueryPool`, `ResourceFactory.CreateTimestampQueryPool` (+ abstract `CreateTimestampQueryPoolCore`),
+- [x] 7.1 `GraphicsDeviceFeatures.TimestampQueries` + NAMED arguments at all four construction sites (C5). Metal/OpenGL pass `false`.
+- [x] 7.2 `TimestampResolveResult`, `TimestampQueryPool`, `ResourceFactory.CreateTimestampQueryPool` (+ abstract `CreateTimestampQueryPoolCore`),
       `CommandList.WriteTimestamp` (+ `WriteTimestampCore`), `GraphicsDevice.TryResolveTimestamps` (+ core). Metal/OpenGL stubs (5.5).
-- [ ] 7.3 Vulkan implementation (5.2 + 5.3). Feature bit from queue family.
-- [ ] 7.4 D3D11 implementation (5.1 + 5.3) including disjoint window pool.
-- [ ] 7.5 Probe bundle + explicit-pool tests (6.1, first six cases).
-- [ ] 7.6 `CommandList.Begin/End` -> `BeginCore/EndCore` refactor (5.4) - pure refactor, no behaviour change, tests still green.
-- [ ] 7.7 `GpuTiming` automatic layer (section 4, 5.4) + remaining tests.
-- [ ] 7.8 Regenerate `AN.Veldrid.stableapi` (C4); update this doc's status; hand off to `95_GpuTiming.md`.
+- [x] 7.3 Vulkan implementation (5.2 + 5.3). Feature bit from queue family.
+- [x] 7.4 D3D11 implementation (5.1 + 5.3) including disjoint window pool.
+- [x] 7.5 Probe workload + explicit-pool tests (6.1; `TimestampQueryTests`, 10 cases x 2 backends).
+- [x] 7.6 `CommandList.Begin/End` -> `BeginCore/EndCore` refactor (5.4) - pure refactor, no behaviour change, tests still green.
+- [x] 7.7 `GpuTiming` automatic layer (section 4, 5.4; `src/Veldrid/GpuTiming.cs`) + `GpuTimingAutoTests` (7 cases x 2 backends).
+- [x] 7.8 Regenerate `AN.Veldrid.stableapi` (C4); this doc's status. Hand off to `95_GpuTiming.md` (next: publish to LocalNuGet).
+- [ ] 7.9 Publish `ArtificialNecessity.Veldrid` to LocalNuGet (`cmd/publish-local`), bump AN_Monsters / AN_FluidUI.
 
 ## 7b. Client guidance - what consumers must do to get per-pass rows
 
@@ -268,6 +276,32 @@ Rules for clients (so the fork's output stays well-formed):
 - `PushDebugGroup` is also what RenderDoc / Nsight / PIX display, so this obligation pays twice.
 
 ## 8. Open items / references
+
+### Driver finding (Nov 10 2026) - D3D11 multi-device query hazard
+
+While landing the tests, `Veldrid.ContractTests` crashed intermittently with `AccessViolationException` inside
+`ID3D11DeviceContext::FinishCommandList` (NVIDIA GeForce RTX 4080, driver 32.0.16.2101). Bisected with a two-thread probe (each thread its own
+`GraphicsDevice`, 200 iterations of Begin / timestamps / 8 x 64 MB CopyBuffer / End / Submit):
+
+| threads (devices) | queries | resolved each iteration | result |
+|---|---|---|---|
+| 1 | yes | no, even under heavy load | pass (3/3) |
+| 2 | no | - | pass (3/3) |
+| 2 | yes | yes | **intermittent AV** (2/3) |
+| 2 | yes | no | AV (3/3) |
+| 2 | **RAW Vortice** `Begin(disjoint)/End(ts)/End(ts)/End(disjoint)` + `GetData`, no Veldrid pool code | yes | **intermittent AV** (2/4) |
+
+The RAW row is the decisive one: the crash reproduces with canonical D3D11 query usage and none of this fork's code, so it is a runtime/UMD
+limitation: **two D3D11 devices on two threads must not concurrently record query-bearing deferred command lists.** Consequences:
+- `Veldrid.ContractTests`: every class that issues timestamp queries is in `GpuTimestampTestCollection` (`DisableParallelization`), so xUnit runs
+  them serially. Full suite 127/127 x3 after the change; before it the host crashed on most runs.
+- Production: one `GraphicsDevice` per process (AN_Monsters, FluidUI GameCompositor) is unaffected. A process that creates several D3D11 devices
+  and times on more than one of them concurrently is at risk; `GpuTiming.Mode` should then be on for at most one device at a time. Documented
+  on `GpuTiming` once the kit adopts it; not enforced in code (no safe cross-device coordination point exists in the fork).
+- Defensive rule kept in the D3D11 pool (`D3D11TimestampQueryPool.MarkWritten`, `D3D11GraphicsDevice.ReturnTimestampDisjointWindow`): a query
+  object whose previous result was never fetched with `GetData` (abandoned slot, discarded automatic record, unfetched disjoint window) is NOT
+  re-issued - the slot gets a fresh `ID3D11Query`, the window is dropped. Pending command lists keep their own COM reference on the old object.
+  This alone fixed the light-load two-thread case; it keeps every query on the canonical issue -> GetData -> issue cycle.
 
 - `_BUGFIX/BUGFIX_Vulkan_CopyBuffer_NoPreCopyBarrier.md` is referenced here (and from `BUGFIX_D3D11_ComputeUavBindingList_Grows_PerFrame.md`) but was never
   filed anywhere under `C:\PROJECTS` (checked Nov 10). The only artefact is `_BUGFIX/BufferPolicies_NativeDocs/Vulkan_CopyBuffer.md`. Timestamps with

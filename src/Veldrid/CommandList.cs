@@ -41,15 +41,30 @@ namespace Veldrid
         private readonly uint uniformBufferAlignment;
         private readonly uint structuredBufferAlignment;
 
+        // Automatic GPU timing (_TASKS/GpuTimestampQueries.md section 4): the device's layer plus this recording's record (null = not traced).
+        private readonly GpuTiming gpuTiming;
+        private GpuTiming_CommandListRecord gpuTimingRecord;
+
         internal CommandList(
             ref CommandListDescription description,
             GraphicsDeviceFeatures features,
             uint uniformAlignment,
-            uint structuredAlignment)
+            uint structuredAlignment,
+            GpuTiming gpuTiming)
         {
             this.features = features;
             uniformBufferAlignment = uniformAlignment;
             structuredBufferAlignment = structuredAlignment;
+            this.gpuTiming = gpuTiming;
+        }
+
+        /// <summary>Called by <see cref="GraphicsDevice.SubmitCommands(CommandList)"/> after the backend submitted: hands this recording's timing record to the device layer.</summary>
+        internal void GpuTiming_NotifySubmitted()
+        {
+            var record = gpuTimingRecord;
+            if (record == null) return;
+            gpuTimingRecord = null;
+            gpuTiming.OnCommandListSubmitted(this, record);
         }
 
         #region Disposal
@@ -70,6 +85,8 @@ namespace Veldrid
         public void Begin()
         {
             BeginCore();
+            // After BeginCore: the native buffer exists and any pending timestamp resets are already recorded (always outside a render pass).
+            gpuTimingRecord = gpuTiming.OnCommandListBegin(this, gpuTimingRecord);
         }
 
         /// <summary>
@@ -80,6 +97,8 @@ namespace Veldrid
         /// </summary>
         public void End()
         {
+            // Before EndCore: the buffer is still open (a render pass may be active - the end-slot is Fresh, so the write is legal there).
+            if (gpuTimingRecord != null) gpuTiming.OnCommandListEnd(this, gpuTimingRecord);
             EndCore();
         }
 
@@ -1202,6 +1221,8 @@ namespace Veldrid
         /// <param name="name">The name of the group. This is an opaque identifier used for display by graphics debuggers.</param>
         public void PushDebugGroup(string name)
         {
+            // Timestamp first, then the debugger marker: the span then brackets exactly what the debugger shows inside the group.
+            if (gpuTimingRecord != null) gpuTiming.OnPushDebugGroup(this, gpuTimingRecord, name);
             PushDebugGroupCore(name);
         }
 
@@ -1212,6 +1233,7 @@ namespace Veldrid
         public void PopDebugGroup()
         {
             PopDebugGroupCore();
+            if (gpuTimingRecord != null) gpuTiming.OnPopDebugGroup(this, gpuTimingRecord);
         }
 
         /// <summary>

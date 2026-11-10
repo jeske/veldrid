@@ -596,6 +596,14 @@ namespace Veldrid.D3D11
         /// <summary>Called by the pools when the last slot referencing an Ended window is rewritten or disposed.</summary>
         internal void ReturnTimestampDisjointWindow(D3D11TimestampDisjointWindow window)
         {
+            // Same rule as the per-slot queries (D3D11TimestampQueryPool.MarkWritten): a disjoint query whose result was never fetched is NOT
+            // re-issued - the window is dropped and a fresh query is created on the next rent. Pending command lists keep their own reference.
+            if (!window.ResultFetched)
+            {
+                window.Query.Dispose();
+                return;
+            }
+
             window.ResetForReuse();
             lock (timestampWindowsLock) freeTimestampDisjointWindows.Push(window);
         }

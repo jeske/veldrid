@@ -1,4 +1,5 @@
 __stableApiVersion: 2
+const.GpuTimestampTestCollection.Name: string "GPU timestamp queries (D3D11 multi-device concurrency hazard)"
 field.ImGuiProjection.IsClipSpaceYInverted: int
 field.ImGuiProjection.UseLegacyColorSpaceHandling: int
 field.ImGuiProjection.projection: Matrix4x4
@@ -99,6 +100,15 @@ method.ExplicitUniformStorageTests..ctor: void()
 method.ExplicitUniformStorageTests.D3D11PartialUniformUpdateIsRejectedWithoutWidening: void()
 method.ExplicitUniformStorageTests.NonDynamicUpdatesBetweenDrawsRetainCommandOrder: void(GraphicsBackend backend, bool memberUpdates)
 method.ExplicitUniformStorageTests.StorageMustBeExplicitAndUsageIsPreserved: void(GraphicsBackend backend)
+method.GpuTimestampTestCollection..ctor: void()
+method.GpuTimingAutoTests..ctor: void()
+method.GpuTimingAutoTests.Auto_BeginWithoutSubmit_IsAbandonedAndRingRecovers: void(GraphicsBackend backend)
+method.GpuTimingAutoTests.Auto_CommandListMode_EverySubmitProducesOneSpan: void(GraphicsBackend backend)
+method.GpuTimingAutoTests.Auto_DebugGroupMode_InsideRenderPass_IsLegal: void(GraphicsBackend backend)
+method.GpuTimingAutoTests.Auto_DebugGroupMode_NestedGroupsReportDepthAndContainment: void(GraphicsBackend backend)
+method.GpuTimingAutoTests.Auto_ModeOff_ProducesNothing: void(GraphicsBackend backend)
+method.GpuTimingAutoTests.Auto_RingFull_DropsNeverBlocks: void(GraphicsBackend backend)
+method.GpuTimingAutoTests.Auto_UnclosedGroup_IsClosedAtEndAndFlagged: void(GraphicsBackend backend)
 method.ImGuiBundleContractTests..ctor: void()
 method.ImGuiBundleContractTests.CommittedImGuiBundleMatchesActualShape: void()
 method.ImGuiShape..ctor: void()
@@ -194,6 +204,7 @@ method.UpdateBufferOutsideCommandListPermissionTests.DescriptionCarriesTheFlagIn
 method.UpdateBufferOutsideCommandListPermissionTests.DeviceLevelUpdateWithPermissionLandsBytes: void(GraphicsBackend backend, BufferUsage usage)
 method.UpdateBufferOutsideCommandListPermissionTests.DeviceLevelUpdateWithoutPermissionThrowsAndNamesTheRemedy: void(GraphicsBackend backend, BufferUsage usage)
 method.UpdateBufferOutsideCommandListPermissionTests.TypedShapeStorageIsSequencedByDesignAndNeverGrantsThePermission: void(GraphicsBackend backend)
+property.GpuTimingAutoTests.Backends: TheoryData`1<GraphicsBackend> { get; }
 property.TimestampQueryTests.Backends: TheoryData`1<GraphicsBackend> { get; }
 struct.ImGuiProjection._layout: Sequential
 struct.ImGuiProjection._pack: 0
@@ -269,6 +280,8 @@ type.CommandContractGpuTests: sealed class
 type.ComputeBundleAndVertexInfoTests: class
 type.D3D11UavBufferMirrorTests: class
 type.ExplicitUniformStorageTests: sealed class
+type.GpuTimestampTestCollection: sealed class
+type.GpuTimingAutoTests: sealed class
 type.ImGuiBundleContractTests: sealed class
 type.ImGuiProjection: struct
 type.ImGuiShape: sealed class

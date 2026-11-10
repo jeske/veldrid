@@ -164,7 +164,7 @@ namespace Veldrid.D3D11
         private readonly int[] numConstsRef = new int[1];
 
         public D3D11CommandList(D3D11GraphicsDevice gd, ref CommandListDescription description)
-            : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment)
+            : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment, gd.GpuTiming)
         {
             this.gd = gd;
             DeviceContext = gd.Device.CreateDeferredContext();

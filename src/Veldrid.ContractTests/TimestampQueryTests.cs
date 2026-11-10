@@ -9,6 +9,7 @@ namespace Veldrid.ContractTests;
 ///     Real-GPU checks of the explicit timestamp primitive (<c>_TASKS/GpuTimestampQueries.md</c> section 6.2): headless D3D11 + Vulkan devices,
 ///     no window. Workload is <see cref="TimestampProbe_Workload"/> (N x 64 MB buffer copies) - pure GPU work, linear in N, nothing to compile.
 /// </summary>
+[Collection(GpuTimestampTestCollection.Name)]
 public sealed class TimestampQueryTests
 {
     public static TheoryData<GraphicsBackend> Backends => new() { GraphicsBackend.Direct3D11, GraphicsBackend.Vulkan };
@@ -282,6 +283,19 @@ public sealed class TimestampQueryTests
         Assert.Equal(TimestampResolveResult.Ready, result);
         return (ticks[1] - ticks[0]) / ticksPerSecond * 1000.0;
     }
+}
+
+/// <summary>
+///     Every test class that issues D3D11 timestamp queries belongs to this collection so xUnit runs them SERIALLY. Reason (Nov 10 2026, NVIDIA
+///     RTX 4080 / 32.0.16.2101): two D3D11 devices on two threads, each recording query-bearing deferred command lists with heavy copies,
+///     intermittently AccessViolate inside <c>ID3D11DeviceContext::FinishCommandList</c>. Reproduced with RAW Vortice queries (no Veldrid pool
+///     code) in the same configuration; one device, or no queries, never crashed. It is a driver/runtime limitation
+///     (<c>_TASKS/GpuTimestampQueries.md</c> section 8). Serial execution also keeps the timing-ratio tests honest.
+/// </summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class GpuTimestampTestCollection
+{
+    public const string Name = "GPU timestamp queries (D3D11 multi-device concurrency hazard)";
 }
 
 /// <summary>

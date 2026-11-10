@@ -69,7 +69,7 @@ namespace Veldrid.MTL
         private bool disposed;
 
         public MtlCommandList(ref CommandListDescription description, MtlGraphicsDevice gd)
-            : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment)
+            : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment, gd.GpuTiming)
         {
             this.gd = gd;
         }

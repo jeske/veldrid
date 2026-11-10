@@ -151,7 +151,17 @@ namespace Veldrid
         private readonly List<IDisposable> disposables = new List<IDisposable>();
         private Sampler aniso4XSampler;
 
-        internal GraphicsDevice() { }
+        /// <summary>
+        ///     Automatic GPU timing (<c>_TASKS/GpuTimestampQueries.md</c> section 4): set <see cref="GpuTiming.Mode"/> and every submitted
+        ///     <see cref="CommandList"/> (and optionally every debug group) is timestamped with no app marking; pull results with
+        ///     <see cref="GpuTiming.DrainCompleted"/>. <see cref="GpuTiming.Supported"/> mirrors <see cref="GraphicsDeviceFeatures.TimestampQueries"/>.
+        /// </summary>
+        public GpuTiming GpuTiming { get; }
+
+        internal GraphicsDevice()
+        {
+            GpuTiming = new GpuTiming(this);
+        }
 
         #region Disposal
 
@@ -162,6 +172,7 @@ namespace Veldrid
         public void Dispose()
         {
             WaitForIdle();
+            GpuTiming.DisposeRing();
             PointSampler.Dispose();
             LinearSampler.Dispose();
             aniso4XSampler?.Dispose();
@@ -227,6 +238,7 @@ namespace Veldrid
         public void SubmitCommands(CommandList commandList)
         {
             SubmitCommandsCore(commandList, null);
+            commandList.GpuTiming_NotifySubmitted();
         }
 
         /// <summary>
@@ -246,6 +258,7 @@ namespace Veldrid
         public void SubmitCommands(CommandList commandList, Fence fence)
         {
             SubmitCommandsCore(commandList, fence);
+            commandList.GpuTiming_NotifySubmitted();
         }
 
         /// <summary>

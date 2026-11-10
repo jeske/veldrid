@@ -68,7 +68,7 @@ namespace Veldrid.Vk
         private StagingResourceInfo currentStagingInfo;
 
         public VkCommandList(VkGraphicsDevice gd, ref CommandListDescription description)
-            : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment)
+            : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment, gd.GpuTiming)
         {
             this.gd = gd;
             var poolCi = VkCommandPoolCreateInfo.New();

@@ -1,6 +1,9 @@
-# BUGFIX (OPEN, parked): D3D11 - two devices in one process + timestamp queries -> AccessViolation inside FinishCommandList
+# BUGFIX - STATUS: UNRESOLVED (parked, avoided) - D3D11: two devices in one process + timestamp queries -> AccessViolation inside FinishCommandList
 
-Filed Nov 10 2026 while landing `_TASKS/GpuTimestampQueries.md` (GPU timestamp queries + automatic GPU timing). Status: **NOT FIXED - avoided.**
+> **STATUS: UNRESOLVED.** Root cause not fixed. The crash is AVOIDED (tests run serially; production is single-device) and placed, by elimination,
+> inside the NVIDIA D3D11 user-mode driver. Nine untested hunches are listed in section 6 for whoever picks this up.
+
+Filed Nov 10 2026 while landing `_TASKS/GpuTimestampQueries.md` (GPU timestamp queries + automatic GPU timing).
 Root cause is placed, by elimination, inside the NVIDIA Direct3D11 user-mode driver. This note packages the observations, every workaround we tried
 (and whether it helped), and the hunches we did NOT get to test, so the next person can pick it up without re-deriving anything.
 

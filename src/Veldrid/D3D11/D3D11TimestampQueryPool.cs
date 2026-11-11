@@ -87,18 +87,25 @@ namespace Veldrid.D3D11
         private ulong abandonedWriteCount;
         private string name;
         private bool disposed;
+        private readonly bool registeredWithDevice;
 
-        public D3D11TimestampQueryPool(D3D11GraphicsDevice gd, uint capacity)
+        /// <param name="registerWithDevice">
+        ///     True (app pools): the pool joins <see cref="D3D11GraphicsDevice.TimestampPoolsSnapshot"/> so EVERY <see cref="D3D11CommandList.Begin"/> advances its
+        ///     resolved slots (5.3 rule 2). False (the automatic layer's per-recording trackers, <c>_TASKS/GpuTimestampQueries.md</c> section 10 F6): only the recording
+        ///     that owns the block advances it, through <c>CommandList.GpuTiming_ResetBlockSlots</c> - another list's Begin() must never touch a block it will not write.
+        /// </param>
+        public D3D11TimestampQueryPool(D3D11GraphicsDevice gd, uint capacity, bool registerWithDevice = true)
         {
             this.gd = gd;
             this.capacity = capacity;
+            registeredWithDevice = registerWithDevice;
             slotStates = new SlotState[capacity];
             slotFetched = new bool[capacity];
             SlotWindows = new D3D11TimestampDisjointWindow[capacity];
             queries = new ID3D11Query[capacity];
             for (int i = 0; i < capacity; i++) queries[i] = gd.Device.CreateQuery(timestampDescription);
             Queries = queries;
-            gd.RegisterTimestampPool(this);
+            if (registerWithDevice) gd.RegisterTimestampPool(this);
         }
 
         /// <summary>True when at least one slot is Resolved; <see cref="D3D11CommandList.Begin"/> polls this before taking the lock.</summary>
@@ -225,7 +232,7 @@ namespace Veldrid.D3D11
         {
             if (disposed) return;
             disposed = true;
-            gd.UnregisterTimestampPool(this);
+            if (registeredWithDevice) gd.UnregisterTimestampPool(this);
             lock (StateLock)
             {
                 for (uint i = 0; i < capacity; i++) releaseWindowLocked(i);

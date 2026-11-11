@@ -76,9 +76,9 @@ namespace Veldrid.D3D11
             return new D3D11Fence(gd, signaled);
         }
 
-        private protected override TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity)
+        private protected override TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity, bool registerForImplicitReset)
         {
-            return new D3D11TimestampQueryPool(gd, capacity);
+            return new D3D11TimestampQueryPool(gd, capacity, registerForImplicitReset);
         }
 
         public override Swapchain CreateSwapchain(ref SwapchainDescription description)

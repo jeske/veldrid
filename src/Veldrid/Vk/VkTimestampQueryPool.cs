@@ -51,11 +51,18 @@ namespace Veldrid.Vk
         private ulong abandonedWriteCount;
         private string name;
         private bool destroyed;
+        private readonly bool registeredWithDevice;
 
-        public VkTimestampQueryPool(VkGraphicsDevice gd, uint capacity, uint timestampValidBits)
+        /// <param name="registerWithDevice">
+        ///     True (app pools): joins <see cref="VkGraphicsDevice.TimestampPoolsSnapshot"/> so every <see cref="VkCommandList.Begin"/> records its pending resets (5.3 rule 2).
+        ///     False (the automatic layer's per-recording trackers, <c>_TASKS/GpuTimestampQueries.md</c> section 10 F6): only the recording that owns the block records its
+        ///     resets, into ITS OWN command buffer - a reset recorded by another list would make this list's write depend on that list submitting first.
+        /// </param>
+        public VkTimestampQueryPool(VkGraphicsDevice gd, uint capacity, uint timestampValidBits, bool registerWithDevice = true)
         {
             this.gd = gd;
             this.capacity = capacity;
+            registeredWithDevice = registerWithDevice;
             slotStates = new SlotState[capacity];
             ValidBitsMask = timestampValidBits >= 64 ? ulong.MaxValue : (1UL << (int)timestampValidBits) - 1;
 
@@ -70,7 +77,7 @@ namespace Veldrid.Vk
             for (int i = 0; i < slotStates.Length; i++) slotStates[i] = SlotState.Resolved;
             resolvedSlotCount = (int)capacity;
 
-            gd.RegisterTimestampPool(this);
+            if (registerWithDevice) gd.RegisterTimestampPool(this);
         }
 
         /// <summary>True when at least one slot needs a GPU-side reset; <see cref="VkCommandList.Begin"/> polls this before taking the lock.</summary>
@@ -172,7 +179,7 @@ namespace Veldrid.Vk
             if (!destroyed)
             {
                 destroyed = true;
-                gd.UnregisterTimestampPool(this);
+                if (registeredWithDevice) gd.UnregisterTimestampPool(this);
                 vkDestroyQueryPool(gd.Device, queryPool, null);
             }
         }

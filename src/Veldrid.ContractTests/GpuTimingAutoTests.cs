@@ -192,13 +192,13 @@ public sealed class GpuTimingAutoTests
     }
 
     [Theory, MemberData(nameof(Backends))]
-    public void Auto_RingFull_DropsNeverBlocks(GraphicsBackend backend)
+    public void Auto_TrackerCapReached_DropsNeverBlocks(GraphicsBackend backend)
     {
         using var device = TryCreateTimestampDevice(backend);
         if (device == null) return;
         using var workload = new TimestampProbe_Workload(device);
-        device.GpuTiming.RingSlotPairs = 2;                 // 4 slots
-        device.GpuTiming.MaxDebugGroupsPerCommandList = 0;  // 2 slots per command list -> exactly 2 command lists fit
+        device.GpuTiming.MaxTrackedCommandLists = 2;        // exactly 2 recordings may be in flight with timestamps
+        device.GpuTiming.MaxDebugGroupsPerCommandList = 0;
         device.GpuTiming.Mode = GpuTiming_Mode.CommandLists;
         using var cl = device.ResourceFactory.CreateCommandList();
 
@@ -206,19 +206,19 @@ public sealed class GpuTimingAutoTests
         for (int i = 0; i < 10; i++)
         {
             cl.Begin(); workload.Record(cl, 1); cl.End();
-            device.SubmitCommands(cl);   // never drained in between -> ring fills after 2
+            device.SubmitCommands(cl);   // never drained in between -> both trackers are pending after 2
         }
         sw.Stop();
 
         Assert.Equal(8UL, device.GpuTiming.DroppedCommandLists);
-        Assert.True(sw.Elapsed.TotalSeconds < 5, "recording with a full ring must not block");
+        Assert.True(sw.Elapsed.TotalSeconds < 5, "recording at the tracker cap must not block");
 
         var cls = new List<GpuTiming_CommandListSpan>();
         var groups = new List<GpuTiming_DebugGroupSpan>();
         DrainWithRetry(device, cls, groups, expectedCommandLists: 2);
         Assert.Equal(2, cls.Count);
 
-        // The ring is free again: the next command list is traced.
+        // The trackers are back in the pool: the next command list is traced.
         cl.Begin(); workload.Record(cl, 1); cl.End();
         device.SubmitCommands(cl);
         DrainWithRetry(device, cls, groups, expectedCommandLists: 3);
@@ -226,7 +226,7 @@ public sealed class GpuTimingAutoTests
     }
 
     [Theory, MemberData(nameof(Backends))]
-    public void Auto_BeginWithoutSubmit_IsAbandonedAndRingRecovers(GraphicsBackend backend)
+    public void Auto_BeginWithoutSubmit_IsAbandonedAndTrackerRecovers(GraphicsBackend backend)
     {
         using var device = TryCreateTimestampDevice(backend);
         if (device == null) return;
@@ -246,10 +246,10 @@ public sealed class GpuTimingAutoTests
         Assert.Empty(groups);
         Assert.Equal(1UL, device.GpuTiming.AbandonedCommandLists);
 
-        // The abandoned slots were discarded -> reset at the next Begin -> usable inside a pass again (no throw) on the next lap of the ring.
+        // The abandoned slots were discarded -> reset by the tracker's next owner at its Begin -> usable inside a pass again (no throw) when the tracker is reused.
         using var scene = new TimestampProbe_DrawScene(device);
-        device.GpuTiming.RecreateRing();
-        device.GpuTiming.RingSlotPairs = 4; device.GpuTiming.MaxDebugGroupsPerCommandList = 1;   // 4 slots per CL, 8 total: lap every 2 lists
+        device.GpuTiming.ResetTrackerPool();
+        device.GpuTiming.MaxTrackedCommandLists = 2; device.GpuTiming.MaxDebugGroupsPerCommandList = 1;   // 2 trackers of 4 slots: every tracker is reused every 2 lists
         device.GpuTiming.Mode = GpuTiming_Mode.CommandLists | GpuTiming_Mode.DebugGroups;
         for (int i = 0; i < 6; i++)
         {
@@ -258,6 +258,167 @@ public sealed class GpuTimingAutoTests
             device.SubmitCommands(cl);
             DrainWithRetry(device, cls, groups, expectedCommandLists: cls.Count + 1);
         }
+    }
+
+    // ---- section 10 (pooled allocator, Nov 10): the orderings the ring could not survive ----
+
+    [Theory, MemberData(nameof(Backends))]
+    public void Auto_OutOfOrderSubmit_NeverThrows(GraphicsBackend backend)
+    {
+        using var device = TryCreateTimestampDevice(backend);
+        if (device == null) return;
+        using var workload = new TimestampProbe_Workload(device);
+        device.GpuTiming.Mode = GpuTiming_Mode.CommandLists | GpuTiming_Mode.DebugGroups;
+        var lists = new CommandList[3];
+        for (int i = 0; i < lists.Length; i++) { lists[i] = device.ResourceFactory.CreateCommandList(); lists[i].Name = $"OoO.CL{i}"; }
+
+        // Begin order 0,1,2 - Submit order 2,1,0, every iteration. The ring allocated by Begin position and freed by Submit order: within one wrap of
+        // this pattern it reissued a Written slot and threw. The pool does not care which order anything happens in. GPU-PACED: a 64 MB copy per list
+        // outruns the GPU within a few dozen iterations and legitimately hits the ~120-tracker cap (drop, never block) - which is not what this test is about.
+        var cls = new List<GpuTiming_CommandListSpan>();
+        var groups = new List<GpuTiming_DebugGroupSpan>();
+        const int iterations = 200;
+        for (int it = 0; it < iterations; it++)
+        {
+            foreach (var cl in lists)
+            {
+                cl.Begin();
+                for (int g = 0; g < 4; g++) { cl.PushDebugGroup($"g{g}"); workload.Record(cl, 1); cl.PopDebugGroup(); }
+                cl.End();
+            }
+            for (int i = lists.Length - 1; i >= 0; i--) device.SubmitCommands(lists[i]);
+            DrainWithRetry(device, cls, groups, expectedCommandLists: (it + 1) * 3);
+        }
+        DrainWithRetry(device, cls, groups, expectedCommandLists: iterations * 3, expectedGroups: iterations * 12);
+
+        Assert.True(cls.Count == iterations * 3, $"spans {cls.Count}/{iterations * 3}, dropped {device.GpuTiming.DroppedCommandLists}, live {device.GpuTiming.LiveBlocks}");
+        Assert.Equal(iterations * 12, groups.Count);
+        Assert.Equal(0UL, device.GpuTiming.DroppedCommandLists);
+        Assert.True(device.GpuTiming.LiveBlocks <= 3 + 1, $"three recorders need at most three trackers in flight (live {device.GpuTiming.LiveBlocks})");
+        foreach (var cl in lists) cl.Dispose();
+    }
+
+    [Theory, MemberData(nameof(Backends))]
+    public void Auto_HeldList_DoesNotBlackOut(GraphicsBackend backend)
+    {
+        using var device = TryCreateTimestampDevice(backend);
+        if (device == null) return;
+        using var workload = new TimestampProbe_Workload(device);
+        device.GpuTiming.Mode = GpuTiming_Mode.CommandLists;
+        using var held = device.ResourceFactory.CreateCommandList();
+        using var worker = device.ResourceFactory.CreateCommandList();
+        held.Name = "Held"; worker.Name = "Worker";
+
+        // A list Begin()'d and never submitted for the whole run (submitted next Tuesday). With the ring, its block eventually sat under the allocation head
+        // and every other recording was dropped (or threw) for as long as it was held. With the pool it pins exactly one tracker. GPU-paced (see Auto_OutOfOrderSubmit):
+        // the point is "a held list never blocks others", not "the cap is infinite".
+        held.Begin(); workload.Record(held, 1);
+        var cls = new List<GpuTiming_CommandListSpan>();
+        var groups = new List<GpuTiming_DebugGroupSpan>();
+        const int submits = 300;   // more laps than the ~120-tracker cap, so a ring would have met the held block under its head
+        for (int i = 0; i < submits; i++)
+        {
+            worker.Begin(); workload.Record(worker, 1); worker.End();
+            device.SubmitCommands(worker);
+            DrainWithRetry(device, cls, groups, expectedCommandLists: i + 1);
+        }
+        DrainWithRetry(device, cls, groups, expectedCommandLists: submits);
+
+        Assert.True(cls.Count == submits, $"spans {cls.Count}/{submits}, dropped {device.GpuTiming.DroppedCommandLists}, live {device.GpuTiming.LiveBlocks}");
+        Assert.All(cls, s => Assert.Equal("Worker", s.CommandListName));
+        Assert.Equal(0UL, device.GpuTiming.DroppedCommandLists);
+        held.End();   // release it at the end so the device disposes cleanly; never submitted -> no span
+    }
+
+    [Theory, MemberData(nameof(Backends))]
+    public void Auto_LostList_IsFinalizedAndRepooled(GraphicsBackend backend)
+    {
+        using var device = TryCreateTimestampDevice(backend);
+        if (device == null) return;
+        using var workload = new TimestampProbe_Workload(device);
+        device.GpuTiming.Mode = GpuTiming_Mode.CommandLists;
+
+        LoseARecordingList(device, workload);   // recorded, never submitted, never disposed: every reference dropped on return - the list is simply lost
+        Assert.Equal(1, device.GpuTiming.LiveBlocks);
+        // Full system GC: the lost CommandList, its record and its tracker are all unreachable; the tracker's finalizer runs here and must do nothing but report.
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+        GC.WaitForPendingFinalizers();
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+
+        // The tracker's finalizer reported to the profiler and did nothing else; the next Begin() drains the report and RE-POOLS that tracker:
+        // no new block is created (LiveBlocks stays 1), and the recording works.
+        using var cl = device.ResourceFactory.CreateCommandList();
+        cl.Begin(); workload.Record(cl, 1); cl.End();
+        device.SubmitCommands(cl);
+        Assert.Equal(1UL, device.GpuTiming.FinalizedBlocks);
+        Assert.Equal(1, device.GpuTiming.LiveBlocks);
+        Assert.Null(device.GpuTiming.Fault);
+        var cls = new List<GpuTiming_CommandListSpan>();
+        var groups = new List<GpuTiming_DebugGroupSpan>();
+        DrainWithRetry(device, cls, groups, expectedCommandLists: 1);
+        Assert.Single(cls);
+        Assert.Equal(0UL, device.GpuTiming.DroppedCommandLists);
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void LoseARecordingList(GraphicsDevice device, TimestampProbe_Workload workload)
+    {
+        var lost = device.ResourceFactory.CreateCommandList();
+        lost.Begin(); workload.Record(lost, 1); lost.End();
+        // Deliberately NOT disposed: the whole point is a list dropped on the floor. Veldrid command lists have no finalizer of their own, so the only
+        // finalizer that runs for this object graph is the tracker's - and it must talk to nobody but the profiler.
+    }
+
+    [Theory, MemberData(nameof(Backends))]
+    public void Auto_PendingResolveTimeout_ReclaimsTrackerNeverThrows(GraphicsBackend backend)
+    {
+        using var device = TryCreateTimestampDevice(backend);
+        if (device == null) return;
+        using var workload = new TimestampProbe_Workload(device);
+        device.GpuTiming.MaxTrackedCommandLists = 1;
+        device.GpuTiming.PendingResolveTimeout = TimeSpan.Zero;   // every head that is not ready on its FIRST drain is written off as lost
+        device.GpuTiming.Mode = GpuTiming_Mode.CommandLists;
+        using var cl = device.ResourceFactory.CreateCommandList();
+        var cls = new List<GpuTiming_CommandListSpan>();
+        var groups = new List<GpuTiming_DebugGroupSpan>();
+
+        // A dead head (device that stopped completing work) cannot be provoked on a healthy GPU, so the timeout is driven to zero instead: with ONE tracker,
+        // each submit's record is either resolved or timed out on the very next drain - and either way the tracker comes back so the NEXT recording is traced.
+        // A pool that did not reclaim would drop every recording after the first unresolved one.
+        const int submits = 50;
+        for (int i = 0; i < submits; i++)
+        {
+            cl.Begin(); workload.Record(cl, 1); cl.End();
+            device.SubmitCommands(cl);
+            device.GpuTiming.DrainCompleted(cls, groups);
+        }
+        device.WaitForGpuIdle();
+        device.GpuTiming.DrainCompleted(cls, groups);
+
+        Assert.Equal(0UL, device.GpuTiming.DroppedCommandLists);
+        Assert.Equal((ulong)submits, (ulong)cls.Count + device.GpuTiming.TimedOutCommandLists);
+        Assert.Equal(1, device.GpuTiming.LiveBlocks);
+        Assert.Null(device.GpuTiming.Fault);
+    }
+
+    [Theory, MemberData(nameof(Backends))]
+    public void Auto_IdleThenBurst_NeverThrows(GraphicsBackend backend)
+    {
+        using var device = TryCreateTimestampDevice(backend);
+        if (device == null) return;
+        using var workload = new TimestampProbe_Workload(device);
+        device.GpuTiming.Mode = GpuTiming_Mode.CommandLists | GpuTiming_Mode.DebugGroups;
+        using var cl = device.ResourceFactory.CreateCommandList();
+        var cls = new List<GpuTiming_CommandListSpan>();
+        var groups = new List<GpuTiming_DebugGroupSpan>();
+
+        // The AN_Monsters crash shape: a few timed lists, a long GPU idle (no submits, no drains), then a burst longer than one old ring wrap. GPU-paced (see Auto_OutOfOrderSubmit).
+        for (int i = 0; i < 10; i++) { cl.Begin(); cl.PushDebugGroup("p"); workload.Record(cl, 1); cl.PopDebugGroup(); cl.End(); device.SubmitCommands(cl); }
+        System.Threading.Thread.Sleep(2000);
+        for (int i = 0; i < 200; i++) { cl.Begin(); cl.PushDebugGroup("p"); workload.Record(cl, 1); cl.PopDebugGroup(); cl.End(); device.SubmitCommands(cl); DrainWithRetry(device, cls, groups, expectedCommandLists: 10 + i + 1); }
+        DrainWithRetry(device, cls, groups, expectedCommandLists: 210, expectedGroups: 210);
+        Assert.True(cls.Count == 210, $"spans {cls.Count}/210, dropped {device.GpuTiming.DroppedCommandLists}, live {device.GpuTiming.LiveBlocks}");
+        Assert.Equal(0UL, device.GpuTiming.DroppedCommandLists);
     }
 
     // ---- helpers ----

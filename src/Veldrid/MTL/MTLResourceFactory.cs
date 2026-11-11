@@ -59,7 +59,7 @@ namespace Veldrid.MTL
             return new MtlFence(signaled);
         }
 
-        private protected override TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity)
+        private protected override TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity, bool registerForImplicitReset)
         {
             // Features.TimestampQueries is false on Metal (MTLCounterSampleBuffer later - _TASKS/GpuTimestampQueries.md 5.5); the public
             // wrapper already threw under VALIDATE_USAGE. Reached only in a non-validating build.

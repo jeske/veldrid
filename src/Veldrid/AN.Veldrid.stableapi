@@ -684,7 +684,7 @@ method.GpuDeviceGeneration.ToString: string()
 method.GpuDeviceGeneration.op_Equality: bool(GpuDeviceGeneration left, GpuDeviceGeneration right)
 method.GpuDeviceGeneration.op_Inequality: bool(GpuDeviceGeneration left, GpuDeviceGeneration right)
 method.GpuTiming.DrainCompleted: void(List`1<GpuTiming_CommandListSpan> commandLists, List`1<GpuTiming_DebugGroupSpan> debugGroups)
-method.GpuTiming.RecreateRing: void()
+method.GpuTiming.ResetTrackerPool: void()
 method.GpuTiming_CommandListSpan..ctor: void(GpuTiming_SubmitIndex Submit, string CommandListName, ulong GpuStartTicks, ulong GpuEndTicks, double TicksPerSecond, long CpuSubmitTimestamp)
 method.GpuTiming_CommandListSpan.Deconstruct: void(ref GpuTiming_SubmitIndex Submit, ref string CommandListName, ref ulong GpuStartTicks, ref ulong GpuEndTicks, ref double TicksPerSecond, ref long CpuSubmitTimestamp)
 method.GpuTiming_CommandListSpan.Equals: bool(GpuTiming_CommandListSpan other)
@@ -1111,10 +1111,16 @@ property.GpuDeviceGeneration.Value: int { get; set; }
 property.GpuTiming.AbandonedCommandLists: ulong { get; }
 property.GpuTiming.DisjointCommandLists: ulong { get; }
 property.GpuTiming.DroppedCommandLists: ulong { get; }
+property.GpuTiming.Fault: string { get; }
+property.GpuTiming.FaultCount: ulong { get; }
+property.GpuTiming.FinalizedBlocks: ulong { get; }
+property.GpuTiming.LiveBlocks: int { get; }
 property.GpuTiming.MaxDebugGroupsPerCommandList: uint { get; set; }
+property.GpuTiming.MaxTrackedCommandLists: int { get; set; }
 property.GpuTiming.Mode: GpuTiming_Mode { get; set; }
-property.GpuTiming.RingSlotPairs: uint { get; set; }
+property.GpuTiming.PendingResolveTimeout: TimeSpan { get; set; }
 property.GpuTiming.Supported: bool { get; }
+property.GpuTiming.TimedOutCommandLists: ulong { get; }
 property.GpuTiming.UntimedDebugGroups: ulong { get; }
 property.GpuTiming_CommandListSpan.CommandListName: string { get; set; }
 property.GpuTiming_CommandListSpan.CpuSubmitTimestamp: long { get; set; }

@@ -42,9 +42,9 @@
             return new VkFence(gd, signaled);
         }
 
-        private protected override TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity)
+        private protected override TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity, bool registerForImplicitReset)
         {
-            return new VkTimestampQueryPool(gd, capacity, gd.GraphicsQueueTimestampValidBits);
+            return new VkTimestampQueryPool(gd, capacity, gd.GraphicsQueueTimestampValidBits, registerForImplicitReset);
         }
 
         public override Swapchain CreateSwapchain(ref SwapchainDescription description)

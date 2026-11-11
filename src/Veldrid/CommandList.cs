@@ -67,6 +67,17 @@ namespace Veldrid
             gpuTiming.OnCommandListSubmitted(this, record);
         }
 
+        /// <summary>
+        ///     Automatic timing, section 10 F6: make the recording's OWN block writable - Resolved slots become Fresh, recorded into THIS command buffer (Vulkan:
+        ///     <c>vkCmdResetQueryPool</c>; D3D11: the state transition). Called by <see cref="GpuTiming.OnCommandListBegin"/> right after <see cref="BeginCore"/>, so
+        ///     always outside a render pass. The block's pool is not in the device's implicit-reset registry: no other list ever resets it, so this list's writes
+        ///     never depend on another list's submit order.
+        /// </summary>
+        internal void GpuTiming_ResetBlockSlots(TimestampQueryPool blockPool) => ResetResolvedTimestampSlotsCore(blockPool);
+
+        /// <summary>Backend hook for <see cref="GpuTiming_ResetBlockSlots"/>. Backends without timestamp support keep the no-op (the automatic layer is Off there).</summary>
+        private protected virtual void ResetResolvedTimestampSlotsCore(TimestampQueryPool blockPool) { }
+
         #region Disposal
 
         /// <summary>

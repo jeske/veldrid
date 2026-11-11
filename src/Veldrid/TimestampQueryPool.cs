@@ -30,9 +30,9 @@ namespace Veldrid
     ///     </para>
     ///     <para>
     ///         A slot that is written again before its previous value was resolved abandons that value (counted in
-    ///         <see cref="AbandonedWriteCount"/>); it is legal, never throws, and means the caller's ring is too shallow. Pools reused every
-    ///         frame must therefore be ring-buffered by the CALLER (the automatic <see cref="GraphicsDevice.GpuTiming"/> layer does this for its
-    ///         own pools). Slot reset is implicit and identical on every backend: a pool whose slots are not fresh is reset in full at the top
+    ///         <see cref="AbandonedWriteCount"/>); it is legal, never throws, and means the caller reuses slots faster than it resolves them. Pools
+    ///         reused every frame must therefore be multi-buffered by the CALLER (the automatic <see cref="GraphicsDevice.GpuTiming"/> layer instead
+    ///         gives every recording its own small pool). Slot reset is implicit and identical on every backend: a pool whose slots are not fresh is reset in full at the top
     ///         of the next command list that writes it; the first write to such a pool while a render pass is active throws under
     ///         <c>VALIDATE_USAGE</c> because Vulkan cannot reset inside a pass (<c>_TASKS/GpuTimestampQueries.md</c> 5.3).
     ///     </para>
@@ -47,7 +47,7 @@ namespace Veldrid
 
         /// <summary>
         ///     Count of <see cref="CommandList.WriteTimestamp(TimestampQueryPool, uint)"/> calls that overwrote a slot whose previous value was
-        ///     written but never resolved. Diagnostic only - a growing count means the caller's ring is too shallow.
+        ///     written but never resolved. Diagnostic only - a growing count means the caller reuses slots faster than it resolves them.
         /// </summary>
         public abstract ulong AbandonedWriteCount { get; }
 

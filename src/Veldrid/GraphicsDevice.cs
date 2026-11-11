@@ -172,7 +172,7 @@ namespace Veldrid
         public void Dispose()
         {
             WaitForGpuIdle();   // teardown: the GPU must be FINISHED, not merely ordered, before native objects go away
-            GpuTiming.DisposeRing();
+            GpuTiming.DisposeTrackerPool();
             PointSampler.Dispose();
             LinearSampler.Dispose();
             aniso4XSampler?.Dispose();

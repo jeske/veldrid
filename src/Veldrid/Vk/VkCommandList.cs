@@ -1378,6 +1378,13 @@ namespace Veldrid.Vk
             }
         }
 
+        /// <summary>Section 10 F6: the automatic layer's per-recording block - reset ITS Resolved slots into THIS command buffer (Begin() just ran: outside any render pass).</summary>
+        private protected override void ResetResolvedTimestampSlotsCore(TimestampQueryPool blockPool)
+        {
+            var vkPool = Util.AssertSubtype<TimestampQueryPool, VkTimestampQueryPool>(blockPool);
+            if (vkPool.HasSlotsAwaitingReset) vkPool.RecordPendingResets(CommandBuffer);
+        }
+
         private protected override void WriteTimestampCore(TimestampQueryPool pool, uint index)
         {
             var vkPool = Util.AssertSubtype<TimestampQueryPool, VkTimestampQueryPool>(pool);

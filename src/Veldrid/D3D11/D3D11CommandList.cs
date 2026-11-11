@@ -317,6 +317,13 @@ namespace Veldrid.D3D11
             if (window.SlotReferences == 0) gd.ReturnTimestampDisjointWindow(window);
         }
 
+        /// <summary>Section 10 F6: the automatic layer's per-recording block - advance ITS Resolved slots to Fresh (D3D11 needs no GPU reset; the state machine is what the parity rule reads).</summary>
+        private protected override void ResetResolvedTimestampSlotsCore(TimestampQueryPool blockPool)
+        {
+            var d3dPool = Util.AssertSubtype<TimestampQueryPool, D3D11TimestampQueryPool>(blockPool);
+            if (d3dPool.HasSlotsAwaitingReset) d3dPool.AdvanceResolvedSlotsToFresh();
+        }
+
         private protected override void WriteTimestampCore(TimestampQueryPool pool, uint index)
         {
             var d3dPool = Util.AssertSubtype<TimestampQueryPool, D3D11TimestampQueryPool>(pool);

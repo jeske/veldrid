@@ -733,7 +733,16 @@ namespace Veldrid
         }
 
         /// <summary>Backend hook for <see cref="CreateTimestampQueryPool(uint)"/>; the feature check and argument validation have already run.</summary>
-        private protected abstract TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity);
+        private protected abstract TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity, bool registerForImplicitReset);
+        private protected TimestampQueryPool CreateTimestampQueryPoolCore(uint capacity) => CreateTimestampQueryPoolCore(capacity, registerForImplicitReset: true);
+
+        /// <summary>
+        ///     A pool for ONE recording of the automatic <see cref="GraphicsDevice.GpuTiming"/> layer (<c>_TASKS/GpuTimestampQueries.md</c> section 10, F2/F6): NOT
+        ///     registered for the implicit reset at every <see cref="CommandList.Begin"/> - the recording that owns it resets it itself
+        ///     (<see cref="CommandList.GpuTiming_ResetBlockSlots"/>), into its own command buffer, so no other list's submit order is assumed. Feature-checked by the
+        ///     caller (<see cref="GpuTiming.Mode"/> is forced Off when unsupported).
+        /// </summary>
+        internal TimestampQueryPool CreateGpuTimingBlockPool(uint capacity) => CreateTimestampQueryPoolCore(capacity, registerForImplicitReset: false);
 
         /// <summary>
         ///     Creates a new <see cref="Swapchain" />.

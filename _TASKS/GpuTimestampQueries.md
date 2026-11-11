@@ -4,7 +4,13 @@ Filed Nov 9 2026 from AN_Monsters; revised Nov 10 2026 after design review (deci
 built on this) is `AN_Monsters/_SPECS_RenderKit/95_GpuTiming.md`.
 
 Status: **IMPLEMENTED Nov 10 2026** (commits `7812365c` primitive, `b2eb475f` Begin/End refactor, + automatic layer). `Veldrid.ContractTests`
-127/127 green on D3D11 + Vulkan (34 timestamp tests: 20 explicit-pool, 14 automatic-layer). Remaining: publish to LocalNuGet, then the kit half.
+127/127 green on D3D11 + Vulkan (34 timestamp tests: 20 explicit-pool, 14 automatic-layer). Published `5.261110.144751`.
+
+**REVISION Nov 10 2026 18:50, LANDED 19:30 - the automatic layer's shared-pool ring allocator was replaced by a POOLED ALLOCATOR of per-recording trackers
+(section 10, `_BUGFIX/BUGFIX_GpuTiming_RingAllocator_OrderAssumption.md`).** The ring allocated blocks by position at `Begin()` and freed them by count in `Submit()`
+order, which is only sound when Begin order == Submit order - an ordering Veldrid never promised (several threads record concurrently; a list may be held and
+submitted much later). In AN_Monsters this surfaced as the pool's `Written`-slot fail-safe throwing one lap after a GPU idle. Sections 4 "Semantics (as built)" / 5.3 /
+5.4 below describe the Nov 10 14:47 build and are marked where section 10 supersedes them; the section 4 API block is current (10.2b). Pending: publish + consumer run (10.4b).
 
 Implementation notes that changed the spec text below are marked **(impl)**. Two findings worth reading first: the per-slot reset rule (5.3) and the
 D3D11 multi-device query hazard (8, "Driver finding").
@@ -117,19 +123,24 @@ public readonly record struct GpuTiming_SubmitIndex(ulong Value);
 public sealed class GpuTiming   // GraphicsDevice.GpuTiming
 {
     public bool Supported { get; }                          // Features.TimestampQueries
-    public GpuTiming_Mode Mode { get; set; }                 // runtime toggle; forced Off when !Supported; turning ON creates the ring (impl: must
-                                                             // happen before the next Begin() so that Begin() records the ring's initial reset)
-    public uint RingSlotPairs { get; set; } = 2048;          // (impl) ring capacity in (start,end) pairs; applied when the ring is (re)created
+    public GpuTiming_Mode Mode { get; set; }                 // runtime toggle; forced Off when !Supported or while Fault is set; turning ON freezes the tracker geometry
+    public int MaxTrackedCommandLists { get; set; } = 120;   // (10.2b) tracker cap = recordings in flight with timestamps; frozen at first enable / after ResetTrackerPool
     public uint MaxDebugGroupsPerCommandList { get; set; } = 16;   // (impl) pairs reserved per recording for groups; further pushes are not timed
-    public ulong DroppedCommandLists { get; }                // recordings traced WITHOUT timestamps because the ring was full (never blocks)
+    public TimeSpan PendingResolveTimeout { get; set; } = 10 s;    // (10.2b) a NotReady head older than this is written off and its tracker reclaimed
+    public ulong DroppedCommandLists { get; }                // recordings traced WITHOUT timestamps because every tracker was in flight (never blocks)
     public ulong DisjointCommandLists { get; }               // recordings discarded because D3D11 reported a clock change
     public ulong UntimedDebugGroups { get; }                 // (impl) pushes past MaxDebugGroupsPerCommandList (forwarded to the debugger, not timed)
-    public ulong AbandonedCommandLists { get; }              // (impl) Begin()'d while on, never submitted; slots recycled unread
+    public ulong AbandonedCommandLists { get; }              // (impl) Begin()'d while on, never submitted; tracker recycled unread
+    public ulong TimedOutCommandLists { get; }               // (10.2b) heads written off by PendingResolveTimeout (device stopped completing work)
+    public ulong FinalizedBlocks { get; }                    // (10, F5) trackers whose command list was garbage-collected mid-recording; re-pooled at the next drain
+    public int LiveBlocks { get; }                           // (10) trackers alive in the current pool generation (cached + recording + pending) <= MaxTrackedCommandLists
+    public string Fault { get; }                             // (10.2b) null while healthy; set + Mode forced Off when a device call of the layer's own throws
+    public ulong FaultCount { get; }
     /// Moves every span whose results are now available into the lists (appends; caller clears). Non-blocking: stops at the first pending
-    /// recording, in submit order, whose values are not in yet. Called once per frame by the kit.
+    /// recording, in submit order, whose values are not in yet (unless it timed out). Never throws for a device reason. Called once per frame by the kit.
     public void DrainCompleted(List<GpuTiming_CommandListSpan> commandLists, List<GpuTiming_DebugGroupSpan> debugGroups);
-    /// (impl) Disposes the ring (Mode forced Off, pending spans dropped) so the next enable rebuilds it from RingSlotPairs / MaxDebugGroups...
-    public void RecreateRing();
+    /// (10.2b) Closes the pool generation: disposes cached + pending trackers, clears Fault, Mode forced Off; the next enable rebuilds from the knobs above.
+    public void ResetTrackerPool();
 }
 ```
 
@@ -141,15 +152,17 @@ Semantics (as built):
   there and reported with the name suffixed `" (unclosed)"`. Pushes beyond `MaxDebugGroupsPerCommandList` (count per recording, nested or sequential)
   are forwarded to the debugger but not timed (`UntimedDebugGroups++`). Group writes are legal inside render passes because their slots are Fresh
   (reset at `Begin()`).
-- **(impl) Slot allocation**: each traced recording reserves a contiguous block of `2 + 2 * MaxDebugGroupsPerCommandList` slots from ONE ring pool
+- **(impl) Slot allocation** - **SUPERSEDED by section 10 (F1-F4): a POOL of per-recording trackers, not a ring; the text below describes the Nov 10 build.**
+  Each traced recording reserves a contiguous block of `2 + 2 * MaxDebugGroupsPerCommandList` slots from ONE ring pool
   (`2 * RingSlotPairs` slots, `"Veldrid.GpuTiming.Ring"`) at `Begin()`. Layout `[clStart, clEnd, g0Start, g0End, ...]`. A block that does not fit before
   the end of the ring wraps to 0 and the wasted tail is charged to that record. If `used + block > capacity` the recording is NOT traced
   (`DroppedCommandLists++`). Defaults (2048 pairs, 16 groups) keep ~120 recordings in flight. Blocks are freed in submit (FIFO) order by `DrainCompleted`.
 - **(impl) Resolve**: `DrainCompleted` resolves only the WRITTEN prefix of a block (`CommandLists` off => the first pair stays Fresh and is skipped),
   so a `DebugGroups`-only recording resolves. `Disjoint` => `DisjointCommandLists++`, spans dropped, block freed.
-- **(impl) Abandon**: `Begin()` on a command list whose previous recording was never submitted marks that record abandoned; it is queued so its block
+- **(impl) Abandon** - **SUPERSEDED by section 10 (F4/F5): a lost or disposed list's tracker is released by GC, no leak.** `Begin()` on a command list whose
+  previous recording was never submitted marks that record abandoned; it is queued so its block
   is freed in ring order, and its written slots are `DiscardRange`d (-> Resolved without a read -> reset at the next Begin). `AbandonedCommandLists++`.
-  A command list DISPOSED with a live record leaks its block for the life of the ring (no base-class Dispose hook); `RecreateRing()` clears it.
+  (Ring build only: a command list DISPOSED with a live record leaked its block for the life of the ring; `RecreateRing()` cleared it.)
 - Mode changes take effect at the next `Begin()`; a recording keeps the mode it started with.
 - Nothing here requires `WaitForIdle`. Resolution happens only inside `DrainCompleted` (the "opportunistically in SwapBuffers" idea was dropped: one
   drain site keeps the lock discipline trivial).
@@ -376,3 +389,83 @@ spans around pure copies on D3D11 may under-report; bracket passes that contain 
 When this lands, `AN_Monsters/_SPECS_RenderKit/95_GpuTiming.md` describes the kit's `GpuFrameProfiler` as a drain-and-tabulate consumer of
 `GraphicsDevice.GpuTiming` (its `Scope()` becomes `PushDebugGroup`/`PopDebugGroup` + CPU stopwatch, which also gives RenderDoc grouping for free), a
 per-command-list lane, and the first consumer (the VoxelColumnTerrain bench's `[FrameStats]` line).
+
+## 10. Revision (Nov 10 2026 18:50): the automatic layer's allocator is a POOL of per-recording trackers, not a ring
+
+Full analysis and verification plan: `_BUGFIX/BUGFIX_GpuTiming_RingAllocator_OrderAssumption.md`. Decisions (user, Nov 10):
+
+| # | Decision |
+|---|---|
+| F1 | **No ordering assumption on command lists.** A `CommandList` may be `Begin()`'d on any thread and submitted any time later (or never). The timing layer's memory management must not depend on Begin order, Submit order, or on a list ever being submitted. (The ring's position-at-Begin / count-at-Submit scheme violated this - section 4 "Slot allocation", "Abandon".) |
+| F2 | **One tracker per recording, self-contained.** `GpuTiming_SlotBlock`: the recording's own `2 + 2 x MaxDebugGroupsPerCommandList` slots as ITS OWN device storage - D3D11 `ID3D11Query[]` + rented disjoint window; Vulkan its own small `VkQueryPool` (a slot of a shared pool cannot be released individually; a small pool can). The per-slot `Fresh / Written / Resolved` machine (5.3) is unchanged, now per block. |
+| F3 | **The pool is a cache, not an owner.** `GpuTiming.freeBlocks` (stack). `Begin()` pops any free block (creates one when empty, up to a cap; else the existing drop path: `DroppedCommandLists++`, recorded without timestamps). Resolve or abandon returns THAT block. No count, no head, no tail waste. |
+| F4 | **Ownership chain = the only references that ever exist:** `freeBlocks -> CommandList.record.Block -> (+ pending while submitted) -> freeBlocks`. A list dropped on the floor takes its tracker with it. |
+| F5 | **The finalizer talks only to the profiler.** The tracker holds its `GpuTiming` owner; `~GpuTiming_SlotBlock()` does exactly `owner.ReportFinalized(this)` (a `ConcurrentQueue` push; object resurrection is legal). NEVER a driver call on the finalizer thread. `GpuTiming` drains the queue under `ringLock` at the next `Begin()` / `DrainCompleted()` and, by default, **re-pools the tracker** (its queries are intact; nothing GPU-side can reference a collectable tracker) - zero driver calls; over the cap it destroys the queries through the device's normal path, on that app thread. |
+| F6 | **Resets are per block.** `VkCommandList.Begin()` resets ITS recording's block only (the only slots it will write); the device registry sweep (5.3 rule 2) remains for EXPLICIT app pools. |
+| F7 | **`RingSlotPairs` keeps its name and default** and becomes the block CAP: `2 x RingSlotPairs / slotsPerCommandList` trackers (~120 at the defaults). `RecreateRing()` keeps its name; it now drops the cache and every pooled tracker. The public surface of section 4 is otherwise unchanged (C4: regenerate the stableapi snapshot anyway). |
+| F8 | **D3D11 rename rule is preserved per block** (section 8 "Driver finding", row 5/9): a slot whose value was never fetched is renamed, not re-issued. Re-pooling a finalized tracker is safe because its slots are Resolved (fetched) or Fresh - an unfetched Written slot in a lost list is renamed on its next write exactly as today. |
+
+### 10.1 What changes where
+
+```
+src/Veldrid/GpuTiming.cs
+  - ring, ringCapacitySlots, ringAllocHead, usedRingSlots, createRingLocked, WasteSlots  ->  removed
+  + sealed class GpuTiming_SlotBlock { TimestampQueryPool Pool (capacity = slotsPerCommandList); GpuTiming Owner; ~GpuTiming_SlotBlock() => Owner.ReportFinalized(this); }
+  + Stack<GpuTiming_SlotBlock> freeBlocks; int liveBlocks; ConcurrentQueue<GpuTiming_SlotBlock> finalizedBlocks; ulong finalizedBlocksTotal
+  + drainFinalizedLocked(): foreach queued: GC.ReRegisterForFinalize(b); liveBlocks within cap ? freeBlocks.Push(b) : b.Pool.Dispose()
+  OnCommandListBegin:   drainFinalizedLocked(); block = freeBlocks.Pop() ?? (liveBlocks < cap ? create : DROP); record.Block = block; slots are block-relative (FirstSlot = 0)
+  DrainCompleted:       resolve record.Block.Pool [ResolveFirstSlot, WrittenSlotCount) as today; on dequeue (Ready | Disjoint | Abandoned) -> freeBlocks.Push(record.Block)
+  abandon():            unchanged (queued; freed when it reaches the head)
+  RecreateRing():       Mode = Off; pending.Clear(); dispose every block in freeBlocks + finalizedBlocks; liveBlocks = 0
+  GpuTiming_CommandListRecord: FirstSlot/ReservedSlots/WasteSlots -> Block; MaxGroups from Block.Pool.Capacity
+src/Veldrid/CommandList.cs           WriteTimestamp(record.Block.Pool, slot) at every hook - no other change (the record already lives on the list)
+src/Veldrid/Vk/VkCommandList.cs      Begin(): record.Block.Pool.RecordPendingResets(cb) for the recording's own block; registry sweep unchanged for app pools
+src/Veldrid/Vk/VkTimestampQueryPool.cs, D3D11/D3D11TimestampQueryPool.cs   no behavioural change (a 34-slot pool is the tracker's storage)
+src/Veldrid.ContractTests/GpuTimingAutoTests.cs   + the four tests of 10.2; Auto_RingFull_DropsNeverBlocks re-expressed as the block CAP (RingSlotPairs = 2 -> 1 block of 34 slots when MaxDebugGroups = 16; set MaxDebugGroups = 0 -> 2 blocks)
+```
+
+Lock discipline unchanged: `ringLock` guards `freeBlocks`, `liveBlocks`, `pending`; per-block slot state is the block's pool `StateLock`; `finalizedBlocks` is lock-free
+and only ever drained under `ringLock`. Nothing is held across a device call that could re-enter (`Pool.Dispose()` in the drain is the one device call, and it runs
+on the app thread that holds `ringLock`, exactly as `RecreateRing()` does today).
+
+### 10.2 Tests (added to `GpuTimingAutoTests`, both backends)
+
+- [x] `Auto_OutOfOrderSubmit_NeverThrows` - three lists `Begin / 4 x Push-Pop / End` in order 0,1,2; submitted 2,1,0; 200 iterations with a drain per iteration -> no
+      exception, `DroppedCommandLists == 0`, one command-list span + 4 group spans per submit, `LiveBlocks <= 4`. (Pre-fix: throws within one lap of the shared pool.)
+- [x] `Auto_HeldList_DoesNotBlackOut` - one list `Begin()`'d and never submitted for the whole test while another list records 300 timed lists -> 300 spans, 0 drops.
+      (Pre-fix: stats stop when the allocation head reaches the held block.)
+- [x] `Auto_LostList_IsFinalizedAndRepooled` - `Begin / End` a list in a `NoInlining` helper, never submit, never dispose, drop every reference; forced compacting full
+      GC + `WaitForPendingFinalizers` -> `FinalizedBlocks == 1`, `LiveBlocks` stays 1 (the SAME tracker is re-pooled, no new query creation), `Fault == null`, next
+      recording traced. Veldrid command lists have no finalizer, so the tracker's is the only one that runs for the lost graph.
+- [x] `Auto_IdleThenBurst_NeverThrows` - 10 timed lists, 2 s with no submits, then 200 lists (the Monsters crash shape) -> no throw, 210 spans.
+- [x] `Auto_PendingResolveTimeout_ReclaimsTrackerNeverThrows` - `MaxTrackedCommandLists = 1`, `PendingResolveTimeout = 0`: 50 submit+drain pairs -> `spans + TimedOutCommandLists == 50`,
+      0 drops, `LiveBlocks == 1` (a timed-out head returns its tracker; the pool never wedges behind a dead record).
+- [x] `Auto_TrackerCapReached_DropsNeverBlocks` (was `Auto_RingFull_...`) - `MaxTrackedCommandLists = 2`, 10 undrained submits -> 8 drops, prompt, traces again after a drain.
+- [x] `Auto_BeginWithoutSubmit_IsAbandonedAndTrackerRecovers` (was `..._RingRecovers`) - `ResetTrackerPool()` then 2 trackers x 1 group with periodic abandons across 6 laps.
+- [ ] Consumer: `AN_Monsters cmd\terrain-eroded.cmd --far-field split 80 --lod-levels 5` survives the 110 s activation and runs > 5 min with the panel populated.
+
+### 10.2b Public surface as landed (Nov 10 19:30) - no "ring" anywhere; this is a POOLED allocator
+
+| Member | Replaces | Meaning |
+|---|---|---|
+| `int MaxTrackedCommandLists = 120` | `uint RingSlotPairs = 2048` | Tracker cap = recordings in flight with timestamps (120 x 34 slots = the old 2048-pair budget). Frozen at first enable / after `ResetTrackerPool`. |
+| `void ResetTrackerPool()` | `RecreateRing()` | Closes the pool GENERATION: disposes cached + pending trackers, clears `Fault`, `Mode = Off`. Trackers still held by live recordings carry the old generation and are disposed, uncounted, when they return (so `LiveBlocks` stays exact - the Nov 10 18:50 build zeroed the count and let old trackers re-enter it). |
+| `TimeSpan PendingResolveTimeout = 10 s` | - | A submitted head that stays `NotReady` this long is written off (`TimedOutCommandLists++`, slots discarded, tracker reclaimed) and the drain continues. Without it a device that stops completing work parks every tracker behind the dead head and the layer drops forever. |
+| `ulong TimedOutCommandLists` | - | Count of the above. Non-zero = the device stopped answering. |
+| `string Fault` / `ulong FaultCount` | - | **Fail gracefully (user, Nov 10 19:00): a performance debugger must never take the client down.** Every device call the layer makes itself (tracker pool create / reset / `WriteTimestamp` / `TryResolveTimestamps` / `Dispose`) is guarded; the first throw records `Fault = "GpuTiming disabled itself while <op>: <ex>"`, forces `Mode = Off`, marks that recording `Faulted` (drained by discard, not resolve) and the client's `Begin/Push/Pop/End/Submit` returns normally, untimed. `Mode` cannot be turned on while `Fault` is set; `ResetTrackerPool()` clears it. The explicit-pool API (section 3) is NOT guarded - app misuse there still throws under `VALIDATE_USAGE` as specced. |
+| `ulong FinalizedBlocks`, `int LiveBlocks` | - | F5 diagnostics (unchanged from 18:50). |
+
+Internals renamed with it: `poolLock`, `freeBlocks`, `configureTrackerPoolLocked`, `GpuTiming_SlotBlock.Generation`, tracker pools named `"Veldrid.GpuTiming.Tracker"`; the
+finalizer-drain re-arms (`GC.ReRegisterForFinalize`) ONLY on the re-pool path (a disposed tracker's finalizer has already run - nothing to re-arm or suppress). `DrainCompleted`
+uses one `stackalloc` scratch of `slotsPerCommandList` for the whole drain (CA2014). `AN.Veldrid.stableapi` regenerated (C4). `Veldrid.ContractTests` 147/147 green D3D11 + Vulkan.
+
+### 10.3 Supersedes
+
+- Section 4 "(impl) Slot allocation" and "(impl) Abandon" (the ring, FIFO freeing, the documented "a disposed list leaks its block" limitation - gone by F4/F5).
+- Section 5.3 rule 2 as applied to the automatic layer (F6); unchanged for explicit pools.
+- Section 5.4 first paragraph ("one ring pool, per-recording reserved blocks").
+- Section 6.2 `Auto_RingFull_DropsNeverBlocks` (re-expressed as the block cap, 10.1).
+- Section 4 API: `RingSlotPairs` / `RecreateRing()` (10.2b). F7 ("keeps its name") was overruled by the user Nov 10 19:00: nothing in the layer is a ring, so nothing is named one.
+
+- [x] 10.4a Implement 10.1 (fork), tests 10.2 green on D3D11 + Vulkan, stableapi regenerated (C4).
+- [ ] 10.4b Publish, bump `AN_Monsters/Monsters.Build.props` `ANVeldridVersion`, consumer run (10.2 last item).
